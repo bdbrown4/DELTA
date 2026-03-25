@@ -1,20 +1,23 @@
 """
-Phase 16: Post-Attention Pruning vs Pre-Attention Routing
+Phase 16: Post-Attention Soft Gating with Curriculum
 
-Core question: Does pruning based on OBSERVED attention weights outperform
-the old pre-attention Gumbel router that predicted importance before seeing
-how elements actually participate in attention?
+Addresses the 29% accuracy gap from the original Phase 16. Root causes:
+1. Hard top-k pruning after attention is non-differentiable — pruner can't learn
+2. Zeroing features after attention creates inconsistent representations
+3. Single-scalar importance signal is too thin for the gating network
 
-This directly addresses Pitfall #1 (router chicken-and-egg) and Pitfall #6
-(Gumbel-softmax not improving accuracy).
+Solution: Soft differentiable gating + curriculum annealing
+- Continuous sigmoid gates instead of hard top-k (full gradient flow)
+- Sparsity regularization instead of hard cutoffs (learned compression)
+- Temperature curriculum: soft → sharp gates over training (dense → sparse)
+- Rich per-head attention features feed the gating network
 
-Benchmark: Same FB15k-237-style KG as Phase 15, comparing:
-1. Old pre-attention router (ImportanceRouter) at 50% sparsity — was ~65-75%
-2. New post-attention pruner (PostAttentionPruner) at 50% sparsity
-3. Post-attention pruner at 30% sparsity (aggressive)
-4. Full attention baseline (no pruning) — should stay 100%
-
-Key metric: accuracy at 50% sparsity should improve over Phase 15's result.
+Compares:
+1. Full attention (upper bound, no pruning)
+2. Old pre-attention router at 50% (hard top-k baseline)
+3. Old post-attention hard pruning at 50% (the broken approach)
+4. New soft gating at 50% target sparsity (differentiable)
+5. Soft gating + curriculum: start dense, anneal to 50% (best of both)
 """
 
 import sys
@@ -42,7 +45,7 @@ class OldRouterModel(nn.Module):
             nn.Linear(d_edge, d_edge), nn.GELU(), nn.Linear(d_edge, num_classes),
         )
 
-    def forward(self, graph, k_ratio=0.5):
+    def forward(self, graph, k_ratio=0.5, **kwargs):
         node_scores, edge_scores = self.router(graph)
         _, edge_mask = self.router.apply_top_k(
             graph, node_scores, edge_scores,
@@ -53,36 +56,59 @@ class OldRouterModel(nn.Module):
                        edge_index=graph.edge_index, node_tiers=graph.node_tiers)
         edge_adj = g.build_edge_adjacency()
         edge_feats = self.edge_attn(g, edge_adj=edge_adj)
-        return self.classifier(edge_feats)
+        return self.classifier(edge_feats), torch.tensor(0.0)
 
 
-class PostAttentionModel(nn.Module):
-    """New approach: run full attention, observe weights, then prune for classification."""
+class HardPostAttnModel(nn.Module):
+    """The original (broken) approach: hard top-k after attention."""
 
     def __init__(self, d_node, d_edge, num_classes, num_heads=4):
         super().__init__()
         self.dual_attn = DualParallelAttention(d_node, d_edge, num_heads)
-        self.pruner = PostAttentionPruner(d_node, d_edge)
+        self.pruner = PostAttentionPruner(d_node, d_edge, num_heads)
         self.classifier = nn.Sequential(
             nn.Linear(d_edge, d_edge), nn.GELU(), nn.Linear(d_edge, num_classes),
         )
 
-    def forward(self, graph, k_ratio=0.5):
+    def forward(self, graph, k_ratio=0.5, **kwargs):
         edge_adj = graph.build_edge_adjacency()
         result, node_attn_w, edge_attn_w = self.dual_attn(
             graph, edge_adj=edge_adj, return_weights=True
         )
-        # Score importance from observed attention
         node_scores, edge_scores = self.pruner.compute_importance(
             result, node_attn_w, edge_attn_w
         )
-        # Prune: zero out unimportant edges
         _, edge_mask = self.pruner.prune(
             result, node_scores, edge_scores,
             node_k_ratio=k_ratio, edge_k_ratio=k_ratio,
         )
-        pruned_edge_feats = result.edge_features * edge_mask.float().unsqueeze(-1)
-        return self.classifier(pruned_edge_feats)
+        pruned = result.edge_features * edge_mask.float().unsqueeze(-1)
+        return self.classifier(pruned), torch.tensor(0.0)
+
+
+class SoftGatingModel(nn.Module):
+    """New approach: soft differentiable gating after attention."""
+
+    def __init__(self, d_node, d_edge, num_classes, num_heads=4):
+        super().__init__()
+        self.dual_attn = DualParallelAttention(d_node, d_edge, num_heads)
+        self.pruner = PostAttentionPruner(d_node, d_edge, num_heads)
+        self.classifier = nn.Sequential(
+            nn.Linear(d_edge, d_edge), nn.GELU(), nn.Linear(d_edge, num_classes),
+        )
+
+    def forward(self, graph, target_sparsity=0.5, temperature=1.0, **kwargs):
+        edge_adj = graph.build_edge_adjacency()
+        result, node_attn_w, edge_attn_w = self.dual_attn(
+            graph, edge_adj=edge_adj, return_weights=True
+        )
+        _, edge_gates = self.pruner.compute_importance(
+            result, node_attn_w, edge_attn_w, temperature=temperature,
+        )
+        gated_graph, sparsity_loss = self.pruner.soft_prune(
+            result, edge_gates, target_sparsity=target_sparsity,
+        )
+        return self.classifier(gated_graph.edge_features), sparsity_loss
 
 
 class FullAttentionModel(nn.Module):
@@ -98,20 +124,33 @@ class FullAttentionModel(nn.Module):
     def forward(self, graph, **kwargs):
         edge_adj = graph.build_edge_adjacency()
         edge_feats = self.edge_attn(graph, edge_adj=edge_adj)
-        return self.classifier(edge_feats)
+        return self.classifier(edge_feats), torch.tensor(0.0)
 
 
 def train_eval(model, graph, labels, train_idx, test_idx,
-               epochs=200, lr=1e-3, **fwd_kwargs):
+               epochs=300, lr=1e-3, sparsity_weight=0.1,
+               curriculum=False, target_sparsity=0.5,
+               temp_start=0.5, temp_end=5.0):
+    """Train with optional curriculum annealing."""
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     best_acc = 0.0
-    num_rels = labels.max().item() + 1
-    per_rel_best = None
+    best_epoch = 0
 
     for epoch in range(epochs):
         model.train()
-        logits = model(graph, **fwd_kwargs)
-        loss = F.cross_entropy(logits[train_idx], labels[train_idx])
+        progress = epoch / max(1, epochs - 1)
+
+        # Curriculum: anneal temperature (soft → sharp) and sparsity (0 → target)
+        if curriculum:
+            temperature = temp_start + (temp_end - temp_start) * progress
+            current_sparsity = target_sparsity * min(1.0, progress * 2)  # reach target at 50% training
+            fwd_kwargs = dict(target_sparsity=current_sparsity, temperature=temperature)
+        else:
+            fwd_kwargs = dict(target_sparsity=target_sparsity, temperature=1.0)
+
+        logits, aux_loss = model(graph, **fwd_kwargs)
+        task_loss = F.cross_entropy(logits[train_idx], labels[train_idx])
+        loss = task_loss + sparsity_weight * aux_loss
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -119,32 +158,33 @@ def train_eval(model, graph, labels, train_idx, test_idx,
         if (epoch + 1) % 50 == 0:
             model.eval()
             with torch.no_grad():
-                logits = model(graph, **fwd_kwargs)
+                eval_kwargs = dict(target_sparsity=target_sparsity, temperature=temp_end if curriculum else 1.0)
+                logits, _ = model(graph, **eval_kwargs)
                 preds = logits.argmax(-1)
                 acc = (preds[test_idx] == labels[test_idx]).float().mean().item()
-
-                per_rel = {}
-                for r in range(num_rels):
-                    mask = labels[test_idx] == r
-                    if mask.any():
-                        per_rel[r] = (preds[test_idx][mask] == r).float().mean().item()
-
                 if acc > best_acc:
                     best_acc = acc
-                    per_rel_best = per_rel
+                    best_epoch = epoch + 1
 
-                print(f"  Epoch {epoch+1}: Loss={loss.item():.4f}  Acc={acc:.3f}")
+                extra = ""
+                if curriculum:
+                    extra = f"  τ={temperature:.2f} sparsity={current_sparsity:.2f}"
+                print(f"  Epoch {epoch+1}: Loss={task_loss.item():.4f}  Acc={acc:.3f}{extra}")
 
-    return best_acc, per_rel_best
+    return best_acc, best_epoch
 
 
 def main():
     print("=" * 70)
-    print("PHASE 16: Post-Attention Pruning vs Pre-Attention Routing")
+    print("PHASE 16: Post-Attention Soft Gating with Curriculum")
     print("=" * 70)
     print()
-    print("Fix 1+6 validation: Does pruning based on OBSERVED attention")
-    print("outperform the old pre-attention importance scoring?")
+    print("Root cause of original 29% gap:")
+    print("  1. Hard top-k after attention = non-differentiable (pruner can't learn)")
+    print("  2. Zeroing post-attention features = inconsistent representations")
+    print("  3. Single scalar importance = too weak a signal")
+    print()
+    print("Fix: Soft sigmoid gates + sparsity regularization + temperature curriculum")
     print()
 
     d_node, d_edge = 64, 32
@@ -164,51 +204,72 @@ def main():
 
     results = {}
 
+    # 1. Full attention baseline
     print("--- Full Attention (no pruning, upper bound) ---")
     torch.manual_seed(42)
     m = FullAttentionModel(d_node, d_edge, num_classes)
-    acc, pr = train_eval(m, graph, labels, train_idx, test_idx)
+    acc, ep = train_eval(m, graph, labels, train_idx, test_idx, epochs=300)
     results['Full (no prune)'] = acc
 
-    print("\n--- Old Pre-Attention Router @ 50% ---")
+    # 2. Old pre-attention router
+    print("\n--- Old Pre-Attention Router @ 50% (hard top-k) ---")
     torch.manual_seed(42)
     m = OldRouterModel(d_node, d_edge, num_classes)
-    acc, pr = train_eval(m, graph, labels, train_idx, test_idx, k_ratio=0.5)
+    acc, ep = train_eval(m, graph, labels, train_idx, test_idx, epochs=300)
     results['Old Router 50%'] = acc
 
-    print("\n--- Post-Attention Pruner @ 50% ---")
+    # 3. Hard post-attention pruning (the broken original)
+    print("\n--- Hard Post-Attention Pruning @ 50% (original broken approach) ---")
     torch.manual_seed(42)
-    m = PostAttentionModel(d_node, d_edge, num_classes)
-    acc, pr = train_eval(m, graph, labels, train_idx, test_idx, k_ratio=0.5)
-    results['PostAttn 50%'] = acc
+    m = HardPostAttnModel(d_node, d_edge, num_classes)
+    acc, ep = train_eval(m, graph, labels, train_idx, test_idx, epochs=300)
+    results['Hard PostAttn 50%'] = acc
 
-    print("\n--- Post-Attention Pruner @ 30% (aggressive) ---")
+    # 4. Soft gating (no curriculum)
+    print("\n--- Soft Gating @ 50% target sparsity (differentiable) ---")
     torch.manual_seed(42)
-    m = PostAttentionModel(d_node, d_edge, num_classes)
-    acc, pr = train_eval(m, graph, labels, train_idx, test_idx, k_ratio=0.3)
-    results['PostAttn 30%'] = acc
+    m = SoftGatingModel(d_node, d_edge, num_classes)
+    acc, ep = train_eval(m, graph, labels, train_idx, test_idx, epochs=300,
+                         target_sparsity=0.5, sparsity_weight=0.1)
+    results['Soft Gate 50%'] = acc
+
+    # 5. Soft gating + curriculum
+    print("\n--- Soft Gating + Curriculum (dense→50% sparsity, τ: 0.5→5.0) ---")
+    torch.manual_seed(42)
+    m = SoftGatingModel(d_node, d_edge, num_classes)
+    acc, ep = train_eval(m, graph, labels, train_idx, test_idx, epochs=300,
+                         curriculum=True, target_sparsity=0.5, sparsity_weight=0.1,
+                         temp_start=0.5, temp_end=5.0)
+    results['Soft+Curriculum 50%'] = acc
 
     # Summary
     print()
     print("=" * 70)
     print("RESULTS SUMMARY")
     print("=" * 70)
-    print(f"  {'Model':<25s} {'Test Acc':>10s}")
-    print(f"  {'-'*25} {'-'*10}")
+    print(f"  {'Model':<30s} {'Test Acc':>10s}")
+    print(f"  {'-'*30} {'-'*10}")
     for name, acc in results.items():
         bar = '#' * int(acc * 40)
-        print(f"  {name:<25s} {acc:>10.3f}  {bar}")
+        print(f"  {name:<30s} {acc:>10.3f}  {bar}")
 
-    old_50 = results['Old Router 50%']
-    new_50 = results['PostAttn 50%']
-    delta = new_50 - old_50
-    print(f"\n  Post-attn 50% vs Old router 50%: {delta:+.3f}")
-    if delta > 0:
-        print("  >> Post-attention pruning outperforms pre-attention routing!")
-    elif delta == 0:
-        print("  >> Same accuracy — post-attention pruning matches pre-attention.")
-    else:
-        print("  >> Pre-attention routing still better at this scale.")
+    full = results['Full (no prune)']
+    old = results['Old Router 50%']
+    hard = results['Hard PostAttn 50%']
+    soft = results['Soft Gate 50%']
+    curr = results['Soft+Curriculum 50%']
+
+    print(f"\n  Hard post-attn vs Old router:   {hard - old:+.3f}")
+    print(f"  Soft gating vs Old router:      {soft - old:+.3f}")
+    print(f"  Soft+Curriculum vs Old router:  {curr - old:+.3f}")
+    print(f"  Soft+Curriculum vs Full:        {curr - full:+.3f}")
+
+    if curr > old:
+        print("\n  >> Soft gating + curriculum BEATS pre-attention routing!")
+    if curr > hard:
+        print(f"  >> Curriculum closes the gap: hard={hard:.3f} → curriculum={curr:.3f}")
+    if soft > hard:
+        print(f"  >> Soft gating alone helps: hard={hard:.3f} → soft={soft:.3f}")
 
 
 if __name__ == '__main__':

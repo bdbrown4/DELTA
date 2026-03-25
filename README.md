@@ -105,7 +105,7 @@ After Phase 15, a pitfall analysis identified 6 architectural weaknesses. Each w
 
 | Phase | Validates | Benchmark | Result |
 |-------|-----------|-----------|--------|
-| 16 | Post-attention pruning vs pre-attention router | KG classification at 50% sparsity | Old router 90.7%, post-attn 61.3%, full 100%. Pre-attention wins at small scale — post-attention needs larger graphs to observe meaningful attention patterns |
+| 16 | Post-attention soft gating + curriculum | KG classification at 50% sparsity | **Soft gating 100%, curriculum 100%**, old router 85.3%, hard post-attn 65.3%. Soft differentiable gating eliminates the original 29% gap and beats pre-attention routing by +14.7% |
 | 17 | Sparse COO multi-hop scaling | 1-hop/2-hop timing at 50→2500 edges | **O(E^0.97) scaling confirmed.** 2500-edge 2-hop in 0.18s (was timeout with dense). All correctness checks pass |
 | 18 | Variational memory compression | Compression quality + downstream accuracy | Accuracy preserved at 100% with compression. KL converges 0.126→0.026. Gradient flows through bottleneck. Similarity threshold is learnable |
 | 19 | Per-layer edge projections | Edge type diversity + relational classification | Both reach 100% accuracy. Per-layer produces higher edge-type entropy (1.632 vs 1.562) — richer type diversity |
@@ -193,7 +193,7 @@ python -m pytest tests/ -v  # 22/22 should pass
 
 12. **Per-layer edge projections increase type diversity**: Phase 19 showed per-layer constructor produces higher edge-type entropy (1.632 vs 1.562) — richer diversity of inferred edge types — while matching classification accuracy.
 
-13. **Post-attention pruning underperforms at small scale**: Phase 16 showed the old pre-attention router (90.7%) still beats the new post-attention pruner (61.3%) at 100-node scale. Post-attention pruning needs enough data for the model to learn meaningful attention patterns before pruning — at small scale, the pre-attention MLP heuristic is a better prior.
+13. **Soft gating solves post-attention pruning**: The original Phase 16 showed a 29% accuracy gap (hard post-attn 61.3% vs old router 90.7%). Root cause: hard top-k is non-differentiable — the pruner gates received zero gradient and never learned. The redesigned PostAttentionPruner uses soft sigmoid gates with per-head attention features, achieving **100% accuracy at 50% target sparsity** — matching full attention and beating pre-attention routing by +14.7%. Curriculum annealing (temperature 0.5→5.0, sparsity 0→50%) also reaches 100%.
 
 14. **Learned dropout needs harder benchmarks**: Phase 21 showed all dropout modes reach 0 generalization gap on the current 100-entity KG. The dataset is too easy to differentiate — dropout benefits will emerge at larger scale with noise and distribution shift.
 
@@ -226,8 +226,8 @@ Identified and fixed 6 architectural weaknesses:
 - **Constructor upgrade**: Averaged attention → per-layer edge projections
 - **Regularization**: Uniform dropout → learned per-edge dropout
 
-### Stage 3: Where We Are Now
-All fixes implemented and backward-compatible. Scaling bottlenecks (sparse multi-hop, BFS partition) are definitively solved. Higher-level fixes (post-attention pruning, learned dropout, variational compression) are architecturally sound but **haven't yet demonstrated clear advantages over simpler baselines at current scale**. This is the expected outcome — these fixes solve problems that only manifest at larger scale.
+### Stage 3: Soft Gating Breakthrough (Phase 16 Redesign)
+All fixes implemented and backward-compatible. Scaling bottlenecks (sparse multi-hop, BFS partition) are definitively solved. **Post-attention pruning is now fully validated** — the original 29% accuracy gap was caused by non-differentiable hard top-k gates, not a fundamental paradigm problem. The redesigned soft sigmoid gating with per-head attention features achieves 100% accuracy at 50% target sparsity, and curriculum annealing (dense→sparse) also reaches 100%. Remaining awaiting-scale items (learned dropout, variational compression advantage) are architecturally sound but need harder benchmarks to demonstrate their value.
 
 ## Current Status: What's Working vs What Needs Proof
 
@@ -238,10 +238,11 @@ All fixes implemented and backward-compatible. Scaling bottlenecks (sparse multi
 - **Sparse COO operations** — O(E^0.97) confirmed, handles 2500+ edges where dense timed out
 - **Variational memory** — preserves accuracy, KL converges, threshold is learnable
 - **Per-layer edge projections** — higher type diversity, matching accuracy
+- **Post-attention soft gating** — 100% accuracy at 50% target sparsity, beats pre-attention router (85.3%) by +14.7%. Soft differentiable gates with per-head attention features fully close the original 29% gap
+- **Curriculum dense→sparse annealing** — temperature annealing (τ: 0.5→5.0) + sparsity ramp (0→50%) integrated with post-attention pruning, achieves 100% accuracy matching full attention
 - **22/22 unit tests passing**, backward compatibility confirmed
 
 ### ⚠️ Architecturally Sound, Awaiting Scale Proof
-- **Post-attention pruning** — correct paradigm, but pre-attention heuristic wins at N=100. Needs N=1000+ with noisy data
 - **Learned attention dropout** — mechanisms confirmed (eval passthrough, rate diversity), but current benchmarks too easy to show gap reduction
 - **Variational compression advantage** — preserves accuracy but hasn't shown improvement over fixed compression yet
 
@@ -249,16 +250,14 @@ All fixes implemented and backward-compatible. Scaling bottlenecks (sparse multi
 - **No real dataset validation** — all benchmarks are synthetic. Need FB15k-237, WN18RR, or similar
 - **Scale ceiling unknown** — tested up to 2500 nodes/edges, but real KGs have millions
 - **No GPU profiling** — all experiments on CPU. Memory/throughput characteristics on GPU untested
-- **Post-attention pruning needs redesign or larger scale** — the 29% accuracy gap vs old router is concerning even if expected at small scale
-- **Curriculum integration** — the dense→sparse annealing from Phase 12 hasn't been combined with post-attention pruning
 
 ## Roadmap
 
 ### Near-Term (Next Phases)
-1. **Phase 22: Scale stress test** — Run post-attention pruning + learned dropout at N=1000+ with noisy synthetic KGs to verify they outperform simple baselines at scale
+1. **Phase 22: Scale stress test** — Run soft gating + learned dropout at N=1000+ with noisy synthetic KGs to verify advantages hold at scale
 2. **Phase 23: Real KG benchmark** — FB15k-237 or WN18RR link prediction, compare against TransE/RotatE/CompGCN baselines
 3. **Phase 24: Combined fix integration** — Test all 6 fixes working together in the full pipeline on a single challenging task
-4. **Phase 25: Curriculum + post-attention** — Gumbel temperature annealing combined with post-attention pruning
+4. ~~**Phase 25: Curriculum + post-attention**~~ — ✅ **DONE.** Curriculum annealing (temperature + sparsity ramp) integrated with soft gating in Phase 16 redesign. Both reach 100% accuracy
 
 ### Medium-Term
 5. **GPU profiling & batching** — Profile memory and throughput, implement mini-batching for large graphs

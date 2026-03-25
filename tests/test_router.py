@@ -90,10 +90,47 @@ def test_legacy_importance_router():
     print("[PASS] test_legacy_importance_router")
 
 
+def test_soft_prune():
+    """Test differentiable soft gating + sparsity loss."""
+    g = make_test_graph()
+    pruner = PostAttentionPruner(32, 16)
+    E = g.num_edges
+    node_attn_w = torch.rand(E, 4)
+    edge_attn_w = torch.rand(20, 4)
+    node_gates, edge_gates = pruner.compute_importance(g, node_attn_w, edge_attn_w, temperature=1.0)
+    gated_graph, sparsity_loss = pruner.soft_prune(g, edge_gates, target_sparsity=0.5)
+    # Gated features should have same shape
+    assert gated_graph.edge_features.shape == g.edge_features.shape
+    # Sparsity loss should be a scalar
+    assert sparsity_loss.dim() == 0
+    # Verify gradient flows through soft gating
+    loss = gated_graph.edge_features.sum() + sparsity_loss
+    loss.backward()
+    has_grad = pruner.edge_gate[0].weight.grad is not None
+    assert has_grad, "No gradient through soft gates!"
+    print("[PASS] test_soft_prune")
+
+
+def test_temperature_sharpening():
+    """Higher temperature should produce more extreme (binary-like) gates."""
+    g = make_test_graph()
+    pruner = PostAttentionPruner(32, 16)
+    E = g.num_edges
+    node_attn_w = torch.rand(E, 4)
+    edge_attn_w = torch.rand(20, 4)
+    _, gates_soft = pruner.compute_importance(g, node_attn_w, edge_attn_w, temperature=0.5)
+    _, gates_sharp = pruner.compute_importance(g, node_attn_w, edge_attn_w, temperature=5.0)
+    # Sharp gates should have higher variance (more polarized)
+    assert gates_sharp.std() >= gates_soft.std() - 0.01  # allow small tolerance
+    print("[PASS] test_temperature_sharpening")
+
+
 if __name__ == '__main__':
     test_post_attention_pruner()
     test_prune()
     test_tier_update()
+    test_soft_prune()
+    test_temperature_sharpening()
     test_learned_attention_dropout()
     test_legacy_importance_router()
     print("\nAll router tests passed.")

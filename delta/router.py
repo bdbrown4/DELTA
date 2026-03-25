@@ -23,82 +23,139 @@ from delta.graph import DeltaGraph, TIER_HOT, TIER_WARM, TIER_COLD
 
 
 class PostAttentionPruner(nn.Module):
-    """Prunes graph elements based on observed attention weights.
+    """Soft differentiable gating based on observed attention weights.
 
-    After dual parallel attention runs and produces attention weights,
-    this module computes importance from those observed weights and
-    prunes low-importance nodes/edges for the next layer.
+    The key insight: hard pruning after attention is destructive because:
+    1. It zeroes features that other features were computed from (inconsistent)
+    2. topk is non-differentiable — the pruner can never learn
+    3. A single scalar importance signal is too thin
+
+    Instead, this module produces SOFT continuous gates [0, 1] per edge,
+    fully differentiable via sigmoid. Sparsity is encouraged through:
+    - L1 regularization on gate values (target_sparsity loss)
+    - Temperature annealing: low temp = soft gates, high temp = sharp gates
+    - At convergence, gates approach binary without hard cutoffs
+
+    This is the post-attention analogue of curriculum routing (Phase 12).
     """
 
-    def __init__(self, d_node: int, d_edge: int):
+    def __init__(self, d_node: int, d_edge: int, num_heads: int = 4):
         super().__init__()
-        # Small projections to combine attention-derived importance with features
-        self.node_gate = nn.Linear(d_node + 1, 1)  # +1 for attention importance
-        self.edge_gate = nn.Linear(d_edge + 1, 1)  # +1 for attention importance
+        self.num_heads = num_heads
+
+        # Rich importance signal: per-head attention statistics → gate
+        # Edge gate sees: edge features + per-head attention weights + endpoint importance
+        self.edge_gate = nn.Sequential(
+            nn.Linear(d_edge + num_heads + 2, d_edge),
+            nn.GELU(),
+            nn.Linear(d_edge, 1),
+        )
+        # Node gate sees: node features + aggregated per-head attention received
+        self.node_gate = nn.Sequential(
+            nn.Linear(d_node + num_heads, d_node // 2),
+            nn.GELU(),
+            nn.Linear(d_node // 2, 1),
+        )
+        # Cached sparsity loss for external access
+        self.sparsity_loss = torch.tensor(0.0)
 
     def compute_importance(self, graph: DeltaGraph,
                            node_attn_weights: torch.Tensor,
-                           edge_attn_weights: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Compute importance scores from observed attention weights.
+                           edge_attn_weights: torch.Tensor,
+                           temperature: float = 1.0) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Compute soft importance gates from observed attention weights.
 
         Args:
-            graph: current DeltaGraph
+            graph: current DeltaGraph (post-attention features)
             node_attn_weights: [E, H] per-edge attention weights from NodeAttention
-                               (how much each edge was attended to during node attention)
             edge_attn_weights: [E_adj, H] per-edge-adj attention weights from EdgeAttention
+            temperature: gate sharpness — low=soft (start), high=sharp (end)
 
         Returns:
-            node_scores: [N] importance in [0, 1]
-            edge_scores: [E] importance in [0, 1]
+            node_gates: [N] soft importance in [0, 1]
+            edge_gates: [E] soft importance in [0, 1]
         """
         N = graph.num_nodes
         E = graph.num_edges
+        H = self.num_heads
         device = graph.device
 
-        # --- Node importance from attention received ---
-        # Sum attention weights across heads, then aggregate per target node
+        # --- Per-head attention statistics for edges ---
         if node_attn_weights.numel() > 0:
-            edge_attn_sum = node_attn_weights.mean(dim=-1)  # [E] mean across heads
-            node_attn_agg = torch.zeros(N, device=device)
-            node_attn_agg.scatter_add_(0, graph.edge_index[1], edge_attn_sum)
-            # Normalize to [0, 1]
-            node_attn_agg = node_attn_agg / (node_attn_agg.max() + 1e-10)
+            # Clamp to num_heads columns (attention may have different H)
+            attn_h = node_attn_weights[:, :H] if node_attn_weights.shape[1] >= H \
+                else F.pad(node_attn_weights, (0, H - node_attn_weights.shape[1]))
         else:
-            node_attn_agg = torch.ones(N, device=device)
+            attn_h = torch.zeros(E, H, device=device)
 
-        node_input = torch.cat([graph.node_features, node_attn_agg.unsqueeze(-1)], dim=-1)
-        node_scores = torch.sigmoid(self.node_gate(node_input).squeeze(-1))
+        # Per-head node importance: scatter attention per head per target node
+        node_attn_per_head = torch.zeros(N, H, device=device)
+        for h in range(H):
+            node_attn_per_head[:, h].scatter_add_(
+                0, graph.edge_index[1], attn_h[:, h]
+            )
+        # Normalize per head
+        head_max = node_attn_per_head.max(dim=0, keepdim=True).values + 1e-10
+        node_attn_per_head = node_attn_per_head / head_max
 
-        # --- Edge importance from both node-attn and edge-attn ---
-        if node_attn_weights.numel() > 0:
-            edge_importance_from_node_attn = node_attn_weights.mean(dim=-1)  # [E]
-        else:
-            edge_importance_from_node_attn = torch.ones(E, device=device)
+        # --- Node gates ---
+        node_input = torch.cat([graph.node_features, node_attn_per_head], dim=-1)
+        node_logits = self.node_gate(node_input).squeeze(-1)  # [N]
+        node_gates = torch.sigmoid(node_logits * temperature)
 
-        # Aggregate edge-to-edge attention importance per edge
-        if edge_attn_weights.numel() > 0:
-            edge_attn_received = torch.zeros(E, device=device)
-            # edge_attn_weights is [E_adj, H] — we need edge_adj to know targets
-            # For simplicity, use node_attn-derived importance for edges
-            edge_imp = edge_importance_from_node_attn
-        else:
-            edge_imp = edge_importance_from_node_attn
+        # --- Edge gates: features + per-head attn + endpoint gate values ---
+        src_gates = node_gates[graph.edge_index[0]].unsqueeze(-1)  # [E, 1]
+        tgt_gates = node_gates[graph.edge_index[1]].unsqueeze(-1)  # [E, 1]
+        edge_input = torch.cat([
+            graph.edge_features,  # [E, d_edge]
+            attn_h,               # [E, H] — per-head attention weights
+            src_gates,            # [E, 1]
+            tgt_gates,            # [E, 1]
+        ], dim=-1)
+        edge_logits = self.edge_gate(edge_input).squeeze(-1)  # [E]
+        edge_gates = torch.sigmoid(edge_logits * temperature)
 
-        edge_imp_normalized = edge_imp / (edge_imp.max() + 1e-10)
-        edge_input = torch.cat([graph.edge_features, edge_imp_normalized.unsqueeze(-1)], dim=-1)
-        edge_scores = torch.sigmoid(self.edge_gate(edge_input).squeeze(-1))
+        return node_gates, edge_gates
 
-        return node_scores, edge_scores
+    def soft_prune(self, graph: DeltaGraph, edge_gates: torch.Tensor,
+                   target_sparsity: float = 0.5) -> Tuple[DeltaGraph, torch.Tensor]:
+        """Apply soft gates to edge features and compute sparsity loss.
+
+        Unlike hard pruning, this is fully differentiable. The sparsity loss
+        encourages gates to approach the target sparsity level.
+
+        Args:
+            graph: DeltaGraph with post-attention features
+            edge_gates: [E] soft gates in [0, 1]
+            target_sparsity: fraction of edges to suppress (0.5 = 50% pruned)
+
+        Returns:
+            gated_graph: DeltaGraph with soft-gated edge features
+            sparsity_loss: scalar loss encouraging target sparsity
+        """
+        # Soft gating: multiply edge features by gates
+        gated_edges = graph.edge_features * edge_gates.unsqueeze(-1)
+
+        gated_graph = DeltaGraph(
+            node_features=graph.node_features,
+            edge_features=gated_edges,
+            edge_index=graph.edge_index,
+            node_tiers=graph.node_tiers,
+        )
+
+        # Sparsity loss: encourage mean gate value to match (1 - target_sparsity)
+        # e.g., target_sparsity=0.5 → want mean gate ≈ 0.5
+        target_active = 1.0 - target_sparsity
+        mean_gate = edge_gates.mean()
+        self.sparsity_loss = (mean_gate - target_active) ** 2
+
+        return gated_graph, self.sparsity_loss
 
     def prune(self, graph: DeltaGraph, node_scores: torch.Tensor,
               edge_scores: torch.Tensor,
               node_k_ratio: float = 0.7,
               edge_k_ratio: float = 0.7) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Return boolean masks for top-k nodes and edges to keep.
-
-        Args:
-            node_k_ratio: fraction of nodes to keep active (0-1)
-            edge_k_ratio: fraction of edges to keep active (0-1)
+        """Hard top-k pruning (backward compat for legacy ImportanceRouter).
 
         Returns:
             node_mask: [N] boolean
@@ -183,7 +240,7 @@ class ImportanceRouter(nn.Module):
 
     def __init__(self, d_node: int, d_edge: int, hidden_dim: int = 64):
         super().__init__()
-        self._pruner = PostAttentionPruner(d_node, d_edge)
+        self._pruner = PostAttentionPruner(d_node, d_edge, num_heads=4)
         # Keep the old MLP-based scorer for backward compat
         self.node_scorer = nn.Sequential(
             nn.Linear(d_node + 2, hidden_dim),

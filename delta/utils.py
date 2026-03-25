@@ -530,3 +530,268 @@ def create_synthetic_kg_benchmark(
     }
 
     return graph, torch.tensor(labels, dtype=torch.long), metadata
+
+
+def create_noisy_kg_benchmark(
+    num_entities: int = 1000,
+    num_relations: int = 15,
+    num_triples: int = 5000,
+    noise_ratio: float = 0.15,
+    d_node: int = 64,
+    d_edge: int = 32,
+    seed: int = 42,
+) -> Tuple[DeltaGraph, torch.Tensor, Dict]:
+    """Large-scale noisy KG benchmark for Phase 22 scale stress testing.
+
+    Like create_synthetic_kg_benchmark but with:
+    - Larger default scale (1000 entities, 5000 triples)
+    - Label noise: a fraction of edges get random relation labels
+    - Feature noise: higher variance on edge features
+    - Power-law degree distribution (some entities are hubs)
+    """
+    torch.manual_seed(seed)
+    random.seed(seed)
+
+    num_top_types = 5
+    entity_type = [i % num_top_types for i in range(num_entities)]
+    type_protos = torch.randn(num_top_types, d_node)
+    node_features = torch.randn(num_entities, d_node) * 0.3
+    for i in range(num_entities):
+        node_features[i] += type_protos[entity_type[i]]
+
+    rel_protos = torch.randn(num_relations, d_edge)
+
+    # Power-law: some entities are hubs (appear more often as source)
+    weights = torch.tensor([1.0 / (i + 1) ** 0.8 for i in range(num_entities)])
+    weights = weights / weights.sum()
+
+    src_list, tgt_list, edge_feats, labels = [], [], [], []
+    seen: set = set()
+
+    for _ in range(num_triples):
+        for _attempt in range(20):
+            s = torch.multinomial(weights, 1).item()
+            t = random.randint(0, num_entities - 1)
+            if s != t and (s, t) not in seen:
+                seen.add((s, t))
+                break
+        else:
+            continue
+
+        r = (entity_type[s] * num_top_types + entity_type[t]) % num_relations
+        # Label noise: flip some labels
+        if random.random() < noise_ratio:
+            r = random.randint(0, num_relations - 1)
+        src_list.append(s)
+        tgt_list.append(t)
+        # Feature noise: higher variance
+        edge_feats.append(rel_protos[r] + torch.randn(d_edge) * 0.4)
+        labels.append(r)
+
+    n = len(src_list)
+    perm = torch.randperm(n)
+    train_end = int(n * 0.7)
+    val_end = int(n * 0.85)
+
+    graph = DeltaGraph(
+        node_features=node_features,
+        edge_features=torch.stack(edge_feats),
+        edge_index=torch.tensor([src_list, tgt_list], dtype=torch.long),
+    )
+
+    metadata = {
+        'num_relations': num_relations,
+        'entity_types': entity_type,
+        'noise_ratio': noise_ratio,
+        'train_idx': perm[:train_end],
+        'val_idx': perm[train_end:val_end],
+        'test_idx': perm[val_end:],
+    }
+
+    return graph, torch.tensor(labels, dtype=torch.long), metadata
+
+
+def create_realistic_kg_benchmark(
+    num_entities: int = 2000,
+    num_relations: int = 20,
+    num_triples: int = 8000,
+    d_node: int = 64,
+    d_edge: int = 32,
+    seed: int = 42,
+) -> Tuple[DeltaGraph, torch.Tensor, Dict]:
+    """FB15k-237-like benchmark with realistic KG properties.
+
+    Mimics real KG structure:
+    - Power-law degree distribution (few hubs, many leaf entities)
+    - Relation-specific type constraints (e.g., 'born_in' only links person->location)
+    - 1-to-1, 1-to-N, and N-to-N relation patterns
+    - Compositional derived relations (A->B, B->C implies A->C')
+    - Noisy features with realistic signal-to-noise ratio
+    """
+    torch.manual_seed(seed)
+    random.seed(seed)
+
+    # Entity types: person, org, location, concept, event
+    type_names = ['person', 'org', 'location', 'concept', 'event']
+    num_types = len(type_names)
+    # Skewed distribution: more persons and concepts
+    type_weights = [0.35, 0.15, 0.15, 0.25, 0.10]
+    entity_type = []
+    for i in range(num_entities):
+        r = random.random()
+        cum = 0
+        for t, w in enumerate(type_weights):
+            cum += w
+            if r < cum:
+                entity_type.append(t)
+                break
+        else:
+            entity_type.append(0)
+
+    type_protos = torch.randn(num_types, d_node) * 1.5
+    node_features = torch.randn(num_entities, d_node) * 0.3
+    for i in range(num_entities):
+        node_features[i] += type_protos[entity_type[i]]
+
+    # Relation definitions with type constraints
+    # (name, src_type_set, tgt_type_set, pattern)
+    rel_defs = [
+        ('born_in', {0}, {2}, '1-to-1'),
+        ('lives_in', {0}, {2}, 'N-to-1'),
+        ('works_at', {0}, {1}, 'N-to-1'),
+        ('founded', {0}, {1}, '1-to-1'),
+        ('located_in', {1}, {2}, 'N-to-1'),
+        ('part_of', {1}, {1}, 'N-to-1'),
+        ('capital_of', {2}, {2}, '1-to-1'),
+        ('friend_of', {0}, {0}, 'N-to-N'),
+        ('manages', {0}, {0}, '1-to-N'),
+        ('produced_by', {4}, {1}, 'N-to-1'),
+        ('occurred_at', {4}, {2}, 'N-to-1'),
+        ('about', {4}, {3}, 'N-to-N'),
+        ('related_to', {3}, {3}, 'N-to-N'),
+        ('instance_of', {0, 1, 2, 4}, {3}, 'N-to-1'),
+        ('causes', {4}, {4}, 'N-to-N'),
+        # Derived/compositional patterns
+        ('lives_near_work', {0}, {2}, '1-to-1'),
+        ('colleague_of', {0}, {0}, 'N-to-N'),
+        ('senior_to', {0}, {0}, '1-to-N'),
+        ('hometown_event', {0}, {4}, 'N-to-N'),
+        ('org_event', {1}, {4}, 'N-to-N'),
+    ]
+    num_rels = len(rel_defs)
+    rel_protos = torch.randn(num_rels, d_edge)
+
+    # Build entity lists per type
+    entities_by_type: Dict[int, list] = {t: [] for t in range(num_types)}
+    for i, t in enumerate(entity_type):
+        entities_by_type[t].append(i)
+
+    src_list, tgt_list, edge_feats, labels = [], [], [], []
+    seen: set = set()
+    base_count = 0
+
+    # Generate base triples respecting type constraints
+    while base_count < int(num_triples * 0.8):
+        rel_idx = random.randint(0, num_rels - 1)
+        _, src_types, tgt_types, _ = rel_defs[rel_idx]
+
+        src_pool = []
+        for st in src_types:
+            src_pool.extend(entities_by_type[st])
+        tgt_pool = []
+        for tt in tgt_types:
+            tgt_pool.extend(entities_by_type[tt])
+
+        if not src_pool or not tgt_pool:
+            continue
+
+        s = random.choice(src_pool)
+        t = random.choice(tgt_pool)
+        if s == t or (s, t) in seen:
+            continue
+        seen.add((s, t))
+
+        src_list.append(s)
+        tgt_list.append(t)
+        edge_feats.append(rel_protos[rel_idx] + torch.randn(d_edge) * 0.25)
+        labels.append(rel_idx)
+        base_count += 1
+
+    n_base = len(src_list)
+
+    # Derived: works_at + located_in => lives_near_work
+    works_at = [(s, t) for s, t, l in zip(src_list, tgt_list, labels) if l == 2]
+    located_in = {s: t for s, t, l in zip(src_list, tgt_list, labels) if l == 4}
+    for person, org in works_at:
+        if org in located_in and len(src_list) < num_triples:
+            loc = located_in[org]
+            if (person, loc) not in seen:
+                seen.add((person, loc))
+                src_list.append(person)
+                tgt_list.append(loc)
+                edge_feats.append(rel_protos[15] + torch.randn(d_edge) * 0.25)
+                labels.append(15)
+
+    # Derived: same org => colleague_of
+    org_employees: Dict[int, list] = {}
+    for s, t, l in zip(src_list[:n_base], tgt_list[:n_base], labels[:n_base]):
+        if l == 2:
+            org_employees.setdefault(t, []).append(s)
+    for org, emps in org_employees.items():
+        for i in range(min(len(emps), 5)):
+            for j in range(i + 1, min(len(emps), 5)):
+                if len(src_list) < num_triples and (emps[i], emps[j]) not in seen:
+                    seen.add((emps[i], emps[j]))
+                    src_list.append(emps[i])
+                    tgt_list.append(emps[j])
+                    edge_feats.append(rel_protos[16] + torch.randn(d_edge) * 0.25)
+                    labels.append(16)
+
+    # Fill remaining with random valid triples
+    while len(src_list) < num_triples:
+        rel_idx = random.randint(0, num_rels - 1)
+        _, src_types, tgt_types, _ = rel_defs[rel_idx]
+        src_pool = []
+        for st in src_types:
+            src_pool.extend(entities_by_type[st])
+        tgt_pool = []
+        for tt in tgt_types:
+            tgt_pool.extend(entities_by_type[tt])
+        if not src_pool or not tgt_pool:
+            continue
+        s = random.choice(src_pool)
+        t = random.choice(tgt_pool)
+        if s != t and (s, t) not in seen:
+            seen.add((s, t))
+            src_list.append(s)
+            tgt_list.append(t)
+            edge_feats.append(rel_protos[rel_idx] + torch.randn(d_edge) * 0.25)
+            labels.append(rel_idx)
+
+    n = len(src_list)
+    perm = torch.randperm(n)
+    train_end = int(n * 0.7)
+    val_end = int(n * 0.85)
+
+    base_mask = torch.zeros(n, dtype=torch.bool)
+    base_mask[:n_base] = True
+
+    graph = DeltaGraph(
+        node_features=node_features,
+        edge_features=torch.stack(edge_feats),
+        edge_index=torch.tensor([src_list, tgt_list], dtype=torch.long),
+    )
+
+    metadata = {
+        'num_relations': num_rels,
+        'entity_types': entity_type,
+        'type_names': type_names,
+        'relation_names': [r[0] for r in rel_defs],
+        'base_mask': base_mask,
+        'n_base': n_base,
+        'train_idx': perm[:train_end],
+        'val_idx': perm[train_end:val_end],
+        'test_idx': perm[val_end:],
+    }
+
+    return graph, torch.tensor(labels, dtype=torch.long), metadata

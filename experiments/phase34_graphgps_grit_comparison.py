@@ -74,10 +74,7 @@ def train_and_evaluate(model, graph, labels, task_type='edge',
     """
     torch.manual_seed(seed)
 
-    if task_type == 'edge':
-        N_items = labels.shape[0]
-    else:
-        N_items = labels.shape[0]
+    N_items = labels.shape[0]
 
     perm = torch.randperm(N_items)
     train_end = int(N_items * 0.7)

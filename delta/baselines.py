@@ -360,8 +360,6 @@ class RandomWalkPE(nn.Module):
         else:
             return self._compute_monte_carlo(graph)
 
-        return rw_probs
-
     def forward(self, graph: DeltaGraph) -> torch.Tensor:
         """Returns [N, d_pe] positional encodings."""
         rw_probs = self.compute_rw_probs(graph)

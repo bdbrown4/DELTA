@@ -30,7 +30,8 @@ Track which architectural claims have been empirically confirmed and at what con
 - CompGCN is a 2020 baseline. The community will ask about GraphGPS (2022) and GRIT (2023).
 - **Action:** Run DELTA against at least GraphGPS on full FB15k-237 once Phase 31 mini-batching works.
 - If DELTA wins → strong paper. If it doesn't → reframe contribution around efficiency + compositionality.
-- Status: [ ] Not started
+- Status: [x] Phase 34 infrastructure ready — lightweight GraphGPS and GRIT baselines implemented (`delta/baselines.py`), tested (`tests/test_baselines.py`), and experiment script ready (`experiments/phase34_graphgps_grit_comparison.py`). Synthetic data comparison can run immediately; full FB15k-237 comparison blocked on Phase 31 compute.
+- **Colab setup:** See `COLAB_SETUP.md` for Google Colab Pro+ ($49.99/mo) instructions and `notebooks/delta_colab_ready.py` for automated infrastructure.
 
 ### Gap 2: Full-scale evaluation — CRITICAL
 - Current status: 2000-entity subgraph (14% of FB15k-237's 14,505 entities; 22% of triples).
@@ -52,7 +53,7 @@ Ordered by cost-effectiveness for the immediate next steps (Phase 31 full-scale 
 
 | Option | Cost | VRAM | Best For | Action |
 |---|---|---|---|---|
-| **Google Colab Pro+** | ~$50/month | A100 40GB | First Phase 31 validation — low commitment | [ ] Evaluate |
+| **Google Colab Pro+** | ~$50/month | A100 40GB | First Phase 31 validation — low commitment | [x] Setup guide: `COLAB_SETUP.md`, infrastructure: `notebooks/delta_colab_ready.py` |
 | **RunPod / vast.ai** | ~$1–3/hour | A100 80GB or H100 | On-demand bursts for benchmark runs ($20–50 total for a solid run) | [ ] Evaluate |
 | **Lambda Labs** | ~$1.25–2/hour | A100 80GB | Longer multi-day training runs; more stable than vast.ai | [ ] Evaluate |
 | **TPU Research Cloud** | Free | TPU v4/v5 | Serious compute for free; requires researcher application | [ ] Apply |
@@ -107,7 +108,7 @@ This frames DELTA as specialized (right tool for relational composition) rather 
 | **31** | Mini-batching: full FB15k-237 without subsampling | Compute (A100 recommended) | 🔴 Highest |
 | **32** | Cross-graph transfer: train FB15k-237, eval WN18RR | Phase 31 compute | 🟡 High |
 | **33** | Task-aware graph construction: preserve path ordering in constructor | Phase 31 or gradient-accum workaround | 🟡 High |
-| **34** | GraphGPS / GRIT comparison on full FB15k-237 | Phase 31 + baseline implementations | 🔴 Highest (for publication) |
+| **34** | GraphGPS / GRIT comparison on full FB15k-237 | Phase 31 + baseline implementations | 🔴 Highest (for publication) — infrastructure ready, see `experiments/phase34_graphgps_grit_comparison.py` |
 | **35** | Harder relational task: replicate Phase 27b finding at scale | Phase 31 compute | 🟠 Medium |
 
 ---
@@ -124,4 +125,4 @@ Full review text available on request.
 
 ---
 
-*Last updated: March 26, 2026 — after Phase 30 + Phase 27b correction*
+*Last updated: March 26, 2026 — Phase 34 infrastructure ready (GraphGPS + GRIT baselines, Colab setup)*

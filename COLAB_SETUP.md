@@ -14,9 +14,9 @@ Instructions for setting up Google Colab Pro to run DELTA's compute-intensive ex
 | Priority | Low | Medium | **Highest** |
 
 **Recommendation:** Colab Pro+ ($49.99/month) is the right choice for DELTA. The A100 40GB provides:
-- **Synthetic benchmarks (Phase 34):** Run immediately — all baselines scale to any synthetic graph size.
-- **Full FB15k-237 (Phase 31+):** 14,505 entities. DELTA and GraphGPS baselines scale via message passing + sparse operations. GRIT baseline uses sparse RWPE and memory-efficient attention. All three architectures are designed to run at this scale on A100.
-- **WN18RR (Phase 32):** 40,943 entities — requires mini-batching from Phase 31. GraphGPS and DELTA scale well; GRIT's global attention may need gradient accumulation at this size.
+- **Synthetic benchmarks (Phase 34):** Run immediately — DELTA and GraphGPS baselines scale to large synthetic graph sizes with sparse operations.
+- **Full FB15k-237 (Phase 31+):** 14,505 entities. DELTA and GraphGPS baselines scale via message passing + sparse operations. The current GRIT baseline uses sparse RWPE but dense global attention that materializes `[heads, N, N]` tensors, which can run out of memory near this scale even on an A100.
+- **WN18RR (Phase 32):** 40,943 entities — requires mini-batching from Phase 31. GraphGPS and DELTA scale well; GRIT's global attention is significantly more memory-intensive and may require substantial tuning (e.g., sub-sampling, more aggressive batching, or a memory-efficient attention reimplementation) to run.
 
 ---
 

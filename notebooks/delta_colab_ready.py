@@ -76,7 +76,7 @@ def detect_environment():
     if env['cuda_available']:
         env['device'] = 'cuda'
         env['gpu_name'] = torch.cuda.get_device_name(0)
-        env['gpu_memory_gb'] = torch.cuda.get_device_properties(0).total_mem / 1e9
+        env['gpu_memory_gb'] = torch.cuda.get_device_properties(0).total_memory / 1e9
 
     return env
 
@@ -315,7 +315,7 @@ def check_phase31_readiness(env):
 
     requirements = {
         'CUDA available': env['cuda_available'],
-        'VRAM >= 20GB': (env['gpu_memory_gb'] or 0) >= 20,
+        'VRAM >= 20GB': (env.get('gpu_memory_gb') or 0) >= 20,
         'A100 or better': env['gpu_name'] is not None and 'A100' in (env['gpu_name'] or ''),
     }
 

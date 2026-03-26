@@ -74,6 +74,9 @@ DELTA/
 │   ├── phase28_hard_ablation.py             # Hard ablation: difficulty levels vs models
 │   ├── phase29_multi_seed.py                # Multi-seed statistical evaluation
 │   ├── phase30_edge_adj_sampling.py         # GPU edge adjacency sampling strategies
+│   ├── phase31_mini_batching.py             # Subgraph sampling + gradient accumulation
+│   ├── phase32_cross_graph_transfer.py      # Train FB15k-237, eval WN18RR (zero-shot)
+│   ├── phase33_task_aware_construction.py   # Hybrid constructor: base topology + learned edges
 │   └── phase34_graphgps_grit_comparison.py  # DELTA vs GraphGPS vs GRIT (Gap 1)
 ├── notebooks/              # Colab-ready infrastructure
 │   └── delta_colab_ready.py  # Automated Colab setup + Phase 34 runner
@@ -378,14 +381,14 @@ Validated 5 roadmap items and stress-tested a core assumption with help from an 
 
 ### Next Steps
 
-**Phase 31: Mini-batching for large graphs**
-Phase 25/30 maxed at 2000 entities (69K edges) on a 12 GB GPU. Real KGs have millions of entities. Goal: implement subgraph sampling + gradient accumulation to scale beyond single-GPU VRAM. Phase 27b demonstrated gradient accumulation works well for DELTA — same technique applies here.
+**Phase 31: Mini-batching for large graphs** *(experiment ready)*
+Phase 25/30 maxed at 2000 entities (69K edges) on a 12 GB GPU. Real KGs have millions of entities. Implements neighbor-sampling subgraph extraction + gradient accumulation to scale beyond single-GPU VRAM. See `experiments/phase31_mini_batching.py`. Phase 27b demonstrated gradient accumulation works well for DELTA — same technique applies here.
 
-**Phase 32: Cross-graph transfer**
-Train on FB15k-237, evaluate zero-shot on WN18RR. Measures whether DELTA edge-attention representations generalize across KG domains without retraining.
+**Phase 32: Cross-graph transfer** *(experiment ready)*
+Train on FB15k-237, evaluate zero-shot on WN18RR. Measures whether DELTA edge-attention representations generalize across KG domains without retraining. See `experiments/phase32_cross_graph_transfer.py`.
 
-**Phase 33: Task-aware graph construction**
-Phase 27b confirmed the problem: GraphConstructor's attention-thresholding discards sequential adjacency edges that Fixed Chain DELTA preserves. Result: Fixed Chain (40.7%) > Bootstrap (34.3%) on path composition. Goal: design a constructor that preserves task-relevant structure (positional ordering for paths, adjacency for sequences) while still learning which non-local connections to add.
+**Phase 33: Task-aware graph construction** *(experiment ready)*
+Phase 27b confirmed the problem: GraphConstructor's attention-thresholding discards sequential adjacency edges that Fixed Chain DELTA preserves. Result: Fixed Chain (40.7%) > Bootstrap (34.3%) on path composition. Implements hybrid construction: preserve base topology + learn new edges. See `experiments/phase33_task_aware_construction.py`.
 
 **Phase 34: DELTA vs GraphGPS vs GRIT comparison** *(infrastructure ready)*
 Critical baseline currency gap (Gap 1 in [RESEARCH_AGENDA.md](./RESEARCH_AGENDA.md)). CompGCN (2020) is the current strongest baseline — the community will ask about GraphGPS (2022) and GRIT (2023). Lightweight implementations in `delta/baselines.py`, 15 tests in `tests/test_baselines.py`, experiment script at `experiments/phase34_graphgps_grit_comparison.py`. Synthetic comparison runs immediately on CPU; full FB15k-237 comparison requires Phase 31 compute. See `COLAB_SETUP.md` for Google Colab Pro+ ($49.99/mo) setup instructions and `notebooks/delta_colab_ready.py` for automated infrastructure.
@@ -403,4 +406,4 @@ Critical baseline currency gap (Gap 1 in [RESEARCH_AGENDA.md](./RESEARCH_AGENDA.
 
 ---
 
-*DELTA architecture — conceived March 25, 2026. 31 validation phases (30 + Phase 27b correction), 6 architectural fixes, 39 unit tests. Phase 34 (GraphGPS/GRIT comparison) infrastructure ready.*
+*DELTA architecture — conceived March 25, 2026. 34 experiment phases (30 + Phase 27b correction + Phases 31–34), 6 architectural fixes, 39 unit tests. Phases 31–34 experiments ready for GPU execution.*

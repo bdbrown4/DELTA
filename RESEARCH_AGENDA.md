@@ -37,13 +37,13 @@ Track which architectural claims have been empirically confirmed and at what con
 - Current status: 2000-entity subgraph (14% of FB15k-237's 14,505 entities; 22% of triples).
 - WN18RR has 40,943 entities. Real-world KGs have millions.
 - **Action:** Phase 31 mini-batching to enable full FB15k-237 training+eval without subsampling.
-- Status: [ ] Not started (roadmap Phase 31)
+- Status: [x] Phase 31 experiment script ready (`experiments/phase31_mini_batching.py`): neighbor sampling + gradient accumulation. Requires GPU to run at scale.
 
 ### Gap 3: Phase 27b's +4.4% needs a harder, larger replication
 - 40.7% vs 36.3% on a 16-class problem is a real but modest margin.
 - **Action:** Design a harder relational task (more classes, longer paths, more distractors) at N=5000+.
 - Needs Phase 31 compute budget to run efficiently.
-- Status: [ ] Not started (roadmap Phase 33)
+- Status: [x] Phase 33 experiment script ready (`experiments/phase33_task_aware_construction.py`): hybrid constructor preserves base topology + learns new edges.
 
 ---
 
@@ -105,9 +105,9 @@ This frames DELTA as specialized (right tool for relational composition) rather 
 
 | Phase | Goal | Blocked By | Priority |
 |---|---|---|---|
-| **31** | Mini-batching: full FB15k-237 without subsampling | Compute (A100 recommended) | 🔴 Highest |
-| **32** | Cross-graph transfer: train FB15k-237, eval WN18RR | Phase 31 compute | 🟡 High |
-| **33** | Task-aware graph construction: preserve path ordering in constructor | Phase 31 or gradient-accum workaround | 🟡 High |
+| **31** | Mini-batching: full FB15k-237 without subsampling | Compute (A100 recommended) | 🔴 Highest — experiment script ready: `experiments/phase31_mini_batching.py` |
+| **32** | Cross-graph transfer: train FB15k-237, eval WN18RR | Phase 31 compute | 🟡 High — experiment script ready: `experiments/phase32_cross_graph_transfer.py` |
+| **33** | Task-aware graph construction: preserve path ordering in constructor | Phase 31 or gradient-accum workaround | 🟡 High — experiment script ready: `experiments/phase33_task_aware_construction.py` |
 | **34** | GraphGPS / GRIT comparison on full FB15k-237 | Phase 31 + baseline implementations | 🔴 Highest (for publication) — infrastructure ready, see `experiments/phase34_graphgps_grit_comparison.py` |
 | **35** | Harder relational task: replicate Phase 27b finding at scale | Phase 31 compute | 🟠 Medium |
 
@@ -125,4 +125,4 @@ Full review text available on request.
 
 ---
 
-*Last updated: March 26, 2026 — Phase 34 infrastructure ready (GraphGPS + GRIT baselines, Colab setup)*
+*Last updated: March 26, 2026 — Phases 31–34 experiment scripts ready (mini-batching, cross-graph transfer, task-aware construction, GraphGPS/GRIT baselines). Colab Pro+ setup guide available.*

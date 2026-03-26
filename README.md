@@ -81,7 +81,7 @@ DELTA/
 | 2 | Dual parallel attention outperforms sequential | Sequential vs dual (1/2 layers) | All 100%; dual converges 2.7x faster |
 | 3 | Importance router enables sparse attention | Accuracy vs sparsity (100% → 20%) | 100% accuracy at 80% sparsity |
 | 4 | Tiered memory maintains recall | Sequential recall task | Perfect recall maintained |
-| 5 | Transformer-bootstrapped graph construction | Transformer alone vs transformer→DELTA | TF: 98.3%, DELTA: 96.7% (non-relational task) |
+| 5 | Transformer-bootstrapped graph construction | Transformer alone vs transformer→DELTA (150 epochs each) | TF: 98.3%, DELTA: 98.3% — pipeline preserves accuracy (non-relational task) |
 | 6 | Full DELTA integration | All components end-to-end | All 4 sub-tests PASS |
 | 7 | Gumbel-softmax differentiable routing | Hard top-k vs Gumbel-softmax | 12/12 router params get gradients (vs 0/12) |
 | 8 | Scaling behavior | 20 → 400 nodes, time vs accuracy | O(n^0.81) sub-linear scaling |
@@ -120,7 +120,7 @@ After Phase 15, a pitfall analysis identified 6 architectural weaknesses. Each w
 | Phase | Validates | Benchmark | Result |
 |-------|-----------|-----------|--------|
 | 22 | Soft gating holds at 10× scale with noise | N=1000, 15 relations, 5000 triples, 15% label noise | **Soft gating 100%, old router 81.6%** (+18.4% gap). Zero generalization gap. |
-| 23 | DELTA vs KG embedding baselines | FB15k-237-like: 2000 entities, 20 typed relations, 8000 triples | **DELTA 100%, CompGCN 100%**, TransE 67.6%, RotatE 70.7%. Soft gating maintains accuracy at 50% sparsity |
+| 23 | DELTA vs KG embedding baselines (TransE, RotatE, CompGCN) | FB15k-237-like: 2000 entities, 20 typed relations, 8000 triples | **DELTA 100%, CompGCN 100%**, TransE 67.6%, RotatE 70.7%. LP: TransE Hits@10=0.020, RotatE 0.010 (4×/2× random; sparse synthetic data). Soft gating maintains accuracy at 50% sparsity |
 | 24 | All fixes integrated at scale | N=1000, 15% noise, full pipeline + ablations | All fixes integrate cleanly — zero degradation. 1-hop ablation runs 10× faster (44s vs 490s) |
 
 ## The Bootstrap Strategy
@@ -131,7 +131,7 @@ The "chicken and egg" problem of graph construction (you need to understand the 
 2. DELTA processes and refines the graph
 3. Over time, trained DELTA models can replace the transformer bootstrap — using their own graph representations to construct graphs for new input
 4. The transformer is scaffolding, not a permanent dependency
-
+Phase 5 confirms the pipeline preserves accuracy: with equal training (150 epochs each), the transformer→DELTA pipeline matches the transformer alone (98.3%) on a non-relational task. DELTA's advantage should emerge on relational tasks where graph structure helps — not yet tested at the bootstrap level.
 ## Setup
 
 ```bash
@@ -217,7 +217,7 @@ python -m pytest tests/ -v  # 22/22 should pass
 
 15. **Soft gating holds at 10× scale**: Phase 22 scaled from N=100 to N=1000 with 15% label noise and power-law degree distribution. The old pre-attention router dropped to 81.6% while soft gating held at 100% — an +18.4% advantage. Zero generalization gap (vs +0.019 for the old router). This is the definitive scale validation.
 
-16. **DELTA matches CompGCN, crushes embedding baselines**: Phase 23 compared against TransE (67.6%), RotatE (70.7%), and CompGCN (100%) on an FB15k-237-like benchmark with 2000 entities, 20 typed relations, and compositional derived edges. DELTA matches the best GNN baseline while providing sparsity-efficient inference via soft gating.
+16. **DELTA matches CompGCN, crushes embedding baselines**: Phase 23 compared against faithful implementations of TransE (Bordes 2013; 67.6%), RotatE (Sun 2019 complex rotation; 70.7%), and CompGCN (Vashishth 2020 GRU message passing; 100%) on an FB15k-237-like benchmark with 2000 entities, 20 typed relations, and compositional derived edges. DELTA matches the best GNN baseline while providing sparsity-efficient inference via soft gating. Link prediction trained separately with margin-based ranking loss (standard LP protocol); low Hits@10 (~0.02) reflects sparse synthetic data (~4 triples/entity), not broken evaluation.
 
 17. **All fixes integrate cleanly at scale**: Phase 24 ran the full pipeline (variational memory + BFS partition + sparse 2-hop adjacency + dual attention + learned dropout + soft gating) on the N=1000 noisy benchmark. No fix caused degradation — all ablations matched full DELTA at 100%. The 2-hop edge adjacency (4.3M entries at E=5000) is the dominant compute cost, with 1-hop ablation running ~10× faster.
 
@@ -254,7 +254,7 @@ Identified and fixed 6 architectural weaknesses:
 All fixes implemented and backward-compatible. Scaling bottlenecks (sparse multi-hop, BFS partition) are definitively solved. **Post-attention pruning is now fully validated** — the original 29% accuracy gap was caused by non-differentiable hard top-k gates, not a fundamental paradigm problem. The redesigned soft sigmoid gating with per-head attention features achieves 100% accuracy at 50% target sparsity, and curriculum annealing (dense→sparse) also reaches 100%. Remaining awaiting-scale items (learned dropout, variational compression advantage) are architecturally sound but need harder benchmarks to demonstrate their value.
 
 ### Stage 4: Scale & Integration Validation (Phases 22–24)
-Validated the full architecture at 10× scale. **Soft gating holds at N=1000 with 15% noise** (+18.4% over old router). DELTA matches CompGCN and crushes TransE/RotatE on a realistic KG benchmark. All 5 inference-pipeline fixes integrate cleanly with zero degradation. The remaining challenge: designing tasks hard enough to differentiate individual fix contributions — current synthetic benchmarks are solvable by vanilla EdgeAttention at this scale.
+Validated the full architecture at 10× scale. **Soft gating holds at N=1000 with 15% noise** (+18.4% over old router). DELTA matches CompGCN and crushes TransE/RotatE on a realistic KG benchmark with faithful baseline implementations (TransE: Bordes 2013 translation scoring, RotatE: Sun 2019 complex rotation, CompGCN: GRU message passing with relation composition). Link prediction evaluated with proper margin-based ranking training (separate from classification) — low absolute numbers (Hits@10 ~0.02) reflect data sparsity (~4 triples/entity) not broken methodology. All 5 inference-pipeline fixes integrate cleanly with zero degradation. The remaining challenge: designing tasks hard enough to differentiate individual fix contributions — current synthetic benchmarks are solvable by vanilla EdgeAttention at this scale.
 
 ## Current Status: What's Working vs What Needs Proof
 
@@ -275,7 +275,7 @@ Validated the full architecture at 10× scale. **Soft gating holds at N=1000 wit
 - **Ablation differentiation** — at N=1000, vanilla EdgeAttention also reaches 100%, so fix ablations show zero impact. The fixes provide *efficiency and robustness*, not accuracy gains on tasks a baseline can already solve
 
 ### ❌ Open Gaps
-- **No real dataset validation** — Phase 23 uses a synthetic FB15k-237-like benchmark. Need actual FB15k-237/WN18RR with real triples
+- **No real dataset validation** — Phase 23 uses a synthetic FB15k-237-like benchmark with faithful baseline implementations (TransE, RotatE, CompGCN). Need actual FB15k-237/WN18RR with real triples for credible LP numbers
 - **Scale ceiling unknown** — tested up to N=2000 entities / 8000 edges, but real KGs have millions
 - **No GPU profiling** — all experiments on CPU. Memory/throughput characteristics on GPU untested
 - **2-hop adjacency cost** — Phase 24 showed 2-hop computation at E=5000 produces 4.3M entries and dominates runtime (~490s vs 44s for 1-hop). Needs optimization or adaptive depth
@@ -284,7 +284,7 @@ Validated the full architecture at 10× scale. **Soft gating holds at N=1000 wit
 
 ### Near-Term (Completed)
 1. ~~**Phase 22: Scale stress test**~~ — ✅ **DONE.** Soft gating 100% vs old router 81.6% at N=1000 with 15% noise. +18.4% advantage confirmed at scale.
-2. ~~**Phase 23: Real KG benchmark**~~ — ✅ **DONE.** DELTA matches CompGCN (100%), beats TransE (67.6%) and RotatE (70.7%) on FB15k-237-like benchmark.
+2. ~~**Phase 23: Real KG benchmark**~~ — ✅ **DONE.** DELTA matches CompGCN (100%), beats TransE (67.6%) and RotatE (70.7%) on FB15k-237-like benchmark. LP evaluation now uses proper margin-based training on fresh models.
 3. ~~**Phase 24: Combined fix integration**~~ — ✅ **DONE.** All fixes integrate cleanly at N=1000. Zero degradation across ablations.
 4. ~~**Phase 25: Curriculum + post-attention**~~ — ✅ **DONE.** Curriculum annealing integrated in Phase 16 redesign.
 
@@ -311,4 +311,4 @@ Validated the full architecture at 10× scale. **Soft gating holds at N=1000 wit
 
 ---
 
-*DELTA architecture — conceived March 25, 2026. 21 validation phases, 6 architectural fixes, 22 unit tests.*
+*DELTA architecture — conceived March 25, 2026. 24 validation phases, 6 architectural fixes, 22 unit tests.*

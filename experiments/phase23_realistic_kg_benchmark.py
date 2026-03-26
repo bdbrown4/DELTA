@@ -304,6 +304,46 @@ def train_eval_delta(model, graph, labels, train_idx, test_idx,
     return best_test
 
 
+def train_link_prediction(model, graph, labels, train_idx,
+                          num_entities, epochs=200, lr=1e-3, margin=1.0):
+    """Train TransE/RotatE from scratch with margin-based ranking loss.
+
+    Standard KG embedding training (Bordes 2013, Sun 2019): for each positive
+    triple (h, r, t), corrupt the tail to get (h, r, t'), then optimize:
+        loss = max(0, margin + score(h, r, t') - score(h, r, t))
+    """
+    if not hasattr(model, 'score_triples'):
+        return
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    src = graph.edge_index[0]
+    tgt = graph.edge_index[1]
+
+    for epoch in range(epochs):
+        model.train()
+        h = src[train_idx]
+        t = tgt[train_idx]
+        r = labels[train_idx]
+
+        # Corrupt tails: replace t with random entities
+        t_neg = torch.randint(0, num_entities, t.shape)
+
+        pos_scores = model.score_triples(h, t, r)
+        neg_scores = model.score_triples(h, t_neg, r)
+
+        loss = F.margin_ranking_loss(
+            pos_scores, neg_scores,
+            target=torch.ones_like(pos_scores),
+            margin=margin,
+        )
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        if (epoch + 1) % 100 == 0:
+            print(f"    LP Epoch {epoch+1}: Margin Loss={loss.item():.4f}")
+
+
 def link_prediction_eval(model, graph, labels, test_idx, num_entities):
     """Evaluate link prediction: Hits@10 and MRR on test edges."""
     model.eval()
@@ -388,9 +428,6 @@ def main():
     times['TransE'] = time.time() - t0
     results['TransE'] = acc
 
-    # LP eval
-    h10, mrr = link_prediction_eval(m, graph, labels, test_idx, num_entities)
-
     # 2. RotatE
     print("\n--- RotatE ---")
     torch.manual_seed(42)
@@ -400,8 +437,6 @@ def main():
                                num_classes, epochs=200)
     times['RotatE'] = time.time() - t0
     results['RotatE'] = acc
-
-    h10_r, mrr_r = link_prediction_eval(m, graph, labels, test_idx, num_entities)
 
     # 3. CompGCN
     print("\n--- CompGCN ---")
@@ -431,6 +466,34 @@ def main():
     times['DELTA+Gate'] = time.time() - t0
     results['DELTA+Gate'] = acc
 
+    # ── Task B: Link Prediction (fresh models, margin-only training) ──
+
+    print()
+    print("=" * 70)
+    print("TASK B: Link Prediction (margin-based ranking)")
+    print("=" * 70)
+    print("  Training fresh models with only margin loss (standard LP protocol)")
+    print("  Note: 2000 entities, ~4 triples/entity — LP on sparse synthetic data")
+    print("        is inherently harder than on real KGs like FB15k-237")
+
+    # TransE — LP
+    print("\n--- TransE (LP) ---")
+    torch.manual_seed(42)
+    m_lp_transe = TransE(num_entities, num_classes, dim=d_node)
+    train_link_prediction(m_lp_transe, graph, labels, train_idx, num_entities,
+                          epochs=500, margin=1.0)
+    h10, mrr = link_prediction_eval(m_lp_transe, graph, labels, test_idx,
+                                    num_entities)
+
+    # RotatE — LP
+    print("\n--- RotatE (LP) ---")
+    torch.manual_seed(42)
+    m_lp_rotate = RotatE(num_entities, num_classes, dim=d_node)
+    train_link_prediction(m_lp_rotate, graph, labels, train_idx, num_entities,
+                          epochs=500, margin=1.0)
+    h10_r, mrr_r = link_prediction_eval(m_lp_rotate, graph, labels, test_idx,
+                                        num_entities)
+
     # ── Summary ──
     print()
     print("=" * 70)
@@ -445,7 +508,9 @@ def main():
         print(f"  {name:<20s} {acc:>10.3f} {t:>7.1f}s  {bar}")
 
     # Link prediction results
+    random_h10 = min(10, num_entities) / num_entities
     print(f"\n  Task B: Link Prediction (Hits@10 / MRR, 100 test samples)")
+    print(f"    Random baseline: Hits@10={random_h10:.3f}  MRR~{1/num_entities:.4f}")
     if h10 is not None:
         print(f"    TransE:  Hits@10={h10:.3f}  MRR={mrr:.3f}")
     if h10_r is not None:

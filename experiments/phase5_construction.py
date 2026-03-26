@@ -181,7 +181,7 @@ def main():
     delta_model = DeltaPipeline(vocab_size, d_model, d_node, d_edge, num_classes)
     optimizer = torch.optim.Adam(delta_model.parameters(), lr=1e-3)
 
-    for epoch in range(75):
+    for epoch in range(150):
         delta_model.train()
         total_loss = 0
         for i in range(len(train_data)):
@@ -192,7 +192,7 @@ def main():
             optimizer.step()
             total_loss += loss.item()
 
-        if (epoch + 1) % 25 == 0:
+        if (epoch + 1) % 50 == 0:
             delta_model.eval()
             correct = 0
             with torch.no_grad():

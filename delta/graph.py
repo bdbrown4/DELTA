@@ -40,6 +40,7 @@ class DeltaGraph:
         if self.node_tiers is None:
             self.node_tiers = torch.zeros(N, dtype=torch.long,
                                           device=self.node_features.device)
+        self._edge_adj_cache = None  # (hops, result) tuple
 
     @property
     def num_nodes(self) -> int:
@@ -106,37 +107,61 @@ class DeltaGraph:
         Returns [2, E_adj] tensor of (edge_i, edge_j) pairs where edges
         are reachable within `hops` edge-hops. Used for edge-to-edge attention.
         """
-        # For each node, collect all edges incident to it
+        # Return cached result if available
+        if self._edge_adj_cache is not None:
+            cached_hops, cached_result = self._edge_adj_cache
+            if cached_hops >= hops:
+                return cached_result
+
+        E = self.num_edges
+        if E == 0:
+            result = torch.zeros(2, 0, dtype=torch.long, device=self.device)
+            self._edge_adj_cache = (hops, result)
+            return result
+
         src_nodes = self.edge_index[0]  # [E]
         tgt_nodes = self.edge_index[1]  # [E]
 
-        edge_pairs_src = []
-        edge_pairs_tgt = []
-
-        # Group edges by endpoint nodes
-        all_nodes = torch.cat([src_nodes, tgt_nodes])
-        all_edge_ids = torch.arange(self.num_edges, device=self.device).repeat(2)
-
-        for node_id in torch.unique(all_nodes):
-            incident = all_edge_ids[all_nodes == node_id]
-            if len(incident) < 2:
-                continue
-            # All pairs of edges sharing this node
-            grid = torch.meshgrid(incident, incident, indexing='ij')
-            mask = grid[0] != grid[1]  # exclude self-loops
-            edge_pairs_src.append(grid[0][mask])
-            edge_pairs_tgt.append(grid[1][mask])
-
-        if edge_pairs_src:
-            adj_1hop = torch.stack([
-                torch.cat(edge_pairs_src),
-                torch.cat(edge_pairs_tgt)
-            ])
-            adj_1hop = self._deduplicate_edge_adj(adj_1hop)
+        if E <= 500:
+            # Fast path: incidence matrix multiply (avoids Python for-loop)
+            all_nodes = torch.cat([src_nodes, tgt_nodes])
+            all_edge_ids = torch.arange(E, device=self.device).repeat(2)
+            N = all_nodes.max().item() + 1
+            # Build incidence matrix I[node, edge] = 1 if edge touches node
+            inc = torch.zeros(N, E, device=self.device)
+            inc[all_nodes, all_edge_ids] = 1.0
+            # I^T @ I gives co-incidence: adj[i,j] > 0 iff edges i,j share a node
+            co = inc.T @ inc  # [E, E]
+            co.fill_diagonal_(0)
+            adj_1hop = co.nonzero(as_tuple=False).T.long()  # [2, num_pairs]
         else:
-            adj_1hop = torch.zeros(2, 0, dtype=torch.long, device=self.device)
+            # Original approach for large graphs (avoids O(E^2) dense matrix)
+            edge_pairs_src = []
+            edge_pairs_tgt = []
+
+            all_nodes = torch.cat([src_nodes, tgt_nodes])
+            all_edge_ids = torch.arange(E, device=self.device).repeat(2)
+
+            for node_id in torch.unique(all_nodes):
+                incident = all_edge_ids[all_nodes == node_id]
+                if len(incident) < 2:
+                    continue
+                grid = torch.meshgrid(incident, incident, indexing='ij')
+                mask = grid[0] != grid[1]
+                edge_pairs_src.append(grid[0][mask])
+                edge_pairs_tgt.append(grid[1][mask])
+
+            if edge_pairs_src:
+                adj_1hop = torch.stack([
+                    torch.cat(edge_pairs_src),
+                    torch.cat(edge_pairs_tgt)
+                ])
+                adj_1hop = self._deduplicate_edge_adj(adj_1hop)
+            else:
+                adj_1hop = torch.zeros(2, 0, dtype=torch.long, device=self.device)
 
         if hops <= 1 or adj_1hop.shape[1] == 0:
+            self._edge_adj_cache = (hops, adj_1hop)
             return adj_1hop
 
         # Multi-hop: use SPARSE matrix powers to avoid O(E²) memory
@@ -159,8 +184,11 @@ class DeltaGraph:
         non_self = rows != cols
         rows, cols = rows[non_self], cols[non_self]
         if len(rows) == 0:
+            self._edge_adj_cache = (hops, adj_1hop)
             return adj_1hop
-        return torch.stack([rows, cols])
+        result = torch.stack([rows, cols])
+        self._edge_adj_cache = (hops, result)
+        return result
 
     def _deduplicate_edge_adj(self, adj: torch.Tensor) -> torch.Tensor:
         """Remove duplicate edge pairs from adjacency."""

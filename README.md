@@ -290,8 +290,10 @@ Validated the full architecture at 10× scale. **Soft gating holds at N=1000 wit
 
 ### Near-Term (Next)
 5. **Adaptive multi-hop depth** — Phase 24 showed 2-hop at E=5000 is 10× slower than 1-hop with no accuracy benefit. Learn when to use 1-hop vs 2-hop per layer.
-6. **Real dataset validation** — Download and evaluate on actual FB15k-237 / WN18RR triples
+6. **Real dataset validation** — Download and evaluate on actual FB15k-237 / WN18RR triples. Requires downloading ~50MB data files; feasible on CPU for small subsets, GPU recommended for full training.
 7. **Harder ablation benchmark** — Design a task where vanilla EdgeAttention fails, enabling meaningful fix contribution analysis
+8. **Bootstrap on a relational task** — Phase 5 validated the pipeline preserves accuracy on a non-relational (sequence classification) task. Need to test whether Transformer→DELTA *improves* over Transformer alone when the task has actual relational structure (multi-hop KG reasoning).
+9. **Multi-seed evaluation** — All 24 phases use a single seed (42). Add 3-5 seeds with mean ± std to every benchmark for statistical credibility.
 
 ### Medium-Term
 8. **GPU profiling & batching** — Profile memory and throughput, implement mini-batching for large graphs

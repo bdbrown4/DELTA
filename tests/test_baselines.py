@@ -141,12 +141,12 @@ def test_random_walk_pe_monte_carlo():
     rwpe = RandomWalkPE(walk_length=4, d_pe=8, num_walks=50)
     original_threshold = RandomWalkPE.EXACT_THRESHOLD
     RandomWalkPE.EXACT_THRESHOLD = 2  # Force MC for any graph > 2 nodes
-
-    g = make_test_graph(N=10, E=20)
-    pe = rwpe(g)
-    assert pe.shape == (10, 8)
-
-    RandomWalkPE.EXACT_THRESHOLD = original_threshold
+    try:
+        g = make_test_graph(N=10, E=20)
+        pe = rwpe(g)
+        assert pe.shape == (10, 8)
+    finally:
+        RandomWalkPE.EXACT_THRESHOLD = original_threshold
     print("[PASS] test_random_walk_pe_monte_carlo")
 
 

@@ -80,7 +80,7 @@ DELTA/
 │   └── phase34_graphgps_grit_comparison.py  # DELTA vs GraphGPS vs GRIT (Gap 1)
 ├── notebooks/              # Colab-ready infrastructure
 │   └── delta_colab_ready.py  # Automated Colab setup + Phase 34 runner
-├── tests/                  # Unit tests (39/39 passing)
+├── tests/                  # Unit tests (40/40 passing)
 │   ├── test_graph.py
 │   ├── test_attention.py
 │   ├── test_router.py
@@ -406,4 +406,4 @@ Critical baseline currency gap (Gap 1 in [RESEARCH_AGENDA.md](./RESEARCH_AGENDA.
 
 ---
 
-*DELTA architecture — conceived March 25, 2026. 34 experiment phases (30 + Phase 27b correction + Phases 31–34), 6 architectural fixes, 39 unit tests. Phases 31–34 experiments ready for GPU execution.*
+*DELTA architecture — conceived March 25, 2026. 34 experiment phases (30 + Phase 27b correction + Phases 31–34), 6 architectural fixes, 40 unit tests. Phases 31–34 experiments ready for GPU execution.*

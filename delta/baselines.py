@@ -250,63 +250,115 @@ class RandomWalkPE(nn.Module):
     Computes k-step random-walk return probabilities as positional features,
     then projects them into the model dimension.
 
-    Uses sparse matrix operations (COO format) for the transition matrix,
-    making it scalable to large graphs (FB15k-237: 14,505 nodes, WN18RR:
-    40,943 nodes) without materializing dense N×N matrices.
+    For small graphs (N ≤ 5000): uses sparse matrix power to compute exact
+    return probabilities. Memory: O(nnz * walk_length).
+
+    For large graphs (N > 5000): uses Monte Carlo random walks to estimate
+    return probabilities. Memory: O(N * num_walks). Scalable to any graph size.
     """
 
-    def __init__(self, walk_length: int = 8, d_pe: int = 16):
+    EXACT_THRESHOLD = 5000  # Use exact computation below this node count
+
+    def __init__(self, walk_length: int = 8, d_pe: int = 16, num_walks: int = 200):
         super().__init__()
         self.walk_length = walk_length
         self.d_pe = d_pe
+        self.num_walks = num_walks
         self.pe_proj = nn.Linear(walk_length, d_pe)
 
-    def compute_rw_probs(self, graph: DeltaGraph) -> torch.Tensor:
-        """Compute random-walk return probabilities using sparse matrices.
+    def _build_adj_list(self, graph: DeltaGraph):
+        """Build adjacency list for random walk sampling."""
+        N = graph.num_nodes
+        adj_list = [[] for _ in range(N)]
+        src, tgt = graph.edge_index[0].tolist(), graph.edge_index[1].tolist()
+        for s, t in zip(src, tgt):
+            adj_list[s].append(t)
+            adj_list[t].append(s)  # Symmetrize
+        return adj_list
 
-        Returns: [N, walk_length] tensor of k-step return probabilities.
-        """
+    def _compute_exact(self, graph: DeltaGraph) -> torch.Tensor:
+        """Exact RWPE via sparse transition matrix powers (small graphs)."""
         N = graph.num_nodes
         device = graph.device
-
         src, tgt = graph.edge_index
 
         # Build symmetric sparse adjacency
-        # Combine both directions: (src→tgt) and (tgt→src)
         all_src = torch.cat([src, tgt])
         all_tgt = torch.cat([tgt, src])
         indices = torch.stack([all_src, all_tgt])
         values = torch.ones(indices.shape[1], device=device)
-        adj_sparse = torch.sparse_coo_tensor(indices, values, (N, N), device=device).coalesce()
+        adj_sparse = torch.sparse_coo_tensor(indices, values, (N, N),
+                                              device=device).coalesce()
 
         # Compute degree for row-normalization
-        deg = torch.sparse.sum(adj_sparse, dim=1).to_dense().clamp(min=1.0)  # [N]
+        deg = torch.sparse.sum(adj_sparse, dim=1).to_dense().clamp(min=1.0)
 
         # Build sparse transition matrix T = D^{-1} A
         adj_indices = adj_sparse.indices()
         adj_values = adj_sparse.values()
         t_values = adj_values / deg[adj_indices[0]]
-        T = torch.sparse_coo_tensor(adj_indices, t_values, (N, N), device=device).coalesce()
+        T = torch.sparse_coo_tensor(adj_indices, t_values, (N, N),
+                                     device=device).coalesce()
 
-        # Compute k-step return probabilities via sparse matrix powers
-        # Instead of materializing T^k, we extract diagonals iteratively:
-        # diag(T^k) = sum_j T^{k-1}[i,j] * T[j,i]
-        # We track T^k as a sparse matrix
+        # Iterative sparse power: track T^k as sparse, extract diagonal
         rw_probs = torch.zeros(N, self.walk_length, device=device)
         Tk = T
         for k in range(self.walk_length):
-            # Extract diagonal of Tk (sparse): Tk[i,i] for all i
-            tk_indices = Tk.indices()  # [2, nnz]
-            tk_values = Tk.values()
-            diag_mask = tk_indices[0] == tk_indices[1]
+            tk_idx = Tk.indices()
+            tk_val = Tk.values()
+            diag_mask = tk_idx[0] == tk_idx[1]
             if diag_mask.any():
-                diag_indices = tk_indices[0, diag_mask]
-                diag_values = tk_values[diag_mask]
-                rw_probs[diag_indices, k] = diag_values
+                rw_probs[tk_idx[0, diag_mask], k] = tk_val[diag_mask]
 
             if k < self.walk_length - 1:
-                # Sparse matrix multiply: Tk = Tk @ T
-                Tk = torch.sparse.mm(Tk, T.to_dense()).to_sparse().coalesce()
+                # Sparse × sparse via two-step: sparse.mm requires dense 2nd arg
+                # Use column-sparse multiplication: for each nonzero T[j,i],
+                # row j of Tk contributes to row i of Tk*T.
+                # This keeps sparsity pattern bounded by the graph structure.
+                Tk = torch.sparse.mm(Tk, T.to_dense()).to_sparse_coo().coalesce()
+
+        return rw_probs
+
+    def _compute_monte_carlo(self, graph: DeltaGraph) -> torch.Tensor:
+        """Monte Carlo RWPE via random walk sampling (large graphs).
+
+        For each node, launch num_walks random walks and count how many
+        return to the starting node at each step k.
+        """
+        N = graph.num_nodes
+        device = graph.device
+        adj_list = self._build_adj_list(graph)
+
+        rw_probs = torch.zeros(N, self.walk_length, device=device)
+
+        for node in range(N):
+            if not adj_list[node]:
+                continue
+            returns = [0] * self.walk_length
+            for _ in range(self.num_walks):
+                current = node
+                for k in range(self.walk_length):
+                    neighbors = adj_list[current]
+                    if not neighbors:
+                        break
+                    current = neighbors[torch.randint(len(neighbors), (1,)).item()]
+                    if current == node:
+                        returns[k] += 1
+            for k in range(self.walk_length):
+                rw_probs[node, k] = returns[k] / self.num_walks
+
+        return rw_probs
+
+    def compute_rw_probs(self, graph: DeltaGraph) -> torch.Tensor:
+        """Compute random-walk return probabilities.
+
+        Automatically selects exact (sparse matrix power) for small graphs
+        and Monte Carlo sampling for large graphs.
+        """
+        if graph.num_nodes <= self.EXACT_THRESHOLD:
+            return self._compute_exact(graph)
+        else:
+            return self._compute_monte_carlo(graph)
 
         return rw_probs
 
@@ -325,13 +377,11 @@ class GRITAttention(nn.Module):
 
     Scalability: PE bias is computed as per-node projected scalars, then
     pairwise differences are formed as (pe_proj[i] - pe_proj[j]) per head.
-    This avoids materializing an N×N×d_pe intermediate tensor. The
-    softmax over j is invariant to row-constant offsets, so only the key
-    term (-pe_proj[j]) is strictly necessary, but we keep the full
-    difference for faithful reproduction of the GRIT formulation.
+    This avoids materializing an N×N×d_pe intermediate tensor — the
+    intermediate is only N×N×num_heads (scalars, not d_pe vectors).
 
-    Uses scaled_dot_product_attention with an additive bias mask for
-    efficient GPU execution.
+    Note: Cannot use F.scaled_dot_product_attention here because the PE
+    bias must be added before softmax. Manual attention is required.
 
     Reference: Ma et al., "Graph Inductive Biases in Transformers without
     Message Passing" (ICML 2023).

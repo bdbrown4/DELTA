@@ -135,6 +135,21 @@ def test_random_walk_pe():
     print("[PASS] test_random_walk_pe")
 
 
+def test_random_walk_pe_monte_carlo():
+    """RWPE Monte Carlo fallback produces correct shape for large graphs."""
+    # Force Monte Carlo by lowering the threshold
+    rwpe = RandomWalkPE(walk_length=4, d_pe=8, num_walks=50)
+    original_threshold = RandomWalkPE.EXACT_THRESHOLD
+    RandomWalkPE.EXACT_THRESHOLD = 2  # Force MC for any graph > 2 nodes
+
+    g = make_test_graph(N=10, E=20)
+    pe = rwpe(g)
+    assert pe.shape == (10, 8)
+
+    RandomWalkPE.EXACT_THRESHOLD = original_threshold
+    print("[PASS] test_random_walk_pe_monte_carlo")
+
+
 def test_grit_attention():
     """GRIT attention with PE bias preserves output shape."""
     N, d_model, d_pe = 10, 32, 8
@@ -301,6 +316,7 @@ if __name__ == '__main__':
     test_graphgps_gradient_flow()
     test_graphgps_link_prediction()
     test_random_walk_pe()
+    test_random_walk_pe_monte_carlo()
     test_grit_attention()
     test_grit_layer()
     test_grit_model_forward()

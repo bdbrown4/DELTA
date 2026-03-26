@@ -78,7 +78,7 @@ You should see an **A100-SXM4-40GB** (or similar A100 variant).
 !python tests/test_baselines.py
 ```
 
-All 39 tests should pass (24 original + 15 baseline).
+All 40 tests should pass (24 original + 16 baseline).
 
 ---
 

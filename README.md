@@ -282,42 +282,52 @@ Validated the full architecture at 10× scale. **Soft gating holds at N=1000 wit
 - **Ablation differentiation** — at N=1000, vanilla EdgeAttention also reaches 100%, so fix ablations show zero impact. The fixes provide *efficiency and robustness*, not accuracy gains on tasks a baseline can already solve
 
 ### ❌ Open Gaps
-- **Scale ceiling unknown** — Phase 25 reached 2000 entities / 69,626 edges on GPU. Real KGs have millions of entities; full-scale training requires mini-batching and subgraph sampling
-- **2-hop adjacency cost** — Phase 24 showed 2-hop computation at E=5000 produces 4.3M entries and dominates runtime (~490s vs 44s for 1-hop). At FB15k-237 real scale, 1-hop already produces 19M pairs requiring subsampling. Needs adaptive depth or hierarchical edge pruning
-- **GPU edge adjacency sampling** — Phase 25 randomly samples 5M of 19M 1-hop pairs to fit VRAM. A learned or structurally-guided sampling strategy could improve DELTA's representational coverage
-- **Multi-seed evaluation** — All phases use seed 42. Add 3–5 seeds with mean ± std for statistical credibility
+- **Scale ceiling unknown** — Phase 25 reached 2000 entities / 69,626 edges on GPU; real KGs have millions. Full-scale training requires mini-batching and subgraph sampling (Phase 30 roadmap item).
+- **Adaptive hop depth** — 2-hop at E=5000 dominates runtime with no accuracy benefit; 1-hop at real scale requires VRAM subsampling. Phase 26 will learn a per-layer hop policy.
+- **Ablation tasks too easy** — At N=1000, vanilla EdgeAttention reaches 100%, so fix ablations show zero delta. Phase 28 will design a benchmark where individual fixes are measurably necessary.
+- **Single-seed results** — All 25 phases use seed 42. Phase 29 will add multi-seed mean ± std for statistical credibility.
 
 ## Roadmap
 
-### Near-Term (Completed)
-1. ~~**Phase 22: Scale stress test**~~ — ✅ **DONE.** Soft gating 100% vs old router 81.6% at N=1000 with 15% noise. +18.4% advantage confirmed at scale.
-2. ~~**Phase 23: Real KG benchmark**~~ — ✅ **DONE.** DELTA matches CompGCN (100%), beats TransE (67.6%) and RotatE (70.7%) on FB15k-237-like benchmark. LP evaluation now uses proper margin-based training on fresh models.
-3. ~~**Phase 24: Combined fix integration**~~ — ✅ **DONE.** All fixes integrate cleanly at N=1000. Zero degradation across ablations.
-4. ~~**Phase 25: Curriculum + post-attention**~~ — ✅ **DONE.** Curriculum annealing integrated in Phase 16 redesign.
+### Completed
+| Phase / Item | Result |
+|---|---|
+| **Phase 22: Scale stress test** | Soft gating 100% vs old router 81.6% at N=1000 with 15% noise. +18.4% advantage confirmed at scale. |
+| **Phase 23: Synthetic KG baseline comparison** | DELTA matches CompGCN (100%), beats TransE (67.6%) and RotatE (70.7%) on FB15k-237-like benchmark. LP evaluation uses proper margin-based training on fresh models. |
+| **Phase 24: Combined fix integration** | All 6 fixes integrate cleanly at N=1000. Zero degradation across ablations. 1-hop runs 10× faster than 2-hop with no accuracy cost. |
+| **Phase 25: Real FB15k-237 on GPU** | DELTA+Gate 97.6% on actual Freebase triples — outperforms all baselines (CompGCN 97.2%, TransE 78.8%, RotatE 77.8%). First real-data, GPU-accelerated benchmark. LP: TransE Hits@10=0.480 (96× random). |
 
-### Near-Term (Next)
-5. **Adaptive multi-hop depth** — Phase 24 showed 2-hop at E=5000 is 10× slower than 1-hop with no accuracy benefit. Phase 25 showed 1-hop already requires subsampling at real scale (69k edges → 5M/19M pairs). Learn when to use 1-hop vs 2-hop per layer.
-6. ~~**Real dataset validation**~~ — ✅ **DONE.** Phase 25 evaluated on actual FB15k-237 triples on GPU. DELTA+Gate 97.6% — outperforms all baselines.
-7. **Harder ablation benchmark** — Design a task where vanilla EdgeAttention fails, enabling meaningful fix contribution analysis
-8. **Bootstrap on a relational task** — Phase 5 validated the pipeline preserves accuracy on a non-relational (sequence classification) task. Need to test whether Transformer→DELTA *improves* over Transformer alone when the task has actual relational structure (multi-hop KG reasoning).
-9. **Multi-seed evaluation** — All 25 phases use a single seed (42). Add 3-5 seeds with mean ± std to every benchmark for statistical credibility.
-10. **GPU edge adjacency sampling strategy** — Phase 25 randomly samples 5M/19M 1-hop pairs. A learned or degree-weighted sampling strategy could improve DELTA's coverage of hub vertices.
+### Next Steps
+
+**Phase 26: Adaptive multi-hop depth**
+Phase 24 showed 2-hop is 10× slower than 1-hop at E=5000 with no accuracy benefit on current benchmarks. Phase 25 showed 1-hop already produces 19M pairs at real scale — requiring subsampling to fit VRAM. Goal: learn a per-layer policy that selects hop depth based on graph structure or task signal, rather than fixing it at construction time.
+
+**Phase 27: Bootstrap on a relational task**
+Phase 5 confirmed the Transformer→DELTA pipeline preserves accuracy at 98.3% on a sequence classification task, but that task has no relational structure — the graph adds no signal over a plain transformer. Goal: design a task where multi-hop graph structure is necessary (e.g., entity-path reasoning) and measure whether the transformer bootstrap produces a better starting graph than a fixed construction strategy.
+
+**Phase 28: Harder ablation benchmark**
+At N=1000 with 15% noise, vanilla EdgeAttention already reaches 100% — making individual fix contributions invisible in ablations. Goal: construct a benchmark where at least one fix (e.g., variational memory, learned dropout, 2-hop adjacency) is strictly necessary to reach full accuracy, enabling clean contribution attribution.
+
+**Phase 29: Multi-seed evaluation**
+All 25 phases use a single seed (42). Goal: re-run the three key result phases (22, 23, 25) with 5 seeds each and report mean ± std. This is the minimum bar for statistical credibility when preparing any external writeup.
+
+**Phase 30: GPU edge adjacency sampling strategy**
+Phase 25 randomly samples 5M of 19M 1-hop pairs to fit VRAM, meaning DELTA operates on ~26% of structural context. Goal: implement degree-weighted or importance-guided sampling so hub entities (highest structural influence) are preferentially included, and measure the accuracy delta vs uniform sampling.
 
 ### Medium-Term
-8. **GPU profiling & batching** — Profile memory and throughput, implement mini-batching for large graphs
-9. **Cross-graph transfer** — Train on one KG, evaluate on another (generalization)
+- **Mini-batching for large graphs** — Subgraph sampling + gradient accumulation to scale beyond single-GPU VRAM limits (currently ~2000 entities at d=64)
+- **Cross-graph transfer** — Train on FB15k-237, evaluate zero-shot on WN18RR; measures whether edge-attention representations generalize across KG domains
 
 ### Long-Term
-10. **Replace transformer bootstrap** — Use trained DELTA models to construct graphs for new inputs (self-bootstrapping)
-11. **Multi-modal input** — Extend graph constructor beyond token sequences
-12. **Real-world application** — Knowledge graph completion, drug-target interaction, or recommendation systems
+- **Replace transformer bootstrap** — Use trained DELTA models to construct graphs for new inputs (self-bootstrapping), removing the scaffolding dependency
+- **Multi-modal input** — Extend graph constructor beyond token sequences (images, tables, structured data)
+- **Real-world application** — Knowledge graph completion, drug-target interaction, or recommendation systems at production scale
 
 ## Requirements
 
 - Python 3.10+
-- PyTorch 2.0+
-- CPU is sufficient for all current experiments (Phases 1–24)
-- GPU recommended for planned real-dataset and larger-scale experiments
+- PyTorch 2.0+ (GPU: `pip install torch --index-url https://download.pytorch.org/whl/cu124`)
+- CPU sufficient for Phases 1–24; GPU (6 GB+ VRAM) recommended for Phase 25+
 
 ---
 

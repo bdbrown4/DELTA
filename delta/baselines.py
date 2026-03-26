@@ -317,9 +317,9 @@ class GRITAttention(nn.Module):
         # Standard attention scores
         attn = (q @ k.transpose(-2, -1)) * self.scale  # [heads, N, N]
 
-        # Relative PE bias: compute pairwise PE differences
-        pe_diff = pe.unsqueeze(0) - pe.unsqueeze(1)  # [N, N, d_pe]
-        pe_bias = self.pe_bias(pe_diff).permute(2, 0, 1)  # [heads, N, N]
+        # Relative PE bias: project per-node PE, then form pairwise differences
+        pe_proj = self.pe_bias(pe)  # [N, num_heads]
+        pe_bias = (pe_proj.unsqueeze(1) - pe_proj.unsqueeze(0)).permute(2, 0, 1)  # [heads, N, N]
         attn = attn + pe_bias
 
         attn = attn.softmax(dim=-1)

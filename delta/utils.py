@@ -795,3 +795,62 @@ def create_realistic_kg_benchmark(
     }
 
     return graph, torch.tensor(labels, dtype=torch.long), metadata
+
+
+def calculate_graph_statistics(graph: DeltaGraph) -> Dict[str, float]:
+    """Calculate comprehensive statistics for a DeltaGraph.
+    
+    Computes various graph metrics useful for analysis and debugging,
+    including basic counts, degree statistics, and connectivity measures.
+    
+    Args:
+        graph: A DeltaGraph instance
+        
+    Returns:
+        Dictionary containing:
+            - num_nodes: Total number of nodes
+            - num_edges: Total number of edges
+            - avg_degree: Average node degree
+            - max_degree: Maximum node degree
+            - min_degree: Minimum node degree
+            - density: Graph density (edges / possible_edges)
+            - node_feature_dim: Node feature dimensionality
+            - edge_feature_dim: Edge feature dimensionality
+    """
+    num_nodes = graph.num_nodes
+    num_edges = graph.num_edges
+    
+    # Calculate degree for each node
+    edge_index = graph.edge_index
+    degrees = torch.zeros(num_nodes, dtype=torch.long)
+    
+    # Count outgoing edges (source nodes)
+    unique_src, src_counts = torch.unique(edge_index[0], return_counts=True)
+    degrees[unique_src] += src_counts
+    
+    # Count incoming edges (destination nodes)
+    unique_dst, dst_counts = torch.unique(edge_index[1], return_counts=True)
+    degrees[unique_dst] += dst_counts
+    
+    # Calculate statistics
+    avg_degree = degrees.float().mean().item()
+    max_degree = degrees.max().item()
+    min_degree = degrees.min().item()
+    
+    # Graph density: actual edges / possible edges
+    # For directed graphs: possible edges = n * (n - 1)
+    # For undirected graphs: possible edges = n * (n - 1) / 2
+    # We treat as directed for generality
+    possible_edges = num_nodes * (num_nodes - 1) if num_nodes > 1 else 1
+    density = num_edges / possible_edges if possible_edges > 0 else 0.0
+    
+    return {
+        'num_nodes': num_nodes,
+        'num_edges': num_edges,
+        'avg_degree': avg_degree,
+        'max_degree': max_degree,
+        'min_degree': min_degree,
+        'density': density,
+        'node_feature_dim': graph.d_node,
+        'edge_feature_dim': graph.d_edge,
+    }

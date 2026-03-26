@@ -114,35 +114,54 @@ class NeighborSampler:
         node_map = {g: l for l, g in enumerate(sampled_nodes)}
         N_local = len(sampled_nodes)
 
-        # Find all edges within the sampled subgraph
-        full_src = self.edge_index[0].tolist()
-        full_tgt = self.edge_index[1].tolist()
-        local_edges_src = []
-        local_edges_tgt = []
-        local_edge_feats = []
-        local_edge_labels = []
-        global_to_local_edge = {}
+        # Find all edges within the sampled subgraph using a vectorized mask
+        device = node_features.device
+        edge_index = self.edge_index.to(device)
+        full_src = edge_index[0]
+        full_tgt = edge_index[1]
 
-        for e_idx in range(self.edge_index.shape[1]):
-            s, t = full_src[e_idx], full_tgt[e_idx]
-            if s in node_set and t in node_set:
-                local_edges_src.append(node_map[s])
-                local_edges_tgt.append(node_map[t])
-                local_edge_feats.append(edge_features[e_idx])
-                local_edge_labels.append(edge_labels[e_idx].item())
-                global_to_local_edge[e_idx] = len(local_edges_src) - 1
+        # Tensor of sampled node ids for membership checks
+        sampled_idx = torch.tensor(sampled_nodes, dtype=torch.long, device=device)
 
-        if not local_edges_src:
+        # Boolean mask: edges where both endpoints are in the sampled node set
+        src_in = torch.isin(full_src, sampled_idx)
+        tgt_in = torch.isin(full_tgt, sampled_idx)
+        edge_mask = src_in & tgt_in
+        selected_edges = edge_mask.nonzero(as_tuple=False).view(-1)
+
+        if selected_edges.numel() == 0:
             return None, None, None
 
-        device = node_features.device
-        sampled_idx = torch.tensor(sampled_nodes, dtype=torch.long, device=device)
+        # Global node ids of endpoints of selected edges
+        sel_src_global = full_src[selected_edges]
+        sel_tgt_global = full_tgt[selected_edges]
+
+        # Map global node ids to local node ids
+        local_edges_src = [node_map[int(s)] for s in sel_src_global.tolist()]
+        local_edges_tgt = [node_map[int(t)] for t in sel_tgt_global.tolist()]
+
+        # Slice edge features and labels for selected edges
+        local_edge_feats = edge_features[selected_edges]
+        local_edge_labels = edge_labels[selected_edges]
+
+        # Map global edge index to local edge index
+        global_to_local_edge = {
+            int(global_e_idx): int(local_idx)
+            for local_idx, global_e_idx in enumerate(selected_edges.tolist())
+        }
+
+        sampled_idx = sampled_idx.to(device)
 
         mini_graph = DeltaGraph(
             node_features=node_features[sampled_idx],
-            edge_features=torch.stack(local_edge_feats),
-            edge_index=torch.tensor([local_edges_src, local_edges_tgt],
-                                    dtype=torch.long, device=device),
+            edge_features=local_edge_feats,
+            edge_index=torch.stack(
+                [
+                    torch.tensor(local_edges_src, dtype=torch.long, device=device),
+                    torch.tensor(local_edges_tgt, dtype=torch.long, device=device),
+                ],
+                dim=0,
+            ),
         )
 
         mini_labels = torch.tensor(local_edge_labels, dtype=torch.long,

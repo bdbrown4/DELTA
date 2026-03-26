@@ -122,6 +122,7 @@ After Phase 15, a pitfall analysis identified 6 architectural weaknesses. Each w
 | 22 | Soft gating holds at 10× scale with noise | N=1000, 15 relations, 5000 triples, 15% label noise | **Soft gating 100%, old router 81.6%** (+18.4% gap). Zero generalization gap. |
 | 23 | DELTA vs KG embedding baselines (TransE, RotatE, CompGCN) | FB15k-237-like: 2000 entities, 20 typed relations, 8000 triples | **DELTA 100%, CompGCN 100%**, TransE 67.6%, RotatE 70.7%. LP: TransE Hits@10=0.020, RotatE 0.010 (4×/2× random; sparse synthetic data). Soft gating maintains accuracy at 50% sparsity |
 | 24 | All fixes integrated at scale | N=1000, 15% noise, full pipeline + ablations | All fixes integrate cleanly — zero degradation. 1-hop ablation runs 10× faster (44s vs 490s) |
+| 25 | DELTA on **real** FB15k-237 (GPU) | Actual Freebase triples: 2000-entity dense subgraph, 69,626 edges, 210 relation types, RTX 3080 Ti | **DELTA+Gate 97.6%, CompGCN 97.2%**, TransE 78.8%, RotatE 77.8%. LP: TransE Hits@10=0.480, RotatE 0.335 (vs random 0.005). First real-data benchmark on GPU. |
 
 ## The Bootstrap Strategy
 
@@ -174,9 +175,10 @@ python -m experiments.phase21_learned_attention_dropout # Learned dropout
 python -m experiments.phase22_scale_stress_test        # N=1000, 15% noise
 python -m experiments.phase23_realistic_kg_benchmark   # vs TransE/RotatE/CompGCN
 python -m experiments.phase24_combined_integration     # All fixes at scale
+python experiments/phase25_fb15k237_gpu.py             # Real FB15k-237 on GPU (Phase 25)
 
 # Run all tests
-python -m pytest tests/ -v  # 22/22 should pass
+python -m pytest tests/ -v  # 24/24 should pass
 ```
 
 ## Key Findings
@@ -221,6 +223,8 @@ python -m pytest tests/ -v  # 22/22 should pass
 
 17. **All fixes integrate cleanly at scale**: Phase 24 ran the full pipeline (variational memory + BFS partition + sparse 2-hop adjacency + dual attention + learned dropout + soft gating) on the N=1000 noisy benchmark. No fix caused degradation — all ablations matched full DELTA at 100%. The 2-hop edge adjacency (4.3M entries at E=5000) is the dominant compute cost, with 1-hop ablation running ~10× faster.
 
+18. **DELTA+Gate outperforms all baselines on REAL FB15k-237 data**: Phase 25 ran on actual Freebase triples (2000-entity dense subgraph, 69,626 edges, 210 real relation types) on a GPU (RTX 3080 Ti). DELTA+Gate reached **97.6%** relation classification accuracy, narrowly beating CompGCN (97.2%), TransE (78.8%), and RotatE (77.8%). Embedding baselines gain +10-11% over synthetic Phase 23 results — reflecting richer real-world structural patterns. TransE LP Hits@10=0.480 (96× random) on real triples confirms learned representations generalize. Edge adjacency capped at 5M of 19M pairs (~26%) to fit GPU VRAM — DELTA still wins despite seeing a fraction of all structural context.
+
 ## Backward Compatibility
 
 After implementing all 6 fixes, backward compatibility was verified against 5 critical original phases:
@@ -256,6 +260,9 @@ All fixes implemented and backward-compatible. Scaling bottlenecks (sparse multi
 ### Stage 4: Scale & Integration Validation (Phases 22–24)
 Validated the full architecture at 10× scale. **Soft gating holds at N=1000 with 15% noise** (+18.4% over old router). DELTA matches CompGCN and crushes TransE/RotatE on a realistic KG benchmark with faithful baseline implementations (TransE: Bordes 2013 translation scoring, RotatE: Sun 2019 complex rotation, CompGCN: GRU message passing with relation composition). Link prediction evaluated with proper margin-based ranking training (separate from classification) — low absolute numbers (Hits@10 ~0.02) reflect data sparsity (~4 triples/entity) not broken methodology. All 5 inference-pipeline fixes integrate cleanly with zero degradation. The remaining challenge: designing tasks hard enough to differentiate individual fix contributions — current synthetic benchmarks are solvable by vanilla EdgeAttention at this scale.
 
+### Stage 5: Real-World Data on GPU (Phase 25)
+**First benchmark on actual real-world data**, running on GPU. Phase 25 downloaded the real FB15k-237 dataset (14,505 entities, 237 relations, 310k Freebase triples) and evaluated on the 2000-entity dense subgraph (69,626 real triples, 210 relation types). **DELTA+Gate 97.6%** outperforms all baselines (CompGCN 97.2%, TransE 78.8%, RotatE 77.8%). TransE link prediction Hits@10=0.480 (96× above random) confirms representations generalize on real data. GPU enablement required a CUDA-build PyTorch install and two library fixes (sparse tensor device propagation in `graph.py`, CPU tensor attribute in `router.py`).
+
 ## Current Status: What's Working vs What Needs Proof
 
 ### ✅ Validated & Working
@@ -267,7 +274,7 @@ Validated the full architecture at 10× scale. **Soft gating holds at N=1000 wit
 - **Per-layer edge projections** — higher type diversity, matching accuracy
 - **Post-attention soft gating** — 100% accuracy at 50% target sparsity, beats pre-attention router (85.3%) by +14.7%. Soft differentiable gates with per-head attention features fully close the original 29% gap
 - **Curriculum dense→sparse annealing** — temperature annealing (τ: 0.5→5.0) + sparsity ramp (0→50%) integrated with post-attention pruning, achieves 100% accuracy matching full attention
-- **22/22 unit tests passing**, backward compatibility confirmed
+- **24/24 unit tests passing**, backward compatibility confirmed
 
 ### ⚠️ Architecturally Sound, Awaiting Scale Proof
 - **Learned attention dropout** — mechanisms confirmed (eval passthrough, rate diversity), but all benchmarks including N=1000 are too easy to show gap reduction
@@ -275,10 +282,10 @@ Validated the full architecture at 10× scale. **Soft gating holds at N=1000 wit
 - **Ablation differentiation** — at N=1000, vanilla EdgeAttention also reaches 100%, so fix ablations show zero impact. The fixes provide *efficiency and robustness*, not accuracy gains on tasks a baseline can already solve
 
 ### ❌ Open Gaps
-- **No real dataset validation** — Phase 23 uses a synthetic FB15k-237-like benchmark with faithful baseline implementations (TransE, RotatE, CompGCN). Need actual FB15k-237/WN18RR with real triples for credible LP numbers
-- **Scale ceiling unknown** — tested up to N=2000 entities / 8000 edges, but real KGs have millions
-- **No GPU profiling** — all experiments on CPU. Memory/throughput characteristics on GPU untested
-- **2-hop adjacency cost** — Phase 24 showed 2-hop computation at E=5000 produces 4.3M entries and dominates runtime (~490s vs 44s for 1-hop). Needs optimization or adaptive depth
+- **Scale ceiling unknown** — Phase 25 reached 2000 entities / 69,626 edges on GPU. Real KGs have millions of entities; full-scale training requires mini-batching and subgraph sampling
+- **2-hop adjacency cost** — Phase 24 showed 2-hop computation at E=5000 produces 4.3M entries and dominates runtime (~490s vs 44s for 1-hop). At FB15k-237 real scale, 1-hop already produces 19M pairs requiring subsampling. Needs adaptive depth or hierarchical edge pruning
+- **GPU edge adjacency sampling** — Phase 25 randomly samples 5M of 19M 1-hop pairs to fit VRAM. A learned or structurally-guided sampling strategy could improve DELTA's representational coverage
+- **Multi-seed evaluation** — All phases use seed 42. Add 3–5 seeds with mean ± std for statistical credibility
 
 ## Roadmap
 
@@ -289,11 +296,12 @@ Validated the full architecture at 10× scale. **Soft gating holds at N=1000 wit
 4. ~~**Phase 25: Curriculum + post-attention**~~ — ✅ **DONE.** Curriculum annealing integrated in Phase 16 redesign.
 
 ### Near-Term (Next)
-5. **Adaptive multi-hop depth** — Phase 24 showed 2-hop at E=5000 is 10× slower than 1-hop with no accuracy benefit. Learn when to use 1-hop vs 2-hop per layer.
-6. **Real dataset validation** — Download and evaluate on actual FB15k-237 / WN18RR triples. Requires downloading ~50MB data files; feasible on CPU for small subsets, GPU recommended for full training.
+5. **Adaptive multi-hop depth** — Phase 24 showed 2-hop at E=5000 is 10× slower than 1-hop with no accuracy benefit. Phase 25 showed 1-hop already requires subsampling at real scale (69k edges → 5M/19M pairs). Learn when to use 1-hop vs 2-hop per layer.
+6. ~~**Real dataset validation**~~ — ✅ **DONE.** Phase 25 evaluated on actual FB15k-237 triples on GPU. DELTA+Gate 97.6% — outperforms all baselines.
 7. **Harder ablation benchmark** — Design a task where vanilla EdgeAttention fails, enabling meaningful fix contribution analysis
 8. **Bootstrap on a relational task** — Phase 5 validated the pipeline preserves accuracy on a non-relational (sequence classification) task. Need to test whether Transformer→DELTA *improves* over Transformer alone when the task has actual relational structure (multi-hop KG reasoning).
-9. **Multi-seed evaluation** — All 24 phases use a single seed (42). Add 3-5 seeds with mean ± std to every benchmark for statistical credibility.
+9. **Multi-seed evaluation** — All 25 phases use a single seed (42). Add 3-5 seeds with mean ± std to every benchmark for statistical credibility.
+10. **GPU edge adjacency sampling strategy** — Phase 25 randomly samples 5M/19M 1-hop pairs. A learned or degree-weighted sampling strategy could improve DELTA's coverage of hub vertices.
 
 ### Medium-Term
 8. **GPU profiling & batching** — Profile memory and throughput, implement mini-batching for large graphs

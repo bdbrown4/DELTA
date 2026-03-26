@@ -56,8 +56,8 @@ class PostAttentionPruner(nn.Module):
             nn.GELU(),
             nn.Linear(d_node // 2, 1),
         )
-        # Cached sparsity loss for external access
-        self.sparsity_loss = torch.tensor(0.0)
+        # Cached sparsity loss for external access (float until first soft_prune call)
+        self.sparsity_loss = 0.0
 
     def compute_importance(self, graph: DeltaGraph,
                            node_attn_weights: torch.Tensor,

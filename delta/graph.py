@@ -143,7 +143,7 @@ class DeltaGraph:
         E = self.num_edges
         indices = adj_1hop  # [2, nnz]
         values = torch.ones(adj_1hop.shape[1], device=self.device)
-        adj_sparse = torch.sparse_coo_tensor(indices, values, (E, E)).coalesce()
+        adj_sparse = torch.sparse_coo_tensor(indices, values, (E, E), device=self.device).coalesce()
 
         # Compose by sparse matrix multiplication
         combined = adj_sparse

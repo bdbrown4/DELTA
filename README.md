@@ -23,6 +23,10 @@ Raw Input (any modality)
     → Output + Updated Graph State
 ```
 
+## Research Agenda
+
+Proposition tracking, open gaps, compute options, and the publication pathway are maintained in **[RESEARCH_AGENDA.md](./RESEARCH_AGENDA.md)** — including the external Phase 30 assessment and next steps.
+
 ## Project Structure
 
 ```

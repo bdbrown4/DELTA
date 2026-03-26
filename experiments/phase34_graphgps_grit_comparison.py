@@ -57,7 +57,7 @@ from delta.utils import (
 # ---------------------------------------------------------------------------
 
 def train_and_evaluate(model, graph, labels, task_type='edge',
-                       epochs=200, lr=1e-3, seed=42):
+                       epochs=200, lr=1e-3, seed=42, device='cpu'):
     """Train a model and return best test accuracy + training time.
 
     Args:
@@ -68,21 +68,26 @@ def train_and_evaluate(model, graph, labels, task_type='edge',
         epochs: training epochs
         lr: learning rate
         seed: random seed for train/test split
+        device: 'cpu' or 'cuda'
 
     Returns:
         dict with best_test_acc, final_train_acc, training_time_s
     """
     torch.manual_seed(seed)
 
+    # Move model and data to device
+    model = model.to(device)
+    graph = graph.to(device)
+    labels = labels.to(device)
+
     N_items = labels.shape[0]
 
-    perm = torch.randperm(N_items)
+    perm = torch.randperm(N_items, device=device)
     train_end = int(N_items * 0.7)
     train_idx = perm[:train_end]
     test_idx = perm[train_end:]
 
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    device = next(model.parameters()).device
 
     best_test_acc = 0.0
     final_train_acc = 0.0
@@ -148,7 +153,8 @@ def create_models(d_node, d_edge, num_classes, num_layers=3, num_heads=4):
 # Benchmark tasks
 # ---------------------------------------------------------------------------
 
-def benchmark_edge_classification(num_seeds=3, epochs=200, d_node=64, d_edge=32):
+def benchmark_edge_classification(num_seeds=3, epochs=200, d_node=64, d_edge=32,
+                                  device='cpu'):
     """Task 1: Relation type classification on synthetic KG."""
     print("=" * 70)
     print("TASK 1: Edge Classification (Synthetic KG)")
@@ -168,7 +174,8 @@ def benchmark_edge_classification(num_seeds=3, epochs=200, d_node=64, d_edge=32)
 
         models = create_models(d_node, d_edge, num_patterns)
         for name, model in models.items():
-            r = train_and_evaluate(model, graph, labels, 'edge', epochs, seed=seed)
+            r = train_and_evaluate(model, graph, labels, 'edge', epochs,
+                                   seed=seed, device=device)
             results[name].append(r['best_test_acc'])
             print(f"    {name:<10s}  Test Acc: {r['best_test_acc']:.3f}  "
                   f"({r['training_time_s']:.1f}s)")
@@ -176,7 +183,8 @@ def benchmark_edge_classification(num_seeds=3, epochs=200, d_node=64, d_edge=32)
     return results
 
 
-def benchmark_noise_robustness(num_seeds=3, epochs=200, d_node=64, d_edge=32):
+def benchmark_noise_robustness(num_seeds=3, epochs=200, d_node=64, d_edge=32,
+                               device='cpu'):
     """Task 2: Edge classification under increasing noise levels."""
     print()
     print("=" * 70)
@@ -203,7 +211,8 @@ def benchmark_noise_robustness(num_seeds=3, epochs=200, d_node=64, d_edge=32):
             models = create_models(d_node, d_edge, num_classes)
 
             for name, model in models.items():
-                r = train_and_evaluate(model, graph, labels, 'edge', epochs, seed=seed)
+                r = train_and_evaluate(model, graph, labels, 'edge', epochs,
+                                       seed=seed, device=device)
                 results[name].append(r['best_test_acc'])
 
             print(f"    Seed {seed}: " + "  ".join(
@@ -214,7 +223,8 @@ def benchmark_noise_robustness(num_seeds=3, epochs=200, d_node=64, d_edge=32):
     return all_results
 
 
-def benchmark_path_composition(num_seeds=3, epochs=200, d_node=64, d_edge=32):
+def benchmark_path_composition(num_seeds=3, epochs=200, d_node=64, d_edge=32,
+                               device='cpu'):
     """Task 3: Multi-hop relational reasoning (compositional rules)."""
     print()
     print("=" * 70)
@@ -236,7 +246,8 @@ def benchmark_path_composition(num_seeds=3, epochs=200, d_node=64, d_edge=32):
 
         models = create_models(d_node, d_edge, num_classes)
         for name, model in models.items():
-            r = train_and_evaluate(model, graph, labels, 'edge', epochs, seed=seed)
+            r = train_and_evaluate(model, graph, labels, 'edge', epochs,
+                                   seed=seed, device=device)
             results[name].append(r['best_test_acc'])
             print(f"    {name:<10s}  Test Acc: {r['best_test_acc']:.3f}  "
                   f"({r['training_time_s']:.1f}s)")
@@ -268,28 +279,35 @@ def main():
     parser.add_argument('--epochs', type=int, default=200, help='Training epochs per run')
     parser.add_argument('--d_node', type=int, default=64, help='Node feature dimension')
     parser.add_argument('--d_edge', type=int, default=32, help='Edge feature dimension')
+    parser.add_argument('--device', type=str, default=None,
+                        help='Device (cpu/cuda). Auto-detects if not set.')
     args = parser.parse_args()
+
+    if args.device is None:
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    else:
+        device = args.device
 
     print("=" * 70)
     print("PHASE 34: DELTA vs GraphGPS vs GRIT — Controlled Comparison")
     print("=" * 70)
     print(f"Config: seeds={args.seeds}, epochs={args.epochs}, "
-          f"d_node={args.d_node}, d_edge={args.d_edge}")
+          f"d_node={args.d_node}, d_edge={args.d_edge}, device={device}")
     print()
 
     start = time.time()
 
     # Task 1: Edge classification
     edge_results = benchmark_edge_classification(
-        args.seeds, args.epochs, args.d_node, args.d_edge)
+        args.seeds, args.epochs, args.d_node, args.d_edge, device=device)
 
     # Task 2: Noise robustness
     noise_results = benchmark_noise_robustness(
-        args.seeds, args.epochs, args.d_node, args.d_edge)
+        args.seeds, args.epochs, args.d_node, args.d_edge, device=device)
 
     # Task 3: Path composition
     path_results = benchmark_path_composition(
-        args.seeds, args.epochs, args.d_node, args.d_edge)
+        args.seeds, args.epochs, args.d_node, args.d_edge, device=device)
 
     total_time = time.time() - start
 

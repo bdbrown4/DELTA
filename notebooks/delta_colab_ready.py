@@ -141,11 +141,17 @@ def run_validation_tests():
 # Section 3: Phase 34 — DELTA vs GraphGPS vs GRIT
 # ===================================================================
 
-def train_model(model, graph, labels, epochs=200, lr=1e-3, seed=42):
+def train_model(model, graph, labels, epochs=200, lr=1e-3, seed=42, device='cpu'):
     """Train a model on edge classification and return results."""
     torch.manual_seed(seed)
+
+    # Move model and data to device
+    model = model.to(device)
+    graph = graph.to(device)
+    labels = labels.to(device)
+
     E = labels.shape[0]
-    perm = torch.randperm(E)
+    perm = torch.randperm(E, device=device)
     train_end = int(E * 0.7)
     train_idx = perm[:train_end]
     test_idx = perm[train_end:]
@@ -212,7 +218,7 @@ def run_phase34_comparison(device='cpu', num_seeds=3, epochs=200):
         }
 
         for name, model in models.items():
-            r = train_model(model, graph, labels, epochs, seed=seed)
+            r = train_model(model, graph, labels, epochs, seed=seed, device=device)
             task1_results[name].append(r['best_test_acc'])
             print(f"    {name:<10s}  Test Acc: {r['best_test_acc']:.3f}  "
                   f"({r['training_time_s']:.1f}s)")
@@ -244,7 +250,7 @@ def run_phase34_comparison(device='cpu', num_seeds=3, epochs=200):
             }
 
             for name, model in models.items():
-                r = train_model(model, graph, labels, epochs, seed=seed)
+                r = train_model(model, graph, labels, epochs, seed=seed, device=device)
                 noise_results[name].append(r['best_test_acc'])
 
         all_results[task_key] = noise_results
@@ -272,7 +278,7 @@ def run_phase34_comparison(device='cpu', num_seeds=3, epochs=200):
         }
 
         for name, model in models.items():
-            r = train_model(model, graph, labels, epochs, seed=seed)
+            r = train_model(model, graph, labels, epochs, seed=seed, device=device)
             path_results[name].append(r['best_test_acc'])
             print(f"    Seed {seed} {name:<10s}  Test Acc: {r['best_test_acc']:.3f}")
 

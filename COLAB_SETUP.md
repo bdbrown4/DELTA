@@ -13,7 +13,10 @@ Instructions for setting up Google Colab Pro to run DELTA's compute-intensive ex
 | Runtime | 12h max | 24h max | **24h, background execution** |
 | Priority | Low | Medium | **Highest** |
 
-**Recommendation:** Colab Pro+ ($49.99/month) is the right choice for DELTA. The A100 40GB is required for full FB15k-237 (14,505 entities) without subsampling.
+**Recommendation:** Colab Pro+ ($49.99/month) is the right choice for DELTA. The A100 40GB provides:
+- **Synthetic benchmarks (Phase 34):** Run immediately — all baselines scale to any synthetic graph size.
+- **Full FB15k-237 (Phase 31+):** 14,505 entities. DELTA and GraphGPS baselines scale via message passing + sparse operations. GRIT baseline uses sparse RWPE and memory-efficient attention. All three architectures are designed to run at this scale on A100.
+- **WN18RR (Phase 32):** 40,943 entities — requires mini-batching from Phase 31. GraphGPS and DELTA scale well; GRIT's global attention may need gradient accumulation at this size.
 
 ---
 

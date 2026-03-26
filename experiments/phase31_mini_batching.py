@@ -83,7 +83,8 @@ class NeighborSampler:
             frontier = next_frontier
 
             if len(visited) >= self.max_neighbors:
-                visited = set(list(visited)[:self.max_neighbors])
+                limited = sorted(visited)[:self.max_neighbors]
+                visited = set(limited)
                 break
 
         return sorted(visited)

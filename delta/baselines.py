@@ -317,10 +317,14 @@ class GRITAttention(nn.Module):
         # Standard attention scores
         attn = (q @ k.transpose(-2, -1)) * self.scale  # [heads, N, N]
 
-        # Relative PE bias: project per-node PE, then form pairwise differences
-        pe_proj = self.pe_bias(pe)  # [N, num_heads]
-        pe_bias = (pe_proj.unsqueeze(1) - pe_proj.unsqueeze(0)).permute(2, 0, 1)  # [heads, N, N]
-        attn = attn + pe_bias
+        # Relative PE bias: project per-node PE, then add as per-key bias.
+        # Original formulation used pairwise differences:
+        #   pe_bias[i, j, h] = pe_proj[i, h] - pe_proj[j, h]
+        # Softmax over j is invariant to adding a constant to each row i,
+        # so this is equivalent to a per-key bias -pe_proj[j, h] without
+        # materializing an [N, N] tensor.
+        pe_proj = self.pe_bias(pe).transpose(0, 1)  # [num_heads, N]
+        attn = attn - pe_proj.unsqueeze(1)  # broadcast to [heads, N, N]
 
         attn = attn.softmax(dim=-1)
         attn = self.attn_drop(attn)

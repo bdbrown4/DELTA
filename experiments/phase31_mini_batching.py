@@ -317,6 +317,8 @@ def main():
     parser = argparse.ArgumentParser(description="Phase 31: Mini-Batching")
     parser.add_argument('--num_entities', type=int, default=500,
                         help='Number of entities (500 for quick test, 14505 for full)')
+    parser.add_argument('--num_triples', type=int, default=2000,
+                        help='Number of triples (auto-scaled to ~300K when --full)')
     parser.add_argument('--epochs', type=int, default=50, help='Training epochs')
     parser.add_argument('--batch_size', type=int, default=32, help='Edges per batch')
     parser.add_argument('--accum_steps', type=int, default=4,
@@ -338,6 +340,7 @@ def main():
 
     if args.full:
         args.num_entities = 14505
+        args.num_triples = args.num_entities * 21  # ~305K, matching FB15k-237 density
         if device == 'cpu':
             print("WARNING: --full requires GPU. Use --device cuda or run on Colab.")
         # Auto-scale subgraph size based on available VRAM
@@ -367,6 +370,7 @@ def main():
     print("Creating benchmark data...")
     graph, labels, metadata = create_realistic_kg_benchmark(
         num_entities=args.num_entities,
+        num_triples=args.num_triples,
         d_node=64, d_edge=32,
         seed=42,
     )

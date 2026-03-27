@@ -337,7 +337,7 @@ def check_phase31_readiness(env):
         print("  Consider: gradient accumulation, or subsample to 5000 entities first.")
     else:
         print("\n  Running on CPU — Phase 31 requires GPU for full-scale training.")
-        print("  Use this script on Google Colab Pro+ (see COLAB_SETUP.md).")
+        print("  Use this script on Google Colab Pro+ (see docs/COLAB_SETUP.md).")
         print("  Phase 34 synthetic comparison can still run on CPU.")
 
     print()
@@ -425,9 +425,9 @@ def main():
         print("  1. Run Phase 31 (full FB15k-237 with mini-batching)")
         print("  2. Run Phase 34b (this comparison on real data)")
     else:
-        print("  1. Set up Google Colab Pro+ (see COLAB_SETUP.md)")
+        print("  1. Set up Google Colab Pro+ (see docs/COLAB_SETUP.md)")
         print("  2. Rerun this script on A100 GPU")
-    print("  3. Update RESEARCH_AGENDA.md with results")
+    print("  3. Update docs/RESEARCH_AGENDA.md with results")
     print()
 
 

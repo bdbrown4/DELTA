@@ -6,7 +6,7 @@ A research implementation of the DELTA architecture — a novel AI framework tha
 
 Reality is a graph. Language is a lossy compression of reality into sequences. Transformers reconstruct relational structure from flat sequences. DELTA operates on relational structure directly.
 
-**The three-paradigm gap — visual explainer:** [ARCHITECTURE_VISUAL.md](./ARCHITECTURE_VISUAL.md) walks through Transformer → GNN → DELTA with an [interactive diagram](https://raw.githack.com/bdbrown4/DELTA/main/assets/transformer_vs_graph_vs_delta_standalone.html). The key insight: GNN edges are passive scalar wires; DELTA edges are first-class computational citizens that attend to each other. That edge-to-edge attention is what produces the Phase 28 +24% noise robustness gap.
+**The three-paradigm gap — visual explainer:** [ARCHITECTURE_VISUAL.md](./docs/ARCHITECTURE_VISUAL.md) walks through Transformer → GNN → DELTA with an [interactive diagram](https://raw.githack.com/bdbrown4/DELTA/main/assets/transformer_vs_graph_vs_delta_standalone.html). The key insight: GNN edges are passive scalar wires; DELTA edges are first-class computational citizens that attend to each other. That edge-to-edge attention is what produces the Phase 28 +24% noise robustness gap.
 
 ## Architecture Overview
 
@@ -27,7 +27,7 @@ Raw Input (any modality)
 
 ## Research Agenda
 
-Proposition tracking, open gaps, compute options, and the publication pathway are maintained in **[RESEARCH_AGENDA.md](./RESEARCH_AGENDA.md)** — including the external Phase 30 assessment and next steps.
+Proposition tracking, open gaps, compute options, and the publication pathway are maintained in **[RESEARCH_AGENDA.md](./docs/RESEARCH_AGENDA.md)** — including the external Phase 30 assessment and next steps.
 
 ## Project Structure
 
@@ -89,8 +89,11 @@ DELTA/
 │   ├── test_memory.py
 │   ├── test_utils.py
 │   └── test_baselines.py     # GraphGPS + GRIT baseline tests
-├── COLAB_SETUP.md          # Google Colab Pro+ setup instructions
-├── RESEARCH_AGENDA.md      # Research gaps, compute options, publication pathway
+├── docs/                   # Documentation, guides, and experiment results
+│   ├── ARCHITECTURE_VISUAL.md  # Transformer vs GNN vs DELTA visual explainer
+│   ├── COLAB_RESULTS.md        # Experiment results from Colab runs
+│   ├── COLAB_SETUP.md          # Google Colab Pro+ setup instructions
+│   └── RESEARCH_AGENDA.md      # Research gaps, compute options, publication pathway
 ├── requirements.txt
 └── README.md
 ```
@@ -401,7 +404,7 @@ Train on FB15k-237, evaluate zero-shot on WN18RR. Measures whether DELTA edge-at
 Phase 27b confirmed the problem: GraphConstructor's attention-thresholding discards sequential adjacency edges that Fixed Chain DELTA preserves. Result: Fixed Chain (40.7%) > Bootstrap (34.3%) on path composition. Implements hybrid construction: preserve base topology + learn new edges. See `experiments/phase33_task_aware_construction.py`.
 
 **Phase 34: DELTA vs GraphGPS vs GRIT comparison** *(infrastructure ready)*
-Critical baseline currency gap (Gap 1 in [RESEARCH_AGENDA.md](./RESEARCH_AGENDA.md)). CompGCN (2020) is the current strongest baseline — the community will ask about GraphGPS (2022) and GRIT (2023). Lightweight implementations in `delta/baselines.py`, 16 tests in `tests/test_baselines.py`, experiment script at `experiments/phase34_graphgps_grit_comparison.py`. Synthetic comparison runs immediately on CPU; full FB15k-237 comparison requires Phase 31 compute. See `COLAB_SETUP.md` for Google Colab Pro+ ($49.99/mo) setup instructions and `notebooks/delta_colab_ready.py` for automated infrastructure.
+Critical baseline currency gap (Gap 1 in [RESEARCH_AGENDA.md](./docs/RESEARCH_AGENDA.md)). CompGCN (2020) is the current strongest baseline — the community will ask about GraphGPS (2022) and GRIT (2023). Lightweight implementations in `delta/baselines.py`, 16 tests in `tests/test_baselines.py`, experiment script at `experiments/phase34_graphgps_grit_comparison.py`. Synthetic comparison runs immediately on CPU; full FB15k-237 comparison requires Phase 31 compute. See `docs/COLAB_SETUP.md` for Google Colab Pro+ ($49.99/mo) setup instructions and `notebooks/delta_colab_ready.py` for automated infrastructure.
 
 ### Long-Term
 - **Replace transformer bootstrap** — Use trained DELTA models to construct graphs for new inputs (self-bootstrapping), removing the scaffolding dependency

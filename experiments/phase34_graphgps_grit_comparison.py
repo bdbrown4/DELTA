@@ -358,7 +358,7 @@ def main():
 
     print()
     print("  NOTE: This uses synthetic data. For publication, rerun on full FB15k-237")
-    print("  using Google Colab Pro (see COLAB_SETUP.md and notebooks/).")
+    print("  using Google Colab Pro (see docs/COLAB_SETUP.md and notebooks/).")
     print()
     print("  Next steps:")
     print("    Phase 31: Mini-batching for full-scale FB15k-237")

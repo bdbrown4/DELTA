@@ -232,8 +232,14 @@ python experiments/phase28_hard_ablation.py            # Hard ablation benchmark
 python experiments/phase29_multi_seed.py               # Multi-seed evaluation (5 seeds)
 python experiments/phase30_edge_adj_sampling.py        # GPU edge adj sampling strategies
 
+# Phase 31-34: Next-step experiments (infrastructure ready)
+python experiments/phase31_mini_batching.py             # Subgraph sampling + gradient accumulation
+python experiments/phase32_cross_graph_transfer.py      # Train FB15k-237, eval WN18RR (zero-shot)
+python experiments/phase33_task_aware_construction.py   # Hybrid constructor: base topology + learned edges
+python experiments/phase34_graphgps_grit_comparison.py  # DELTA vs GraphGPS vs GRIT (Gap 1)
+
 # Run all tests
-python -m pytest tests/ -v  # 24/24 should pass
+for f in tests/test_*.py; do python "$f"; done  # 40/40 should pass
 ```
 
 ## Key Findings
@@ -302,7 +308,7 @@ Phase 15's Router@50% improved from 65.3%→74.7% because the legacy `Importance
 
 ## Architecture Evolution
 
-DELTA has gone through three development stages:
+DELTA has gone through six development stages:
 
 ### Stage 1: Core Validation (Phases 1–15)
 Proved the thesis: edge-first dual attention outperforms node-only GNNs on compositional reasoning. Multi-hop edge adjacency (Phase 11) and compositional logic rules (Phase 13) were the headline results.
@@ -350,7 +356,7 @@ Validated 5 roadmap items and stress-tested a core assumption with help from an 
 - **Curriculum dense→sparse annealing** — temperature annealing (τ: 0.5→5.0) + sparsity ramp (0→50%) integrated with post-attention pruning, achieves 100% accuracy matching full attention
 - **Graph structure adds value on relational tasks** — Phase 27b confirmed Fixed Chain DELTA (40.7%) beats pure Transformer (36.3%) on 2-hop path composition with proper training
 - **Edge adjacency caching + vectorized incidence matrix** — `graph.py` fast path for E≤500 replaces Python for-loop, enabling efficient per-sample training for graph-based models
-- **24/24 unit tests passing**, backward compatibility confirmed
+- **40/40 unit tests passing**, backward compatibility confirmed
 
 ### ⚠️ Architecturally Sound, Awaiting Scale Proof
 - **Learned attention dropout** — mechanisms confirmed (eval passthrough, rate diversity), but all benchmarks including N=1000 are too easy to show gap reduction

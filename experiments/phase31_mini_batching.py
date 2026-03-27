@@ -342,7 +342,7 @@ def main():
             print("WARNING: --full requires GPU. Use --device cuda or run on Colab.")
         # Auto-scale subgraph size based on available VRAM
         if device == 'cuda' and args.max_neighbors == 100:
-            vram_gb = torch.cuda.get_device_properties(0).total_mem / 1e9
+            vram_gb = torch.cuda.get_device_properties(0).total_memory / 1e9
             if vram_gb >= 70:  # H100 80GB
                 args.max_neighbors = 500
                 args.batch_size = 64

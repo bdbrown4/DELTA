@@ -80,7 +80,7 @@ DELTA/
 │   └── phase34_graphgps_grit_comparison.py  # DELTA vs GraphGPS vs GRIT (Gap 1)
 ├── notebooks/              # Colab-ready infrastructure
 │   └── delta_colab_ready.py  # Automated Colab setup + Phase 34 runner
-├── tests/                  # Unit tests (40/40 passing)
+├── tests/                  # Unit tests (44/44 passing)
 │   ├── test_graph.py
 │   ├── test_attention.py
 │   ├── test_router.py
@@ -145,6 +145,8 @@ After Phase 15, a pitfall analysis identified 6 architectural weaknesses. Each w
 | 23 | DELTA vs KG embedding baselines (TransE, RotatE, CompGCN) | FB15k-237-like: 2000 entities, 20 typed relations, 8000 triples | **DELTA 100%, CompGCN 100%**, TransE 67.6%, RotatE 70.7%. LP: TransE Hits@10=0.020, RotatE 0.010 (4×/2× random; sparse synthetic data). Soft gating maintains accuracy at 50% sparsity |
 | 24 | All fixes integrated at scale | N=1000, 15% noise, full pipeline + ablations | All fixes integrate cleanly — zero degradation. 1-hop ablation runs 10× faster (44s vs 490s) |
 | 25 | DELTA on **real** FB15k-237 (GPU) | Actual Freebase triples: 2000-entity dense subgraph, 69,626 edges, 210 relation types, RTX 3080 Ti | **DELTA+Gate 97.6%, CompGCN 97.2%**, TransE 78.8%, RotatE 77.8%. LP: TransE Hits@10=0.480, RotatE 0.335 (vs random 0.005). First real-data benchmark on GPU. |
+
+*Phases 22, 23, and 25 were replicated with 5 seeds each in Phase 29 — see the Phase 26–30 table for multi-seed statistics.*
 
 ### Phase 26–30 + 27b: Near-Term Roadmap Validation
 
@@ -239,7 +241,7 @@ python experiments/phase33_task_aware_construction.py   # Hybrid constructor: ba
 python experiments/phase34_graphgps_grit_comparison.py  # DELTA vs GraphGPS vs GRIT (Gap 1)
 
 # Run all tests
-for f in tests/test_*.py; do python "$f"; done  # 40/40 should pass
+python -m pytest tests/ -q  # 44/44 should pass
 ```
 
 ## Key Findings
@@ -356,7 +358,7 @@ Validated 5 roadmap items and stress-tested a core assumption with help from an 
 - **Curriculum dense→sparse annealing** — temperature annealing (τ: 0.5→5.0) + sparsity ramp (0→50%) integrated with post-attention pruning, achieves 100% accuracy matching full attention
 - **Graph structure adds value on relational tasks** — Phase 27b confirmed Fixed Chain DELTA (40.7%) beats pure Transformer (36.3%) on 2-hop path composition with proper training
 - **Edge adjacency caching + vectorized incidence matrix** — `graph.py` fast path for E≤500 replaces Python for-loop, enabling efficient per-sample training for graph-based models
-- **40/40 unit tests passing**, backward compatibility confirmed
+- **44/44 unit tests passing**, backward compatibility confirmed
 
 ### ⚠️ Architecturally Sound, Awaiting Scale Proof
 - **Learned attention dropout** — mechanisms confirmed (eval passthrough, rate diversity), but all benchmarks including N=1000 are too easy to show gap reduction
@@ -412,4 +414,4 @@ Critical baseline currency gap (Gap 1 in [RESEARCH_AGENDA.md](./RESEARCH_AGENDA.
 
 ---
 
-*DELTA architecture — conceived March 25, 2026. 34 experiment phases (30 + Phase 27b correction + Phases 31–34), 6 architectural fixes, 40 unit tests. Phases 31–34 experiments ready for GPU execution.*
+*DELTA architecture — conceived March 25, 2026. 35 experiment phases (Phases 1–30 + Phase 27b correction + Phases 31–34), 6 architectural fixes, 44 unit tests. Phases 31–34 experiments ready for GPU execution.*

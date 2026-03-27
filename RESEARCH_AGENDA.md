@@ -74,7 +74,7 @@ Ordered by cost-effectiveness for the immediate next steps (Phase 31 full-scale 
 
 ### Already Have ✅
 - [x] Novel architecture with theoretical motivation (edge-first dual attention)
-- [x] 31 validation phases with honest failure documentation
+- [x] 35 experiment phases (Phases 1–30 + 27b + 31–34) with honest failure documentation
 - [x] Multi-seed statistical validation (Phase 29: 5 seeds, low variance)
 - [x] Real dataset results beating established baselines (FB15k-237, 5 seeds)
 - [x] Clean ablation showing component contributions (Phase 28: +24% at extreme noise)

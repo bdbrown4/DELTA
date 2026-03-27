@@ -14,8 +14,8 @@ Scalability:
   when available on GPU, memory-efficient fallback otherwise) for O(N) memory.
 - RandomWalkPE uses sparse matrix operations for the transition matrix, scaling
   to full FB15k-237 (14,505 nodes) and beyond.
-- GRITAttention avoids materializing N×N×d_pe tensors by projecting PE per-node
-  first, then forming pairwise bias from scalar differences.
+- GRITAttention folds PE bias into key vectors and uses F.scaled_dot_product_attention,
+  avoiding N×N intermediate tensors. Enables FlashAttention-2 on GPU for O(N) memory.
 
 NOTE: These are research baselines for controlled comparison, not full replicas
 of the original papers. For publication, run against official implementations.
@@ -373,13 +373,14 @@ class GRITAttention(nn.Module):
     injected as a bias into the attention scores, giving the model
     structural awareness without explicit message passing.
 
-    Scalability: PE bias is computed as per-node projected scalars, then
-    pairwise differences are formed as (pe_proj[i] - pe_proj[j]) per head.
-    This avoids materializing an N×N×d_pe intermediate tensor — the
-    intermediate is only N×N×num_heads (scalars, not d_pe vectors).
-
-    Note: Cannot use F.scaled_dot_product_attention here because the PE
-    bias must be added before softmax. Manual attention is required.
+    Scalability: Uses F.scaled_dot_product_attention with PE bias folded
+    into the key vectors. The original formulation computes pairwise
+    differences pe_proj[i] - pe_proj[j] as an additive attention bias.
+    Since softmax over j is invariant to row-constant offsets (the pe_proj[i]
+    term), this is equivalent to subtracting pe_proj[j] as a per-key bias.
+    We fold this into the key by concatenating the PE projection, avoiding
+    any N×N intermediate tensors. This enables FlashAttention-2 /
+    memory-efficient dispatch on GPU — O(N) memory instead of O(N²).
 
     Reference: Ma et al., "Graph Inductive Biases in Transformers without
     Message Passing" (ICML 2023).
@@ -391,10 +392,12 @@ class GRITAttention(nn.Module):
         assert d_model % num_heads == 0
         self.num_heads = num_heads
         self.head_dim = d_model // num_heads
-        self.scale = self.head_dim ** -0.5
 
         self.qkv = nn.Linear(d_model, 3 * d_model)
-        self.pe_bias = nn.Linear(d_pe, num_heads)  # PE → per-head scalar
+        # PE → per-head scalar bias, added to each head's key dimension
+        self.pe_key_proj = nn.Linear(d_pe, num_heads)
+        # Learned scalar per head for the PE dimension in queries
+        self.pe_q_scale = nn.Parameter(torch.ones(num_heads))
         self.out_proj = nn.Linear(d_model, d_model)
         self.dropout_p = dropout
         self.proj_drop = nn.Dropout(dropout)
@@ -412,22 +415,31 @@ class GRITAttention(nn.Module):
         qkv = qkv.permute(1, 2, 0, 3)  # [3, heads, N, head_dim]
         q, k, v = qkv[0], qkv[1], qkv[2]
 
-        # Relative PE bias: project per-node PE to per-head scalars, then
-        # form pairwise differences without materializing N×N×d_pe.
-        # pe_proj: [N, num_heads], pe_bias[i,j,h] = pe_proj[i,h] - pe_proj[j,h]
-        pe_proj = self.pe_bias(pe)  # [N, num_heads]
-        # Broadcast: [1, N, heads] - [N, 1, heads] → [N, N, heads] → [heads, N, N]
-        pe_bias_mask = (pe_proj.unsqueeze(0) - pe_proj.unsqueeze(1)).permute(2, 0, 1)
+        # Fold PE bias into keys: the relative PE bias pe_proj[i] - pe_proj[j]
+        # is invariant to the pe_proj[i] term under softmax, so it reduces to
+        # -pe_proj[j] as a per-key additive bias. We implement this by
+        # appending -pe_proj to each key and a learned scale to each query,
+        # so that q·k includes the PE contribution without materializing N×N.
+        pe_k = -self.pe_key_proj(pe)  # [N, num_heads]
+        pe_k = pe_k.transpose(0, 1).unsqueeze(-1)  # [heads, N, 1]
+        k_aug = torch.cat([k, pe_k], dim=-1)  # [heads, N, head_dim+1]
 
-        # Compute attention with PE bias
-        attn = (q @ k.transpose(-2, -1)) * self.scale  # [heads, N, N]
-        attn = attn + pe_bias_mask
-        attn = attn.softmax(dim=-1)
+        # Query gets a learnable scalar for the PE dimension
+        pe_q = self.pe_q_scale.view(self.num_heads, 1, 1).expand(-1, N, 1)
+        q_aug = torch.cat([q, pe_q], dim=-1)  # [heads, N, head_dim+1]
+
+        # Use scaled_dot_product_attention for automatic flash/memory-efficient dispatch
+        # Shape: [batch=1, heads, N, head_dim+1]
+        q_aug = q_aug.unsqueeze(0)
+        k_aug = k_aug.unsqueeze(0)
+        v = v.unsqueeze(0)
         dropout_p = self.dropout_p if self.training else 0.0
-        if dropout_p > 0:
-            attn = F.dropout(attn, p=dropout_p, training=self.training)
+        out = F.scaled_dot_product_attention(
+            q_aug, k_aug, v, dropout_p=dropout_p,
+        )
+        out = out.squeeze(0)  # [heads, N, head_dim]
 
-        out = (attn @ v).transpose(0, 1).reshape(N, D)
+        out = out.transpose(0, 1).reshape(N, D)  # [N, D]
         return self.proj_drop(self.out_proj(out))
 
 

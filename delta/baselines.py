@@ -421,15 +421,15 @@ class GRITAttention(nn.Module):
         # appending -pe_proj to each key and a learned scale to each query,
         # so that q·k includes the PE contribution without materializing N×N.
         pe_k = -self.pe_key_proj(pe)  # [N, num_heads]
-        pe_k = pe_k.transpose(0, 1).unsqueeze(-1)  # [heads, N, 1]
-        k_aug = torch.cat([k, pe_k], dim=-1)  # [heads, N, head_dim+1]
+        pe_k = pe_k.transpose(0, 1).unsqueeze(-1)  # [num_heads, N, 1]
+        k_aug = torch.cat([k, pe_k], dim=-1)  # [num_heads, N, head_dim+1]
 
         # Query gets a learnable scalar for the PE dimension
         pe_q = self.pe_q_scale.view(self.num_heads, 1, 1).expand(-1, N, 1)
-        q_aug = torch.cat([q, pe_q], dim=-1)  # [heads, N, head_dim+1]
+        q_aug = torch.cat([q, pe_q], dim=-1)  # [num_heads, N, head_dim+1]
 
         # Use scaled_dot_product_attention for automatic flash/memory-efficient dispatch
-        # Shape: [batch=1, heads, N, head_dim+1]
+        # Shape: [batch=1, num_heads, N, head_dim+1]
         q_aug = q_aug.unsqueeze(0)
         k_aug = k_aug.unsqueeze(0)
         v = v.unsqueeze(0)
@@ -437,7 +437,7 @@ class GRITAttention(nn.Module):
         out = F.scaled_dot_product_attention(
             q_aug, k_aug, v, dropout_p=dropout_p,
         )
-        out = out.squeeze(0)  # [heads, N, head_dim]
+        out = out.squeeze(0)  # [num_heads, N, head_dim]
 
         out = out.transpose(0, 1).reshape(N, D)  # [N, D]
         return self.proj_drop(self.out_proj(out))

@@ -6,6 +6,8 @@ A research implementation of the DELTA architecture — a novel AI framework tha
 
 Reality is a graph. Language is a lossy compression of reality into sequences. Transformers reconstruct relational structure from flat sequences. DELTA operates on relational structure directly.
 
+**The three-paradigm gap — visual explainer:** [ARCHITECTURE_VISUAL.md](./ARCHITECTURE_VISUAL.md) walks through Transformer → GNN → DELTA with an [interactive diagram](./assets/transformer_vs_graph_vs_delta.html). The key insight: GNN edges are passive scalar wires; DELTA edges are first-class computational citizens that attend to each other. That edge-to-edge attention is what produces the Phase 28 +24% noise robustness gap.
+
 ## Architecture Overview
 
 ```

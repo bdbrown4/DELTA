@@ -1,6 +1,6 @@
 # Why DELTA? — Transformer vs Graph Neural Net vs DELTA
 
-Interactive visual: [assets/transformer_vs_graph_vs_delta.html](assets/transformer_vs_graph_vs_delta.html)
+Interactive visual: [Open in browser](https://htmlpreview.github.io/?https://github.com/bdbrown4/DELTA/blob/main/assets/transformer_vs_graph_vs_delta.html) · [Source](assets/transformer_vs_graph_vs_delta.html)
 
 ---
 

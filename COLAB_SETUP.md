@@ -132,15 +132,14 @@ Phase 31 auto-detects your GPU and scales subgraph sizes accordingly:
 All full-scale experiments log every epoch by default (`--log_every 1` when `--full`).
 
 ```python
-# Phase 31: Full FB15k-237 mini-batching (20 epochs safe for 24h Colab limit)
-# Logs every epoch so you can track progress during multi-hour runs
-!python experiments/phase31_mini_batching.py --full --epochs 20
+# Phase 31: Full FB15k-237 mini-batching (~4.4 min/epoch on H100 = ~3.7h for 50 epochs)
+!python experiments/phase31_mini_batching.py --full --epochs 50
 
-# Or manually set epochs and log interval:
+# Or with custom epoch count and log interval:
 !python experiments/phase31_mini_batching.py --full --epochs 50 --log_every 5
 ```
 
-> **Colab Pro+ 24-hour session limit:** 50 epochs at full scale takes ~33 hours and WILL be killed. Use `--epochs 20` (~13 hours) to stay safely under the limit. Results at 20 epochs are sufficient to demonstrate the mechanism.
+> **Actual observed runtime (H100 85GB):** ~4.4 min/epoch → 50 epochs ≈ 3.7 hours. Well within the 24-hour session limit.
 
 ### Phase 34b: Full-scale GraphGPS / GRIT comparison (same FB15k-237 dataset)
 
@@ -194,8 +193,8 @@ Or use individual sections — see `notebooks/delta_colab_ready.py` for details.
 | Phase 34 (synthetic, 5 seeds) | ~100 nodes | 5-8 min | 15 min |
 | Phase 33 (synthetic, 3 seeds) | 60 nodes | 1-2 min | 3-5 min |
 | Phase 33 (synthetic, 5 seeds) | 60 nodes | 3-5 min | 8-12 min |
-| Phase 31 (full FB15k-237, 20 epochs) | 14,505 entities, 305K edges | **~13 hours** | ~20+ hours |
-| Phase 31 (full FB15k-237, 50 epochs) | 14,505 entities, 305K edges | ~33 hours (**exceeds 24h limit**) | N/A |
+| Phase 31 (full FB15k-237, 20 epochs) | 14,505 entities, 305K edges | ~1.5 hours | ~3-4 hours |
+| Phase 31 (full FB15k-237, 50 epochs) | 14,505 entities, 305K edges | **~3.7 hours** | ~8-10 hours |
 | Phase 34b (full synthetic, 3 models × 5 seeds) | ~50-100 nodes | 15-20 min | 30-45 min |
 | Phase 32 (cross-domain, 100 epochs) | 14,505 → 40,943 entities | **~2-4 hours** | 4-8 hours |
 

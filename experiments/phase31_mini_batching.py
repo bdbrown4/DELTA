@@ -191,7 +191,7 @@ class NeighborSampler:
 
 def train_with_mini_batching(model, full_graph, labels, sampler,
                              epochs=50, lr=1e-3, batch_size=32,
-                             accum_steps=4, device='cpu'):
+                             accum_steps=4, device='cpu', log_every=10):
     """Train DELTA with mini-batch subgraph sampling.
 
     Args:
@@ -271,7 +271,7 @@ def train_with_mini_batching(model, full_graph, labels, sampler,
         scheduler.step(avg_loss)
 
         # Evaluate on test edges (sample a few batches)
-        if (epoch + 1) % 10 == 0 or epoch == epochs - 1:
+        if (epoch + 1) % log_every == 0 or epoch == epochs - 1:
             model.eval()
             correct = 0
             total = 0
@@ -327,6 +327,8 @@ def main():
                         help='Neighborhood hops for sampling')
     parser.add_argument('--max_neighbors', type=int, default=100,
                         help='Max nodes per subgraph (100=A100, 300-500=H100 80GB)')
+    parser.add_argument('--log_every', type=int, default=None,
+                        help='Log every N epochs (default: 1 when --full, 10 otherwise)')
     parser.add_argument('--full', action='store_true',
                         help='Run on full FB15k-237 (requires GPU)')
     parser.add_argument('--device', type=str, default=None,
@@ -337,6 +339,10 @@ def main():
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
     else:
         device = args.device
+
+    # Resolve log_every default based on --full
+    if args.log_every is None:
+        args.log_every = 1 if args.full else 10
 
     if args.full:
         args.num_entities = 14505
@@ -363,6 +369,7 @@ def main():
     print(f"  Entities: {args.num_entities}, Epochs: {args.epochs}, "
           f"Batch: {args.batch_size}, Accum: {args.accum_steps}")
     print(f"  Neighborhood: {args.k_hops} hops, max {args.max_neighbors} nodes")
+    print(f"  Log every: {args.log_every} epoch(s)")
     print(f"  Device: {device}")
     print()
 
@@ -401,6 +408,7 @@ def main():
         batch_size=args.batch_size,
         accum_steps=args.accum_steps,
         device=device,
+        log_every=args.log_every,
     )
 
     print()

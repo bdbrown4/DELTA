@@ -99,12 +99,12 @@ All 44 tests should pass.
 
 ### Quick run (synthetic data, ~5 minutes)
 ```python
-!python experiments/phase34_graphgps_grit_comparison.py --seeds 3 --epochs 200
+!python experiments/phase34_graphgps_grit_comparison.py --seeds 3 --epochs 200 --log_every 50
 ```
 
 ### Full run (5 seeds, more epochs, ~15 minutes)
 ```python
-!python experiments/phase34_graphgps_grit_comparison.py --seeds 5 --epochs 500
+!python experiments/phase34_graphgps_grit_comparison.py --seeds 5 --epochs 500 --log_every 100
 ```
 
 ---
@@ -129,13 +129,18 @@ Phase 31 auto-detects your GPU and scales subgraph sizes accordingly:
 - **H100 80GB:** 500 nodes/subgraph, batch_size=64 (auto-set)
 - **A100 40GB:** 200 nodes/subgraph, batch_size=32 (auto-set)
 
-```python
-# Phase 31: Full FB15k-237 mini-batching — auto-scales to your GPU
-!python experiments/phase31_mini_batching.py --full
+All full-scale experiments log every epoch by default (`--log_every 1` when `--full`).
 
-# Or manually override subgraph size
-!python experiments/phase31_mini_batching.py --full --max_neighbors 500 --batch_size 64
+```python
+# Phase 31: Full FB15k-237 mini-batching (20 epochs safe for 24h Colab limit)
+# Logs every epoch so you can track progress during multi-hour runs
+!python experiments/phase31_mini_batching.py --full --epochs 20
+
+# Or manually set epochs and log interval:
+!python experiments/phase31_mini_batching.py --full --epochs 50 --log_every 5
 ```
+
+> **Colab Pro+ 24-hour session limit:** 50 epochs at full scale takes ~33 hours and WILL be killed. Use `--epochs 20` (~13 hours) to stay safely under the limit. Results at 20 epochs are sufficient to demonstrate the mechanism.
 
 ### Phase 34b: Full-scale GraphGPS / GRIT comparison (same FB15k-237 dataset)
 
@@ -144,7 +149,7 @@ Run this after Phase 31 while still on FB15k-237. It compares all three architec
 ```python
 # Full synthetic benchmark, 3 models × 5 seeds (~15-20 min on H100)
 # Phase 34 is a controlled synthetic comparison — no full-scale mode
-!python experiments/phase34_graphgps_grit_comparison.py --seeds 5 --epochs 500
+!python experiments/phase34_graphgps_grit_comparison.py --seeds 5 --epochs 500 --log_every 100
 ```
 
 ### Phase 32: Cross-domain WN18RR (different dataset)
@@ -152,7 +157,12 @@ Run this after Phase 31 while still on FB15k-237. It compares all three architec
 After completing both FB15k-237 runs above, switch to WN18RR:
 
 ```python
-!python experiments/phase32_cross_graph_transfer.py --full
+# Full-scale cross-domain transfer: FB15k-237 → WN18RR
+# Logs every epoch by default when --full
+!python experiments/phase32_cross_graph_transfer.py --full --epochs 100
+
+# Or with custom epoch count and logging:
+!python experiments/phase32_cross_graph_transfer.py --full --epochs 50 --log_every 5
 ```
 
 The Colab-ready infrastructure script automates GPU setup and experiment execution:
@@ -184,9 +194,10 @@ Or use individual sections — see `notebooks/delta_colab_ready.py` for details.
 | Phase 34 (synthetic, 5 seeds) | ~100 nodes | 5-8 min | 15 min |
 | Phase 33 (synthetic, 3 seeds) | 60 nodes | 1-2 min | 3-5 min |
 | Phase 33 (synthetic, 5 seeds) | 60 nodes | 3-5 min | 8-12 min |
-| Phase 31 (full FB15k-237) | 14,505 entities | 1-2 hours | 2-4 hours |
+| Phase 31 (full FB15k-237, 20 epochs) | 14,505 entities, 305K edges | **~13 hours** | ~20+ hours |
+| Phase 31 (full FB15k-237, 50 epochs) | 14,505 entities, 305K edges | ~33 hours (**exceeds 24h limit**) | N/A |
 | Phase 34b (full synthetic, 3 models × 5 seeds) | ~50-100 nodes | 15-20 min | 30-45 min |
-| Phase 32 (cross-domain WN18RR) | 40,943 entities | 2-4 hours | 4-8 hours |
+| Phase 32 (cross-domain, 100 epochs) | 14,505 → 40,943 entities | **~2-4 hours** | 4-8 hours |
 
 ---
 

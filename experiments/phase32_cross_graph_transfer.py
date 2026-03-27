@@ -91,7 +91,7 @@ def create_domain_data(num_entities, num_relations, d_node, d_edge,
 # Training and evaluation
 # ---------------------------------------------------------------------------
 
-def train_model(model, graph, labels, epochs, lr, device):
+def train_model(model, graph, labels, epochs, lr, device, log_every=20):
     """Train model on a source domain."""
     model = model.to(device)
     graph = graph.to(device)
@@ -114,7 +114,7 @@ def train_model(model, graph, labels, epochs, lr, device):
         loss.backward()
         optimizer.step()
 
-        if (epoch + 1) % 20 == 0 or epoch == epochs - 1:
+        if (epoch + 1) % log_every == 0 or epoch == epochs - 1:
             model.eval()
             with torch.no_grad():
                 out = model(graph)
@@ -184,6 +184,8 @@ def main():
                         help='Entities in target domain')
     parser.add_argument('--epochs', type=int, default=100,
                         help='Training epochs for source domain')
+    parser.add_argument('--log_every', type=int, default=None,
+                        help='Log every N epochs (default: 1 when --full, 20 otherwise)')
     parser.add_argument('--full', action='store_true',
                         help='Run full-scale: FB15k-237 (14505) -> WN18RR (40943)')
     parser.add_argument('--device', type=str, default=None)
@@ -192,9 +194,16 @@ def main():
     device = args.device or ('cuda' if torch.cuda.is_available() else 'cpu')
     d_node, d_edge = 64, 32
 
+    # Resolve log_every default based on --full
+    if args.log_every is None:
+        args.log_every = 1 if args.full else 20
+
     if args.full:
         args.source_entities = 14505
         args.target_entities = 40943
+        if device == 'cuda':
+            vram_gb = torch.cuda.get_device_properties(0).total_memory / 1e9
+            print(f"  GPU detected: {torch.cuda.get_device_name(0)} ({vram_gb:.0f}GB)")
         if device == 'cpu':
             print("WARNING: --full requires GPU for realistic scale.")
 
@@ -203,7 +212,8 @@ def main():
     print("=" * 70)
     print(f"  Source: {args.source_entities} entities, "
           f"Target: {args.target_entities} entities")
-    print(f"  Device: {device}, Epochs: {args.epochs}")
+    print(f"  Device: {device}, Epochs: {args.epochs}, "
+          f"Log every: {args.log_every} epoch(s)")
     print()
 
     # --- Create source domain (FB15k-237-like) ---
@@ -235,7 +245,8 @@ def main():
         num_classes=num_relations,
     )
     source_acc = train_model(model, src_graph, src_labels,
-                             args.epochs, 1e-3, device)
+                             args.epochs, 1e-3, device,
+                             log_every=args.log_every)
     print(f"  Source domain accuracy: {source_acc:.3f}")
     print()
 

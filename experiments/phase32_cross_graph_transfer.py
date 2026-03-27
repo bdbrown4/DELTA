@@ -38,6 +38,9 @@ from delta.graph import DeltaGraph
 from delta.model import DELTAModel
 from delta.utils import create_realistic_kg_benchmark
 
+# Import mini-batch sampler from Phase 31
+from experiments.phase31_mini_batching import NeighborSampler
+
 
 # ---------------------------------------------------------------------------
 # Domain-specific data generation
@@ -91,85 +94,246 @@ def create_domain_data(num_entities, num_relations, d_node, d_edge,
 # Training and evaluation
 # ---------------------------------------------------------------------------
 
-def train_model(model, graph, labels, epochs, lr, device, log_every=20):
-    """Train model on a source domain."""
+def train_model(model, graph, labels, epochs, lr, device, log_every=20,
+                sampler=None, batch_size=64, accum_steps=4):
+    """Train model on a source domain. Uses mini-batching if sampler is provided."""
     model = model.to(device)
-    graph = graph.to(device)
-    labels = labels.to(device)
-
-    E = labels.shape[0]
-    perm = torch.randperm(E, device=device)
-    train_idx = perm[:int(E * 0.8)]
-    val_idx = perm[int(E * 0.8):]
-
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
+    if sampler is None:
+        # --- Full-graph training (synthetic scale) ---
+        graph = graph.to(device)
+        labels = labels.to(device)
+        E = labels.shape[0]
+        perm = torch.randperm(E, device=device)
+        train_idx = perm[:int(E * 0.8)]
+        val_idx = perm[int(E * 0.8):]
+        best_val_acc = 0.0
+
+        for epoch in range(epochs):
+            model.train()
+            out = model(graph)
+            logits = model.classify_edges(out)
+            loss = F.cross_entropy(logits[train_idx], labels[train_idx])
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            if (epoch + 1) % log_every == 0 or epoch == epochs - 1:
+                model.eval()
+                with torch.no_grad():
+                    out = model(graph)
+                    logits = model.classify_edges(out)
+                    val_acc = (logits[val_idx].argmax(-1) == labels[val_idx]).float().mean().item()
+                    best_val_acc = max(best_val_acc, val_acc)
+                    print(f"    Epoch {epoch+1:3d}  Val Acc: {val_acc:.3f}  Best: {best_val_acc:.3f}")
+
+        return best_val_acc
+
+    # --- Mini-batch training (full scale) ---
+    E = labels.shape[0]
+    all_edges = list(range(E))
+    split = int(E * 0.8)
     best_val_acc = 0.0
 
     for epoch in range(epochs):
         model.train()
-        out = model(graph)
-        logits = model.classify_edges(out)
-        loss = F.cross_entropy(logits[train_idx], labels[train_idx])
+        random.shuffle(all_edges)
+        train_edges = all_edges[:split]
+        epoch_loss = 0.0
+        num_batches = 0
         optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
 
+        for batch_start in range(0, len(train_edges), batch_size):
+            batch_edges = train_edges[batch_start:batch_start + batch_size]
+            mini_graph, mini_labels, target_idx = sampler.sample_subgraph(
+                batch_edges, graph.node_features, graph.edge_features, labels)
+            if mini_graph is None:
+                continue
+            mini_graph = mini_graph.to(device)
+            mini_labels = mini_labels.to(device)
+            target_idx = target_idx.to(device)
+
+            out = model(mini_graph)
+            logits = model.classify_edges(out)
+            loss = F.cross_entropy(logits[target_idx], mini_labels[target_idx])
+            loss = loss / accum_steps
+            loss.backward()
+            epoch_loss += loss.item() * accum_steps
+            num_batches += 1
+
+            if num_batches % accum_steps == 0:
+                optimizer.step()
+                optimizer.zero_grad()
+
+        if num_batches % accum_steps != 0:
+            optimizer.step()
+            optimizer.zero_grad()
+
+        # Evaluate on validation batches
         if (epoch + 1) % log_every == 0 or epoch == epochs - 1:
             model.eval()
+            val_edges = all_edges[split:]
+            correct = 0
+            total = 0
             with torch.no_grad():
-                out = model(graph)
-                logits = model.classify_edges(out)
-                val_acc = (logits[val_idx].argmax(-1) == labels[val_idx]).float().mean().item()
-                best_val_acc = max(best_val_acc, val_acc)
+                for batch_start in range(0, min(len(val_edges), batch_size * 5), batch_size):
+                    batch = val_edges[batch_start:batch_start + batch_size]
+                    mini_graph, mini_labels, target_idx = sampler.sample_subgraph(
+                        batch, graph.node_features, graph.edge_features, labels)
+                    if mini_graph is None:
+                        continue
+                    mini_graph = mini_graph.to(device)
+                    mini_labels = mini_labels.to(device)
+                    target_idx = target_idx.to(device)
+
+                    out = model(mini_graph)
+                    logits = model.classify_edges(out)
+                    preds = logits[target_idx].argmax(-1)
+                    correct += (preds == mini_labels[target_idx]).sum().item()
+                    total += len(target_idx)
+
+            val_acc = correct / max(total, 1)
+            best_val_acc = max(best_val_acc, val_acc)
+            avg_loss = epoch_loss / max(num_batches, 1)
+            print(f"    Epoch {epoch+1:3d}  Loss: {avg_loss:.4f}  "
+                  f"Val Acc: {val_acc:.3f}  Best: {best_val_acc:.3f}")
 
     return best_val_acc
 
 
-def evaluate_zero_shot(model, graph, labels, device):
+def evaluate_zero_shot(model, graph, labels, device, sampler=None, batch_size=64):
     """Evaluate a frozen model on a target domain (zero-shot transfer)."""
     model = model.to(device)
     model.eval()
-    graph = graph.to(device)
-    labels = labels.to(device)
 
+    if sampler is None:
+        # Full-graph evaluation
+        graph = graph.to(device)
+        labels = labels.to(device)
+        with torch.no_grad():
+            out = model(graph)
+            logits = model.classify_edges(out)
+            acc = (logits.argmax(-1) == labels).float().mean().item()
+        return acc
+
+    # Mini-batch evaluation
+    all_edges = list(range(labels.shape[0]))
+    correct = 0
+    total = 0
     with torch.no_grad():
-        out = model(graph)
-        logits = model.classify_edges(out)
-        acc = (logits.argmax(-1) == labels).float().mean().item()
+        for batch_start in range(0, len(all_edges), batch_size):
+            batch = all_edges[batch_start:batch_start + batch_size]
+            mini_graph, mini_labels, target_idx = sampler.sample_subgraph(
+                batch, graph.node_features, graph.edge_features, labels)
+            if mini_graph is None:
+                continue
+            mini_graph = mini_graph.to(device)
+            mini_labels = mini_labels.to(device)
+            target_idx = target_idx.to(device)
 
-    return acc
+            out = model(mini_graph)
+            logits = model.classify_edges(out)
+            preds = logits[target_idx].argmax(-1)
+            correct += (preds == mini_labels[target_idx]).sum().item()
+            total += len(target_idx)
+
+    return correct / max(total, 1)
 
 
-def evaluate_fine_tuned(model, graph, labels, epochs, lr, device):
+def evaluate_fine_tuned(model, graph, labels, epochs, lr, device,
+                        sampler=None, batch_size=64, accum_steps=4):
     """Fine-tune on target domain (few-shot) and evaluate."""
     model = model.to(device)
-    graph = graph.to(device)
-    labels = labels.to(device)
 
+    if sampler is None:
+        # Full-graph fine-tuning
+        graph = graph.to(device)
+        labels = labels.to(device)
+        E = labels.shape[0]
+        perm = torch.randperm(E, device=device)
+        finetune_idx = perm[:int(E * 0.2)]
+        test_idx = perm[int(E * 0.2):]
+
+        optimizer = torch.optim.Adam(model.parameters(), lr=lr * 0.1)
+        for epoch in range(epochs // 2):
+            model.train()
+            out = model(graph)
+            logits = model.classify_edges(out)
+            loss = F.cross_entropy(logits[finetune_idx], labels[finetune_idx])
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+        model.eval()
+        with torch.no_grad():
+            out = model(graph)
+            logits = model.classify_edges(out)
+            acc = (logits[test_idx].argmax(-1) == labels[test_idx]).float().mean().item()
+        return acc
+
+    # Mini-batch fine-tuning
     E = labels.shape[0]
-    # Use only 20% for fine-tuning (few-shot)
-    perm = torch.randperm(E, device=device)
-    finetune_idx = perm[:int(E * 0.2)]
-    test_idx = perm[int(E * 0.2):]
+    all_edges = list(range(E))
+    random.shuffle(all_edges)
+    finetune_edges = all_edges[:int(E * 0.2)]
+    test_edges = all_edges[int(E * 0.2):]
 
     optimizer = torch.optim.Adam(model.parameters(), lr=lr * 0.1)
 
     for epoch in range(epochs // 2):
         model.train()
-        out = model(graph)
-        logits = model.classify_edges(out)
-        loss = F.cross_entropy(logits[finetune_idx], labels[finetune_idx])
+        random.shuffle(finetune_edges)
         optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        num_batches = 0
 
+        for batch_start in range(0, len(finetune_edges), batch_size):
+            batch = finetune_edges[batch_start:batch_start + batch_size]
+            mini_graph, mini_labels, target_idx = sampler.sample_subgraph(
+                batch, graph.node_features, graph.edge_features, labels)
+            if mini_graph is None:
+                continue
+            mini_graph = mini_graph.to(device)
+            mini_labels = mini_labels.to(device)
+            target_idx = target_idx.to(device)
+
+            out = model(mini_graph)
+            logits = model.classify_edges(out)
+            loss = F.cross_entropy(logits[target_idx], mini_labels[target_idx])
+            loss = loss / accum_steps
+            loss.backward()
+            num_batches += 1
+
+            if num_batches % accum_steps == 0:
+                optimizer.step()
+                optimizer.zero_grad()
+
+        if num_batches % accum_steps != 0:
+            optimizer.step()
+            optimizer.zero_grad()
+
+    # Evaluate on test edges
     model.eval()
+    correct = 0
+    total = 0
     with torch.no_grad():
-        out = model(graph)
-        logits = model.classify_edges(out)
-        acc = (logits[test_idx].argmax(-1) == labels[test_idx]).float().mean().item()
+        for batch_start in range(0, len(test_edges), batch_size):
+            batch = test_edges[batch_start:batch_start + batch_size]
+            mini_graph, mini_labels, target_idx = sampler.sample_subgraph(
+                batch, graph.node_features, graph.edge_features, labels)
+            if mini_graph is None:
+                continue
+            mini_graph = mini_graph.to(device)
+            mini_labels = mini_labels.to(device)
+            target_idx = target_idx.to(device)
 
-    return acc
+            out = model(mini_graph)
+            logits = model.classify_edges(out)
+            preds = logits[target_idx].argmax(-1)
+            correct += (preds == mini_labels[target_idx]).sum().item()
+            total += len(target_idx)
+
+    return correct / max(total, 1)
 
 
 # ---------------------------------------------------------------------------
@@ -204,6 +368,20 @@ def main():
         if device == 'cuda':
             vram_gb = torch.cuda.get_device_properties(0).total_memory / 1e9
             print(f"  GPU detected: {torch.cuda.get_device_name(0)} ({vram_gb:.0f}GB)")
+            # Auto-scale mini-batch params
+            if vram_gb >= 70:  # H100 80GB
+                args.max_neighbors = 500
+                args.batch_size = 64
+                print(f"  H100 scaling: max_neighbors={args.max_neighbors}, "
+                      f"batch_size={args.batch_size}")
+            elif vram_gb >= 35:  # A100 40GB
+                args.max_neighbors = 200
+                args.batch_size = 32
+                print(f"  A100 scaling: max_neighbors={args.max_neighbors}, "
+                      f"batch_size={args.batch_size}")
+            else:
+                args.max_neighbors = 100
+                args.batch_size = 16
         if device == 'cpu':
             print("WARNING: --full requires GPU for realistic scale.")
 
@@ -238,6 +416,23 @@ def main():
     print(f"  Target: {tgt_graph.num_nodes} nodes, {tgt_graph.num_edges} edges")
     print()
 
+    # --- Create samplers for full-scale mini-batching ---
+    src_sampler = None
+    tgt_sampler = None
+    batch_size = getattr(args, 'batch_size', 64)
+    max_neighbors = getattr(args, 'max_neighbors', 100)
+
+    if args.full:
+        print("Creating source domain sampler (mini-batch training)...")
+        src_sampler = NeighborSampler(
+            src_graph.edge_index, src_graph.num_nodes,
+            k_hops=2, max_neighbors=max_neighbors)
+        print("Creating target domain sampler (mini-batch evaluation)...")
+        tgt_sampler = NeighborSampler(
+            tgt_graph.edge_index, tgt_graph.num_nodes,
+            k_hops=2, max_neighbors=max_neighbors)
+        print()
+
     # --- Train on source domain ---
     print("Training DELTA on source domain...")
     model = DELTAModel(
@@ -246,13 +441,16 @@ def main():
     )
     source_acc = train_model(model, src_graph, src_labels,
                              args.epochs, 1e-3, device,
-                             log_every=args.log_every)
+                             log_every=args.log_every,
+                             sampler=src_sampler,
+                             batch_size=batch_size)
     print(f"  Source domain accuracy: {source_acc:.3f}")
     print()
 
     # --- Zero-shot transfer to target domain ---
     print("Zero-shot transfer to target domain (frozen encoder)...")
-    zero_shot_acc = evaluate_zero_shot(model, tgt_graph, tgt_labels, device)
+    zero_shot_acc = evaluate_zero_shot(model, tgt_graph, tgt_labels, device,
+                                       sampler=tgt_sampler, batch_size=batch_size)
     print(f"  Zero-shot accuracy: {zero_shot_acc:.3f}")
 
     # --- Fine-tuned transfer ---
@@ -260,7 +458,9 @@ def main():
     import copy
     model_ft = copy.deepcopy(model)
     fine_tuned_acc = evaluate_fine_tuned(model_ft, tgt_graph, tgt_labels,
-                                         args.epochs, 1e-3, device)
+                                         args.epochs, 1e-3, device,
+                                         sampler=tgt_sampler,
+                                         batch_size=batch_size)
     print(f"  Fine-tuned accuracy: {fine_tuned_acc:.3f}")
 
     # --- Random baseline ---

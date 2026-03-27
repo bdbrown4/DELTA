@@ -1,0 +1,14 @@
+**Remaining concerns — all must be addressed before merge:**
+
+### Scalability / Memory (Critical)
+1. **`GRITAttention` still materializes `[heads, N, N]` tensors** — Both the `pe_bias_mask` and the full attention matrix + softmax are O(N²) memory. This will OOM at FB15k-237 scale (~14.5k nodes) even on an A100. Needs sparse/local/block attention, or an explicit N-size guard that fails fast with guidance.
+2. **`COLAB_SETUP.md` overpromises GRIT scalability** — Claims all three architectures scale to full FB15k-237, but the GRIT attention implementation contradicts this. Update the docs to honestly reflect GRIT's current limits (synthetic-only until attention is reworked) or fix the implementation.
+3. **`sample_subgraph()` is O(E) per mini-batch** — Scans every edge in the full graph each time. Use a vectorized `torch.isin` mask or precompute node→edge adjacency lists for FB15k-237 scale.
+
+### Correctness / Reproducibility
+4. **Non-deterministic `max_neighbors` truncation** — `set(list(visited)[:self.max_neighbors])` depends on unstable set iteration order (hash randomization). Use `sorted(visited)[:self.max_neighbors]` for reproducibility.
+5. **`RandomWalkPE.EXACT_THRESHOLD` test mutation not in `try/finally`** — If an assertion fails before restoration, it corrupts subsequent tests. Wrap in `try/finally`.
+6. **Unreachable `return rw_probs` in `compute_rw_probs()`** — Both branches already return, so this trailing statement references an undefined name. Remove it.
+
+### Documentation
+7. **README test count mismatch** — Says "15 tests in `tests/test_baselines.py`" but the file has 16. Update to match.

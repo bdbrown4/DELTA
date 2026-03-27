@@ -8,3 +8,4 @@ from delta.partition import GraphPartitioner
 from delta.reconciliation import ReconciliationLayer
 from delta.constructor import GraphConstructor
 from delta.model import DELTAModel
+from delta.baselines import GraphGPSModel, GRITModel

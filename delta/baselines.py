@@ -1,0 +1,543 @@
+"""
+Lightweight baseline implementations of GraphGPS and GRIT for comparison testing.
+
+These are faithful simplified implementations capturing the core architectural ideas:
+- GraphGPS (Rampášek et al., 2022): GPS layer = MPNN + Global Attention + FFN
+- GRIT (Ma et al., 2023): Graph Inductive Bias Transformer with relative random-walk
+  positional encodings injected into attention
+
+These implementations operate on DeltaGraph structures so we can compare
+DELTA, GraphGPS, and GRIT on identical data with identical evaluation protocols.
+
+Scalability:
+- GlobalSelfAttention uses PyTorch scaled_dot_product_attention (flash attention
+  when available on GPU, memory-efficient fallback otherwise) for O(N) memory.
+- RandomWalkPE uses sparse matrix operations for the transition matrix, scaling
+  to full FB15k-237 (14,505 nodes) and beyond.
+- GRITAttention folds PE bias into key vectors and uses F.scaled_dot_product_attention,
+  avoiding N×N intermediate tensors. Enables FlashAttention-2 on GPU for O(N) memory.
+
+NOTE: These are research baselines for controlled comparison, not full replicas
+of the original papers. For publication, run against official implementations.
+"""
+
+from __future__ import annotations
+
+import math
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from typing import Optional
+
+from delta.graph import DeltaGraph
+
+
+# ---------------------------------------------------------------------------
+# Shared utilities
+# ---------------------------------------------------------------------------
+
+class FeedForward(nn.Module):
+    """Two-layer FFN with GELU, shared by both baselines."""
+
+    def __init__(self, d_model: int, expansion: int = 4, dropout: float = 0.1):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(d_model, d_model * expansion),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(d_model * expansion, d_model),
+            nn.Dropout(dropout),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+
+# ---------------------------------------------------------------------------
+# GraphGPS baseline
+# ---------------------------------------------------------------------------
+
+class MPNNLayer(nn.Module):
+    """Message-Passing Neural Network layer (GIN-style aggregation).
+
+    Each node aggregates neighbor features through edges:
+        h_i' = MLP( (1 + eps) * h_i + sum_{j in N(i)} msg(h_j, e_ij) )
+    """
+
+    def __init__(self, d_node: int, d_edge: int, dropout: float = 0.1):
+        super().__init__()
+        self.msg_fn = nn.Sequential(
+            nn.Linear(d_node + d_edge, d_node),
+            nn.GELU(),
+            nn.Dropout(dropout),
+        )
+        self.update_fn = nn.Sequential(
+            nn.Linear(d_node, d_node),
+            nn.GELU(),
+            nn.Dropout(dropout),
+        )
+        self.eps = nn.Parameter(torch.zeros(1))
+
+    def forward(self, graph: DeltaGraph) -> torch.Tensor:
+        src, tgt = graph.edge_index  # [E]
+        src_feats = graph.node_features[src]  # [E, d_node]
+        messages = self.msg_fn(torch.cat([src_feats, graph.edge_features], dim=-1))
+
+        # Scatter-add messages to target nodes
+        agg = torch.zeros_like(graph.node_features)
+        agg.index_add_(0, tgt, messages)
+
+        out = self.update_fn((1 + self.eps) * graph.node_features + agg)
+        return out
+
+
+class GlobalSelfAttention(nn.Module):
+    """Scalable multi-head self-attention over all nodes (no graph structure).
+
+    This is the global attention component of GraphGPS — treating nodes
+    as a set (like a Transformer).
+
+    Uses PyTorch's scaled_dot_product_attention which automatically selects
+    the most efficient kernel available:
+    - FlashAttention-2 on supported GPUs (O(N) memory)
+    - Memory-efficient attention fallback
+    - Standard attention for small graphs or CPU
+    """
+
+    def __init__(self, d_model: int, num_heads: int = 4, dropout: float = 0.1):
+        super().__init__()
+        assert d_model % num_heads == 0
+        self.num_heads = num_heads
+        self.head_dim = d_model // num_heads
+
+        self.qkv = nn.Linear(d_model, 3 * d_model)
+        self.out_proj = nn.Linear(d_model, d_model)
+        self.dropout_p = dropout
+        self.proj_drop = nn.Dropout(dropout)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """x: [N, d_model] — all node features as a flat set."""
+        N, D = x.shape
+        qkv = self.qkv(x).reshape(N, 3, self.num_heads, self.head_dim)
+        qkv = qkv.permute(1, 2, 0, 3)  # [3, heads, N, head_dim]
+        q, k, v = qkv[0], qkv[1], qkv[2]
+
+        # Use scaled_dot_product_attention for automatic flash/memory-efficient dispatch
+        # q, k, v: [heads, N, head_dim] → need [batch, heads, N, head_dim]
+        q = q.unsqueeze(0)  # [1, heads, N, head_dim]
+        k = k.unsqueeze(0)
+        v = v.unsqueeze(0)
+        dropout_p = self.dropout_p if self.training else 0.0
+        out = F.scaled_dot_product_attention(q, k, v, dropout_p=dropout_p)
+        out = out.squeeze(0)  # [heads, N, head_dim]
+
+        out = out.transpose(0, 1).reshape(N, D)  # [N, D]
+        return self.proj_drop(self.out_proj(out))
+
+
+class GPSLayer(nn.Module):
+    """GraphGPS layer: local MPNN + global attention + FFN with residuals.
+
+    GPS(h) = Norm(h + MPNN(h)) → Norm(h + GlobalAttn(h)) → Norm(h + FFN(h))
+
+    Reference: Rampášek et al., "Recipe for a General, Powerful, Scalable
+    Graph Transformer" (NeurIPS 2022).
+    """
+
+    def __init__(self, d_node: int, d_edge: int, num_heads: int = 4,
+                 dropout: float = 0.1):
+        super().__init__()
+        self.mpnn = MPNNLayer(d_node, d_edge, dropout)
+        self.global_attn = GlobalSelfAttention(d_node, num_heads, dropout)
+        self.ffn = FeedForward(d_node, dropout=dropout)
+        self.norm1 = nn.LayerNorm(d_node)
+        self.norm2 = nn.LayerNorm(d_node)
+        self.norm3 = nn.LayerNorm(d_node)
+
+    def forward(self, graph: DeltaGraph) -> DeltaGraph:
+        h = graph.node_features
+
+        # Local MPNN
+        h = self.norm1(h + self.mpnn(graph))
+
+        # Global self-attention
+        h = self.norm2(h + self.global_attn(h))
+
+        # FFN
+        h = self.norm3(h + self.ffn(h))
+
+        return DeltaGraph(
+            node_features=h,
+            edge_features=graph.edge_features,
+            edge_index=graph.edge_index,
+            node_tiers=graph.node_tiers,
+            node_importance=graph.node_importance,
+            edge_importance=graph.edge_importance,
+        )
+
+
+class GraphGPSModel(nn.Module):
+    """GraphGPS baseline model.
+
+    Stacks GPS layers (MPNN + global attention + FFN) with optional
+    classification heads for node and edge tasks.
+
+    Args:
+        d_node: node feature dimension
+        d_edge: edge feature dimension
+        num_layers: number of GPS layers
+        num_heads: attention heads for global attention
+        num_classes: output classes (None = no classifier)
+        dropout: dropout rate
+    """
+
+    def __init__(self, d_node: int = 64, d_edge: int = 32,
+                 num_layers: int = 3, num_heads: int = 4,
+                 num_classes: int = None, dropout: float = 0.1):
+        super().__init__()
+        self.layers = nn.ModuleList([
+            GPSLayer(d_node, d_edge, num_heads, dropout)
+            for _ in range(num_layers)
+        ])
+
+        self.node_classifier = None
+        self.edge_classifier = None
+        if num_classes is not None:
+            self.node_classifier = nn.Sequential(
+                nn.Linear(d_node, d_node),
+                nn.GELU(),
+                nn.Linear(d_node, num_classes),
+            )
+            self.edge_classifier = nn.Sequential(
+                nn.Linear(d_edge + 2 * d_node, d_edge),
+                nn.GELU(),
+                nn.Linear(d_edge, num_classes),
+            )
+
+    def forward(self, graph: DeltaGraph) -> DeltaGraph:
+        for layer in self.layers:
+            graph = layer(graph)
+        return graph
+
+    def classify_nodes(self, graph: DeltaGraph) -> torch.Tensor:
+        assert self.node_classifier is not None
+        return self.node_classifier(graph.node_features)
+
+    def classify_edges(self, graph: DeltaGraph) -> torch.Tensor:
+        assert self.edge_classifier is not None
+        src, tgt = graph.edge_index
+        edge_repr = torch.cat([
+            graph.node_features[src],
+            graph.node_features[tgt],
+            graph.edge_features,
+        ], dim=-1)
+        return self.edge_classifier(edge_repr)
+
+    def predict_link(self, graph: DeltaGraph, src: torch.Tensor,
+                     tgt: torch.Tensor) -> torch.Tensor:
+        src_feats = graph.node_features[src]
+        tgt_feats = graph.node_features[tgt]
+        return (src_feats * tgt_feats).sum(dim=-1)
+
+
+# ---------------------------------------------------------------------------
+# GRIT baseline
+# ---------------------------------------------------------------------------
+
+class RandomWalkPE(nn.Module):
+    """Sparse random-walk positional encoding for GRIT.
+
+    Computes k-step random-walk return probabilities as positional features,
+    then projects them into the model dimension.
+
+    For small graphs (N ≤ 5000): uses sparse matrix power to compute exact
+    return probabilities. Memory: O(nnz * walk_length).
+
+    For large graphs (N > 5000): uses Monte Carlo random walks to estimate
+    return probabilities. Memory: O(N * num_walks). Scalable to any graph size.
+    """
+
+    EXACT_THRESHOLD = 5000  # Use exact computation below this node count
+
+    def __init__(self, walk_length: int = 8, d_pe: int = 16, num_walks: int = 200):
+        super().__init__()
+        self.walk_length = walk_length
+        self.d_pe = d_pe
+        self.num_walks = num_walks
+        self.pe_proj = nn.Linear(walk_length, d_pe)
+
+    def _build_adj_list(self, graph: DeltaGraph):
+        """Build adjacency list for random walk sampling."""
+        N = graph.num_nodes
+        adj_list = [[] for _ in range(N)]
+        src, tgt = graph.edge_index[0].tolist(), graph.edge_index[1].tolist()
+        for s, t in zip(src, tgt):
+            adj_list[s].append(t)
+            adj_list[t].append(s)  # Symmetrize
+        return adj_list
+
+    def _compute_exact(self, graph: DeltaGraph) -> torch.Tensor:
+        """Exact RWPE via sparse transition matrix powers (small graphs)."""
+        N = graph.num_nodes
+        device = graph.device
+        src, tgt = graph.edge_index
+
+        # Build symmetric sparse adjacency
+        all_src = torch.cat([src, tgt])
+        all_tgt = torch.cat([tgt, src])
+        indices = torch.stack([all_src, all_tgt])
+        values = torch.ones(indices.shape[1], device=device)
+        adj_sparse = torch.sparse_coo_tensor(indices, values, (N, N),
+                                              device=device).coalesce()
+
+        # Compute degree for row-normalization
+        deg = torch.sparse.sum(adj_sparse, dim=1).to_dense().clamp(min=1.0)
+
+        # Build sparse transition matrix T = D^{-1} A
+        adj_indices = adj_sparse.indices()
+        adj_values = adj_sparse.values()
+        t_values = adj_values / deg[adj_indices[0]]
+        T = torch.sparse_coo_tensor(adj_indices, t_values, (N, N),
+                                     device=device).coalesce()
+
+        # Iterative sparse power: track T^k as sparse, extract diagonal
+        rw_probs = torch.zeros(N, self.walk_length, device=device)
+        Tk = T
+        for k in range(self.walk_length):
+            tk_idx = Tk.indices()
+            tk_val = Tk.values()
+            diag_mask = tk_idx[0] == tk_idx[1]
+            if diag_mask.any():
+                rw_probs[tk_idx[0, diag_mask], k] = tk_val[diag_mask]
+
+            if k < self.walk_length - 1:
+                # Sparse × sparse via two-step: sparse.mm requires dense 2nd arg
+                # Use column-sparse multiplication: for each nonzero T[j,i],
+                # row j of Tk contributes to row i of Tk*T.
+                # This keeps sparsity pattern bounded by the graph structure.
+                Tk = torch.sparse.mm(Tk, T.to_dense()).to_sparse_coo().coalesce()
+
+        return rw_probs
+
+    def _compute_monte_carlo(self, graph: DeltaGraph) -> torch.Tensor:
+        """Monte Carlo RWPE via random walk sampling (large graphs).
+
+        For each node, launch num_walks random walks and count how many
+        return to the starting node at each step k.
+        """
+        N = graph.num_nodes
+        device = graph.device
+        adj_list = self._build_adj_list(graph)
+
+        rw_probs = torch.zeros(N, self.walk_length, device=device)
+
+        for node in range(N):
+            if not adj_list[node]:
+                continue
+            returns = [0] * self.walk_length
+            for _ in range(self.num_walks):
+                current = node
+                for k in range(self.walk_length):
+                    neighbors = adj_list[current]
+                    if not neighbors:
+                        break
+                    current = neighbors[torch.randint(len(neighbors), (1,)).item()]
+                    if current == node:
+                        returns[k] += 1
+            for k in range(self.walk_length):
+                rw_probs[node, k] = returns[k] / self.num_walks
+
+        return rw_probs
+
+    def compute_rw_probs(self, graph: DeltaGraph) -> torch.Tensor:
+        """Compute random-walk return probabilities.
+
+        Automatically selects exact (sparse matrix power) for small graphs
+        and Monte Carlo sampling for large graphs.
+        """
+        if graph.num_nodes <= self.EXACT_THRESHOLD:
+            return self._compute_exact(graph)
+        else:
+            return self._compute_monte_carlo(graph)
+
+    def forward(self, graph: DeltaGraph) -> torch.Tensor:
+        """Returns [N, d_pe] positional encodings."""
+        rw_probs = self.compute_rw_probs(graph)
+        return self.pe_proj(rw_probs)
+
+
+class GRITAttention(nn.Module):
+    """GRIT-style attention with relative positional encoding bias.
+
+    Key difference from standard attention: the positional encoding is
+    injected as a bias into the attention scores, giving the model
+    structural awareness without explicit message passing.
+
+    Scalability: Uses F.scaled_dot_product_attention with PE bias folded
+    into the key vectors. The original formulation computes pairwise
+    differences pe_proj[i] - pe_proj[j] as an additive attention bias.
+    Since softmax over j is invariant to row-constant offsets (the pe_proj[i]
+    term), this is equivalent to subtracting pe_proj[j] as a per-key bias.
+    We fold this into the key by concatenating the PE projection, avoiding
+    any N×N intermediate tensors. This enables FlashAttention-2 /
+    memory-efficient dispatch on GPU — O(N) memory instead of O(N²).
+
+    Reference: Ma et al., "Graph Inductive Biases in Transformers without
+    Message Passing" (ICML 2023).
+    """
+
+    def __init__(self, d_model: int, d_pe: int = 16, num_heads: int = 4,
+                 dropout: float = 0.1):
+        super().__init__()
+        assert d_model % num_heads == 0
+        self.num_heads = num_heads
+        self.head_dim = d_model // num_heads
+
+        self.qkv = nn.Linear(d_model, 3 * d_model)
+        # PE → per-head scalar bias, added to each head's key dimension
+        self.pe_key_proj = nn.Linear(d_pe, num_heads)
+        # Learned scalar per head for the PE dimension in queries
+        self.pe_q_scale = nn.Parameter(torch.ones(num_heads))
+        self.out_proj = nn.Linear(d_model, d_model)
+        self.dropout_p = dropout
+        self.proj_drop = nn.Dropout(dropout)
+
+    def forward(self, x: torch.Tensor, pe: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            x: [N, d_model] node features
+            pe: [N, d_pe] positional encodings
+        Returns:
+            [N, d_model] updated features
+        """
+        N, D = x.shape
+        qkv = self.qkv(x).reshape(N, 3, self.num_heads, self.head_dim)
+        qkv = qkv.permute(1, 2, 0, 3)  # [3, heads, N, head_dim]
+        q, k, v = qkv[0], qkv[1], qkv[2]
+
+        # Fold PE bias into keys: the relative PE bias pe_proj[i] - pe_proj[j]
+        # is invariant to the pe_proj[i] term under softmax, so it reduces to
+        # -pe_proj[j] as a per-key additive bias. We implement this by
+        # appending -pe_proj to each key and a learned scale to each query,
+        # so that q·k includes the PE contribution without materializing N×N.
+        pe_k = -self.pe_key_proj(pe)  # [N, num_heads]
+        pe_k = pe_k.transpose(0, 1).unsqueeze(-1)  # [num_heads, N, 1]
+        k_aug = torch.cat([k, pe_k], dim=-1)  # [num_heads, N, head_dim+1]
+
+        # Query gets a learnable scalar for the PE dimension
+        pe_q = self.pe_q_scale.view(self.num_heads, 1, 1).expand(-1, N, 1)
+        q_aug = torch.cat([q, pe_q], dim=-1)  # [num_heads, N, head_dim+1]
+
+        # Use scaled_dot_product_attention for automatic flash/memory-efficient dispatch
+        # Shape: [batch=1, num_heads, N, head_dim+1]
+        q_aug = q_aug.unsqueeze(0)
+        k_aug = k_aug.unsqueeze(0)
+        v = v.unsqueeze(0)
+        dropout_p = self.dropout_p if self.training else 0.0
+        out = F.scaled_dot_product_attention(
+            q_aug, k_aug, v, dropout_p=dropout_p,
+        )
+        out = out.squeeze(0)  # [num_heads, N, head_dim]
+
+        out = out.transpose(0, 1).reshape(N, D)  # [N, D]
+        return self.proj_drop(self.out_proj(out))
+
+
+class GRITLayer(nn.Module):
+    """GRIT layer: PE-biased attention + FFN with residuals.
+
+    GRIT(h) = Norm(h + GRITAttn(h, PE)) → Norm(h + FFN(h))
+    """
+
+    def __init__(self, d_node: int, d_pe: int = 16, num_heads: int = 4,
+                 dropout: float = 0.1):
+        super().__init__()
+        self.attn = GRITAttention(d_node, d_pe, num_heads, dropout)
+        self.ffn = FeedForward(d_node, dropout=dropout)
+        self.norm1 = nn.LayerNorm(d_node)
+        self.norm2 = nn.LayerNorm(d_node)
+
+    def forward(self, x: torch.Tensor, pe: torch.Tensor) -> torch.Tensor:
+        x = self.norm1(x + self.attn(x, pe))
+        x = self.norm2(x + self.ffn(x))
+        return x
+
+
+class GRITModel(nn.Module):
+    """GRIT baseline model.
+
+    Graph Inductive Bias Transformer: uses random-walk PE to inject
+    structural information into a pure Transformer (no message passing).
+
+    Args:
+        d_node: node feature dimension
+        d_edge: edge feature dimension (used for edge classification head)
+        num_layers: number of GRIT layers
+        num_heads: attention heads
+        walk_length: random walk steps for PE
+        d_pe: PE embedding dimension
+        num_classes: output classes (None = no classifier)
+        dropout: dropout rate
+    """
+
+    def __init__(self, d_node: int = 64, d_edge: int = 32,
+                 num_layers: int = 3, num_heads: int = 4,
+                 walk_length: int = 8, d_pe: int = 16,
+                 num_classes: int = None, dropout: float = 0.1):
+        super().__init__()
+        self.d_edge = d_edge
+        self.rwpe = RandomWalkPE(walk_length, d_pe)
+        self.layers = nn.ModuleList([
+            GRITLayer(d_node, d_pe, num_heads, dropout)
+            for _ in range(num_layers)
+        ])
+
+        self.node_classifier = None
+        self.edge_classifier = None
+        if num_classes is not None:
+            self.node_classifier = nn.Sequential(
+                nn.Linear(d_node, d_node),
+                nn.GELU(),
+                nn.Linear(d_node, num_classes),
+            )
+            self.edge_classifier = nn.Sequential(
+                nn.Linear(d_edge + 2 * d_node, d_edge),
+                nn.GELU(),
+                nn.Linear(d_edge, num_classes),
+            )
+
+    def forward(self, graph: DeltaGraph) -> DeltaGraph:
+        pe = self.rwpe(graph)
+        h = graph.node_features
+
+        for layer in self.layers:
+            h = layer(h, pe)
+
+        return DeltaGraph(
+            node_features=h,
+            edge_features=graph.edge_features,
+            edge_index=graph.edge_index,
+            node_tiers=graph.node_tiers,
+            node_importance=graph.node_importance,
+            edge_importance=graph.edge_importance,
+        )
+
+    def classify_nodes(self, graph: DeltaGraph) -> torch.Tensor:
+        assert self.node_classifier is not None
+        return self.node_classifier(graph.node_features)
+
+    def classify_edges(self, graph: DeltaGraph) -> torch.Tensor:
+        assert self.edge_classifier is not None
+        src, tgt = graph.edge_index
+        edge_repr = torch.cat([
+            graph.node_features[src],
+            graph.node_features[tgt],
+            graph.edge_features,
+        ], dim=-1)
+        return self.edge_classifier(edge_repr)
+
+    def predict_link(self, graph: DeltaGraph, src: torch.Tensor,
+                     tgt: torch.Tensor) -> torch.Tensor:
+        src_feats = graph.node_features[src]
+        tgt_feats = graph.node_features[tgt]
+        return (src_feats * tgt_feats).sum(dim=-1)

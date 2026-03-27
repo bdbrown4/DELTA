@@ -15,13 +15,14 @@ This combines the gradient accumulation proven in Phase 27b with subgraph
 sampling to enable full FB15k-237 (14,505 entities, 310K edges) training.
 
 Requirements:
-    - GPU recommended (A100 40GB for full scale, any GPU for validation)
+    - GPU recommended (H100 80GB ideal, A100 40GB good, any GPU for validation)
     - pip install torch numpy
     - For real FB15k-237: download dataset first (see Phase 25)
 
 Usage:
     python experiments/phase31_mini_batching.py [--num_entities 500] [--epochs 50]
     python experiments/phase31_mini_batching.py --full  # Full FB15k-237 (GPU required)
+    python experiments/phase31_mini_batching.py --full --max_neighbors 500  # H100 80GB
 """
 
 import sys
@@ -323,7 +324,7 @@ def main():
     parser.add_argument('--k_hops', type=int, default=2,
                         help='Neighborhood hops for sampling')
     parser.add_argument('--max_neighbors', type=int, default=100,
-                        help='Max nodes per subgraph')
+                        help='Max nodes per subgraph (100=A100, 300-500=H100 80GB)')
     parser.add_argument('--full', action='store_true',
                         help='Run on full FB15k-237 (requires GPU)')
     parser.add_argument('--device', type=str, default=None,
@@ -339,6 +340,19 @@ def main():
         args.num_entities = 14505
         if device == 'cpu':
             print("WARNING: --full requires GPU. Use --device cuda or run on Colab.")
+        # Auto-scale subgraph size based on available VRAM
+        if device == 'cuda' and args.max_neighbors == 100:
+            vram_gb = torch.cuda.get_device_properties(0).total_mem / 1e9
+            if vram_gb >= 70:  # H100 80GB
+                args.max_neighbors = 500
+                args.batch_size = 64
+                print(f"  H100 detected ({vram_gb:.0f}GB) — scaling up: "
+                      f"max_neighbors={args.max_neighbors}, batch_size={args.batch_size}")
+            elif vram_gb >= 35:  # A100 40GB
+                args.max_neighbors = 200
+                args.batch_size = 32
+                print(f"  A100 detected ({vram_gb:.0f}GB) — scaling up: "
+                      f"max_neighbors={args.max_neighbors}, batch_size={args.batch_size}")
 
     print("=" * 70)
     print("PHASE 31: Mini-Batching for Full-Scale KG Training")
@@ -402,7 +416,7 @@ def main():
 
     print()
     print("  Next steps:")
-    print("    - Run with --full on A100 GPU for full FB15k-237")
+    print("    - Run with --full on H100/A100 GPU for full FB15k-237")
     print("    - Compare with Phase 25 full-graph results (97.6%)")
     print("    - Enable Phase 32 (cross-domain) and Phase 34b (full-scale comparison)")
 

@@ -13,10 +13,19 @@ Instructions for setting up Google Colab Pro to run DELTA's compute-intensive ex
 | Runtime | 12h max | 24h max | **24h, background execution** |
 | Priority | Low | Medium | **Highest** |
 
-**Recommendation:** Colab Pro+ ($49.99/month) is the right choice for DELTA. The A100 40GB provides:
-- **Synthetic benchmarks (Phase 34):** Run immediately — all three architectures scale to any synthetic graph size.
-- **Full FB15k-237 (Phase 31+):** 14,505 entities. All three architectures (DELTA, GraphGPS, GRIT) use `F.scaled_dot_product_attention` for automatic FlashAttention-2 / memory-efficient dispatch on A100, enabling full-scale runs without subsampling.
-- **WN18RR (Phase 32):** 40,943 entities — requires mini-batching from Phase 31. All models scale with subgraph sampling + gradient accumulation.
+**Recommendation:** Colab Pro+ ($49.99/month) gives access to **H100 (80GB)** and **A100 (40GB)** GPUs:
+- **H100 80GB (best choice):** ~2-3x faster than A100 with double the VRAM. Full FB15k-237 (14,505 entities) may fit without mini-batching. Select this if available.
+- **A100 40GB (great fallback):** All three architectures (DELTA, GraphGPS, GRIT) use `F.scaled_dot_product_attention` for automatic FlashAttention-2 / memory-efficient dispatch, enabling full-scale runs.
+- **WN18RR (Phase 32):** 40,943 entities — H100 80GB may handle directly; A100 40GB requires mini-batching from Phase 31.
+
+### Available GPUs (Pro+ tier, ranked)
+| GPU | VRAM | Speed vs A100 | Recommendation |
+|-----|------|---------------|----------------|
+| **H100** | 80GB | ~2-3x faster | **Best choice** — select this first |
+| **A100** | 40GB | 1x (baseline) | Great fallback if H100 unavailable |
+| L4 | 24GB | ~0.5x | Viable for synthetic experiments, tight for full-scale |
+| T4 | 16GB | ~0.3x | Too small for Phase 31+; fine for Phases 1-24 |
+| G4 | ~16GB | ~0.3x | Similar to T4 |
 
 ---
 
@@ -28,24 +37,28 @@ Instructions for setting up Google Colab Pro to run DELTA's compute-intensive ex
 4. Complete payment with Google account
 5. You can cancel anytime — charges are monthly with no commitment
 
-### Verify GPU access
-After subscribing, in any notebook run:
-```python
-!nvidia-smi
-```
-You should see an **A100-SXM4-40GB** (or similar A100 variant).
-
 ---
 
-## Step 2: Set Up Runtime
+## Step 2: Set Up Runtime (Required Before Any GPU Code)
 
 1. Open a new Colab notebook
 2. Go to **Runtime → Change runtime type**
 3. Select:
    - **Hardware accelerator:** GPU
-   - **GPU type:** A100 (available with Pro+)
+   - **GPU type:** **H100** (first choice) or **A100** (if H100 unavailable)
    - **High-RAM:** Enabled
-4. Click **Save**
+4. Click **Save** — this restarts the runtime
+
+### Verify GPU access
+After setting the runtime type, create a **code cell** and run:
+```python
+!nvidia-smi
+```
+You should see an **NVIDIA H100 80GB HBM3** or **A100-SXM4-40GB** (depending on which you selected).
+
+> **If you see `nvidia-smi: command not found`:** The runtime has no GPU attached. Go back to Runtime → Change runtime type and select GPU.
+>
+> **If you see `!nvidia: event not found`:** You're in a terminal, not a code cell. The `!` prefix only works in notebook code cells — in a terminal, run `nvidia-smi` without `!`.
 
 ---
 
@@ -78,7 +91,7 @@ You should see an **A100-SXM4-40GB** (or similar A100 variant).
 !python tests/test_baselines.py
 ```
 
-All 40 tests should pass (24 original + 16 baseline).
+All 44 tests should pass.
 
 ---
 
@@ -97,6 +110,18 @@ All 40 tests should pass (24 original + 16 baseline).
 ---
 
 ## Step 6: Run Full-Scale Experiments (Phase 31+)
+
+Phase 31 auto-detects your GPU and scales subgraph sizes accordingly:
+- **H100 80GB:** 500 nodes/subgraph, batch_size=64 (auto-set)
+- **A100 40GB:** 200 nodes/subgraph, batch_size=32 (auto-set)
+
+```python
+# Full FB15k-237 — auto-scales to your GPU
+!python experiments/phase31_mini_batching.py --full
+
+# Or manually override subgraph size
+!python experiments/phase31_mini_batching.py --full --max_neighbors 500 --batch_size 64
+```
 
 The Colab-ready infrastructure script automates GPU setup and experiment execution:
 
@@ -121,13 +146,13 @@ Or use individual sections — see `notebooks/delta_colab_ready.py` for details.
 
 ## Expected GPU Time Estimates
 
-| Experiment | Data Size | Est. Time (A100) | Compute Units |
-|-----------|-----------|-------------------|---------------|
-| Phase 34 (synthetic, 3 seeds) | ~100 nodes | 5 min | < 1 |
-| Phase 34 (synthetic, 5 seeds) | ~100 nodes | 15 min | < 1 |
-| Phase 31 (full FB15k-237) | 14,505 entities | 2-4 hours | 5-10 |
-| Phase 34b (full FB15k-237, 3 models × 5 seeds) | 14,505 entities | 6-12 hours | 15-25 |
-| Phase 32 (cross-domain WN18RR) | 40,943 entities | 4-8 hours | 10-20 |
+| Experiment | Data Size | Est. Time (H100) | Est. Time (A100) |
+|-----------|-----------|-------------------|-------------------|
+| Phase 34 (synthetic, 3 seeds) | ~100 nodes | 2-3 min | 5 min |
+| Phase 34 (synthetic, 5 seeds) | ~100 nodes | 5-8 min | 15 min |
+| Phase 31 (full FB15k-237) | 14,505 entities | 1-2 hours | 2-4 hours |
+| Phase 34b (full FB15k-237, 3 models × 5 seeds) | 14,505 entities | 3-6 hours | 6-12 hours |
+| Phase 32 (cross-domain WN18RR) | 40,943 entities | 2-4 hours | 4-8 hours |
 
 ---
 

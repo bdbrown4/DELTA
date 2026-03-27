@@ -109,18 +109,50 @@ All 44 tests should pass.
 
 ---
 
-## Step 6: Run Full-Scale Experiments (Phase 31+)
+## Step 6: Run Phase 33 (Task-Aware Construction)
+
+Phase 33 validates the hybrid graph constructor that preserves base topology while learning long-range edges (fixes the Phase 27b attention-thresholding issue). Synthetic data, runs fast.
+
+```python
+# Quick run (~1-2 min on H100)
+!python experiments/phase33_task_aware_construction.py --seeds 3 --epochs 200
+
+# Full run (~3-5 min on H100)
+!python experiments/phase33_task_aware_construction.py --seeds 5 --epochs 500
+```
+
+---
+
+## Step 7: Run Full-Scale Experiments (Phase 31+)
 
 Phase 31 auto-detects your GPU and scales subgraph sizes accordingly:
 - **H100 80GB:** 500 nodes/subgraph, batch_size=64 (auto-set)
 - **A100 40GB:** 200 nodes/subgraph, batch_size=32 (auto-set)
 
 ```python
-# Full FB15k-237 — auto-scales to your GPU
+# Phase 31: Full FB15k-237 mini-batching — auto-scales to your GPU
 !python experiments/phase31_mini_batching.py --full
 
 # Or manually override subgraph size
 !python experiments/phase31_mini_batching.py --full --max_neighbors 500 --batch_size 64
+```
+
+### Phase 34b: Full-scale GraphGPS / GRIT comparison (same FB15k-237 dataset)
+
+Run this after Phase 31 while still on FB15k-237. It compares all three architectures (DELTA, GraphGPS, GRIT) at full scale.
+
+```python
+# Full synthetic benchmark, 3 models × 5 seeds (~15-20 min on H100)
+# Phase 34 is a controlled synthetic comparison — no full-scale mode
+!python experiments/phase34_graphgps_grit_comparison.py --seeds 5 --epochs 500
+```
+
+### Phase 32: Cross-domain WN18RR (different dataset)
+
+After completing both FB15k-237 runs above, switch to WN18RR:
+
+```python
+!python experiments/phase32_cross_graph_transfer.py --full
 ```
 
 The Colab-ready infrastructure script automates GPU setup and experiment execution:
@@ -150,8 +182,10 @@ Or use individual sections — see `notebooks/delta_colab_ready.py` for details.
 |-----------|-----------|-------------------|-------------------|
 | Phase 34 (synthetic, 3 seeds) | ~100 nodes | 2-3 min | 5 min |
 | Phase 34 (synthetic, 5 seeds) | ~100 nodes | 5-8 min | 15 min |
+| Phase 33 (synthetic, 3 seeds) | 60 nodes | 1-2 min | 3-5 min |
+| Phase 33 (synthetic, 5 seeds) | 60 nodes | 3-5 min | 8-12 min |
 | Phase 31 (full FB15k-237) | 14,505 entities | 1-2 hours | 2-4 hours |
-| Phase 34b (full FB15k-237, 3 models × 5 seeds) | 14,505 entities | 3-6 hours | 6-12 hours |
+| Phase 34b (full synthetic, 3 models × 5 seeds) | ~50-100 nodes | 15-20 min | 30-45 min |
 | Phase 32 (cross-domain WN18RR) | 40,943 entities | 2-4 hours | 4-8 hours |
 
 ---

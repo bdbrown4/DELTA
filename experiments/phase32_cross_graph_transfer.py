@@ -44,7 +44,7 @@ from delta.utils import create_realistic_kg_benchmark
 # ---------------------------------------------------------------------------
 
 def create_domain_data(num_entities, num_relations, d_node, d_edge,
-                       domain_seed, domain_offset=0.0):
+                       domain_seed, domain_offset=0.0, num_triples=None):
     """Create a domain-specific KG benchmark.
 
     Different domains are simulated by shifting the feature prototypes
@@ -57,12 +57,16 @@ def create_domain_data(num_entities, num_relations, d_node, d_edge,
         d_edge: edge feature dimension
         domain_seed: random seed for this domain
         domain_offset: offset applied to feature prototypes (simulates domain shift)
+        num_triples: number of triples (defaults to ~21x num_entities if None)
 
     Returns:
         (graph, labels, num_relations)
     """
+    if num_triples is None:
+        num_triples = num_entities * 21  # ~21 edges/entity (FB15k-237 density)
     graph, labels, metadata = create_realistic_kg_benchmark(
         num_entities=num_entities,
+        num_triples=num_triples,
         d_node=d_node, d_edge=d_edge,
         seed=domain_seed,
     )
@@ -180,11 +184,19 @@ def main():
                         help='Entities in target domain')
     parser.add_argument('--epochs', type=int, default=100,
                         help='Training epochs for source domain')
+    parser.add_argument('--full', action='store_true',
+                        help='Run full-scale: FB15k-237 (14505) -> WN18RR (40943)')
     parser.add_argument('--device', type=str, default=None)
     args = parser.parse_args()
 
     device = args.device or ('cuda' if torch.cuda.is_available() else 'cpu')
     d_node, d_edge = 64, 32
+
+    if args.full:
+        args.source_entities = 14505
+        args.target_entities = 40943
+        if device == 'cpu':
+            print("WARNING: --full requires GPU for realistic scale.")
 
     print("=" * 70)
     print("PHASE 32: Cross-Graph Transfer")
@@ -199,6 +211,7 @@ def main():
     src_graph, src_labels, num_relations = create_domain_data(
         args.source_entities, 20, d_node, d_edge,
         domain_seed=42, domain_offset=0.0,
+        num_triples=args.source_entities * 21,  # ~FB15k-237 density
     )
     print(f"  Source: {src_graph.num_nodes} nodes, {src_graph.num_edges} edges, "
           f"{num_relations} relations")
@@ -208,6 +221,7 @@ def main():
     tgt_graph, tgt_labels, tgt_num_relations = create_domain_data(
         args.target_entities, 20, d_node, d_edge,
         domain_seed=123, domain_offset=0.3,
+        num_triples=args.target_entities * 2,  # ~WN18RR density (~93K / 40943 ≈ 2.3x)
     )
     # Remap labels to match source relation count if they differ
     tgt_labels = tgt_labels % num_relations

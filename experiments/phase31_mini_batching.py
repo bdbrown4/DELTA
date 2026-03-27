@@ -144,7 +144,7 @@ class NeighborSampler:
 
         # Slice edge features and labels for selected edges
         local_edge_feats = edge_features[selected_edges]
-        local_edge_labels = edge_labels[selected_edges]
+        local_edge_labels = edge_labels[selected_edges].detach().clone()
 
         # Map global edge index to local edge index
         global_to_local_edge = {
@@ -166,8 +166,7 @@ class NeighborSampler:
             ),
         )
 
-        mini_labels = torch.tensor(local_edge_labels, dtype=torch.long,
-                                   device=device)
+        mini_labels = local_edge_labels.to(dtype=torch.long, device=device)
 
         # Map target edges to local indices
         local_targets = []

@@ -434,7 +434,12 @@ def main():
             vram_gb = torch.cuda.get_device_properties(0).total_memory / 1e9
             print(f"  GPU detected: {torch.cuda.get_device_name(0)} ({vram_gb:.0f}GB)")
             # Auto-scale mini-batch params
-            if vram_gb >= 70:  # H100 80GB
+            if vram_gb >= 90:  # G4 / H100 NVL / H200 (90GB+)
+                args.max_neighbors = 750
+                args.batch_size = 128
+                print(f"  G4/H100-NVL scaling: max_neighbors={args.max_neighbors}, "
+                      f"batch_size={args.batch_size}")
+            elif vram_gb >= 70:  # H100 SXM 80GB
                 args.max_neighbors = 500
                 args.batch_size = 64
                 print(f"  H100 scaling: max_neighbors={args.max_neighbors}, "

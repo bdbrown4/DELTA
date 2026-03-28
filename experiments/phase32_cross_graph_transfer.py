@@ -95,8 +95,13 @@ def create_domain_data(num_entities, num_relations, d_node, d_edge,
 # ---------------------------------------------------------------------------
 
 def train_model(model, graph, labels, epochs, lr, device, log_every=20,
-                sampler=None, batch_size=64, accum_steps=4):
-    """Train model on a source domain. Uses mini-batching if sampler is provided."""
+                sampler=None, batch_size=64, accum_steps=4, patience=0):
+    """Train model on a source domain. Uses mini-batching if sampler is provided.
+
+    Args:
+        patience: Early stopping patience (0 = disabled). Stops after this many
+                  consecutive evaluation rounds with no improvement.
+    """
     model = model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
@@ -109,6 +114,7 @@ def train_model(model, graph, labels, epochs, lr, device, log_every=20,
         train_idx = perm[:int(E * 0.8)]
         val_idx = perm[int(E * 0.8):]
         best_val_acc = 0.0
+        no_improve = 0
 
         for epoch in range(epochs):
             model.train()
@@ -125,8 +131,15 @@ def train_model(model, graph, labels, epochs, lr, device, log_every=20,
                     out = model(graph)
                     logits = model.classify_edges(out)
                     val_acc = (logits[val_idx].argmax(-1) == labels[val_idx]).float().mean().item()
-                    best_val_acc = max(best_val_acc, val_acc)
+                    if val_acc > best_val_acc:
+                        best_val_acc = val_acc
+                        no_improve = 0
+                    else:
+                        no_improve += 1
                     print(f"    Epoch {epoch+1:3d}  Val Acc: {val_acc:.3f}  Best: {best_val_acc:.3f}")
+                    if patience > 0 and no_improve >= patience:
+                        print(f"    Early stopping at epoch {epoch+1} (patience={patience})")
+                        break
 
         return best_val_acc
 
@@ -135,6 +148,7 @@ def train_model(model, graph, labels, epochs, lr, device, log_every=20,
     all_edges = list(range(E))
     split = int(E * 0.8)
     best_val_acc = 0.0
+    no_improve = 0
 
     for epoch in range(epochs):
         model.train()
@@ -194,10 +208,17 @@ def train_model(model, graph, labels, epochs, lr, device, log_every=20,
                     total += len(target_idx)
 
             val_acc = correct / max(total, 1)
-            best_val_acc = max(best_val_acc, val_acc)
+            if val_acc > best_val_acc:
+                best_val_acc = val_acc
+                no_improve = 0
+            else:
+                no_improve += 1
             avg_loss = epoch_loss / max(num_batches, 1)
             print(f"    Epoch {epoch+1:3d}  Loss: {avg_loss:.4f}  "
                   f"Val Acc: {val_acc:.3f}  Best: {best_val_acc:.3f}")
+            if patience > 0 and no_improve >= patience:
+                print(f"    Early stopping at epoch {epoch+1} (patience={patience})")
+                break
 
     return best_val_acc
 
@@ -242,8 +263,13 @@ def evaluate_zero_shot(model, graph, labels, device, sampler=None, batch_size=64
 
 
 def evaluate_fine_tuned(model, graph, labels, epochs, lr, device,
-                        sampler=None, batch_size=64, accum_steps=4):
-    """Fine-tune on target domain (few-shot) and evaluate."""
+                        sampler=None, batch_size=64, accum_steps=4, patience=0):
+    """Fine-tune on target domain (few-shot) and evaluate.
+
+    Args:
+        patience: Early stopping patience (0 = disabled). Stops after this many
+                  consecutive evaluation rounds with no improvement in fine-tuning loss.
+    """
     model = model.to(device)
 
     if sampler is None:
@@ -256,6 +282,8 @@ def evaluate_fine_tuned(model, graph, labels, epochs, lr, device,
         test_idx = perm[int(E * 0.2):]
 
         optimizer = torch.optim.Adam(model.parameters(), lr=lr * 0.1)
+        best_loss = float('inf')
+        no_improve = 0
         for epoch in range(epochs // 2):
             model.train()
             out = model(graph)
@@ -264,6 +292,16 @@ def evaluate_fine_tuned(model, graph, labels, epochs, lr, device,
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
+            loss_val = loss.item()
+            if loss_val < best_loss - 1e-4:
+                best_loss = loss_val
+                no_improve = 0
+            else:
+                no_improve += 1
+            if patience > 0 and no_improve >= patience:
+                print(f"    Fine-tune early stop at epoch {epoch+1} (patience={patience})")
+                break
 
         model.eval()
         with torch.no_grad():
@@ -280,12 +318,15 @@ def evaluate_fine_tuned(model, graph, labels, epochs, lr, device,
     test_edges = all_edges[int(E * 0.2):]
 
     optimizer = torch.optim.Adam(model.parameters(), lr=lr * 0.1)
+    best_loss = float('inf')
+    no_improve = 0
 
     for epoch in range(epochs // 2):
         model.train()
         random.shuffle(finetune_edges)
         optimizer.zero_grad()
         num_batches = 0
+        epoch_loss = 0.0
 
         for batch_start in range(0, len(finetune_edges), batch_size):
             batch = finetune_edges[batch_start:batch_start + batch_size]
@@ -302,6 +343,7 @@ def evaluate_fine_tuned(model, graph, labels, epochs, lr, device,
             loss = F.cross_entropy(logits[target_idx], mini_labels[target_idx])
             loss = loss / accum_steps
             loss.backward()
+            epoch_loss += loss.item() * accum_steps
             num_batches += 1
 
             if num_batches % accum_steps == 0:
@@ -311,6 +353,16 @@ def evaluate_fine_tuned(model, graph, labels, epochs, lr, device,
         if num_batches % accum_steps != 0:
             optimizer.step()
             optimizer.zero_grad()
+
+        avg_loss = epoch_loss / max(num_batches, 1)
+        if avg_loss < best_loss - 1e-4:
+            best_loss = avg_loss
+            no_improve = 0
+        else:
+            no_improve += 1
+        if patience > 0 and no_improve >= patience:
+            print(f"    Fine-tune early stop at epoch {epoch+1} (patience={patience})")
+            break
 
     # Evaluate on test edges
     model.eval()
@@ -352,6 +404,11 @@ def main():
                         help='Log every N epochs (default: 1 when --full, 20 otherwise)')
     parser.add_argument('--full', action='store_true',
                         help='Run full-scale: FB15k-237 (14505) -> WN18RR (40943)')
+    parser.add_argument('--patience', type=int, default=0,
+                        help='Early stopping patience (0 = disabled). Stops after N '
+                             'consecutive eval rounds with no improvement.')
+    parser.add_argument('--finetune_epochs', type=int, default=None,
+                        help='Fine-tuning epochs (default: epochs // 2)')
     parser.add_argument('--device', type=str, default=None)
     args = parser.parse_args()
 
@@ -361,6 +418,14 @@ def main():
     # Resolve log_every default based on --full
     if args.log_every is None:
         args.log_every = 1 if args.full else 20
+
+    # Default patience: 10 eval rounds when --full (saves hours), disabled otherwise
+    if args.patience == 0 and args.full:
+        args.patience = 10
+
+    # Default finetune epochs
+    if args.finetune_epochs is None:
+        args.finetune_epochs = args.epochs // 2
 
     if args.full:
         args.source_entities = 14505
@@ -392,6 +457,8 @@ def main():
           f"Target: {args.target_entities} entities")
     print(f"  Device: {device}, Epochs: {args.epochs}, "
           f"Log every: {args.log_every} epoch(s)")
+    patience_str = f", Patience: {args.patience}" if args.patience > 0 else ""
+    print(f"  Fine-tune epochs: {args.finetune_epochs}{patience_str}")
     print()
 
     # --- Create source domain (FB15k-237-like) ---
@@ -443,7 +510,8 @@ def main():
                              args.epochs, 1e-3, device,
                              log_every=args.log_every,
                              sampler=src_sampler,
-                             batch_size=batch_size)
+                             batch_size=batch_size,
+                             patience=args.patience)
     print(f"  Source domain accuracy: {source_acc:.3f}")
     print()
 
@@ -454,13 +522,14 @@ def main():
     print(f"  Zero-shot accuracy: {zero_shot_acc:.3f}")
 
     # --- Fine-tuned transfer ---
-    print("Fine-tuned transfer (20% target data)...")
+    print(f"Fine-tuned transfer (20% target data, {args.finetune_epochs} epochs)...")
     import copy
     model_ft = copy.deepcopy(model)
     fine_tuned_acc = evaluate_fine_tuned(model_ft, tgt_graph, tgt_labels,
-                                         args.epochs, 1e-3, device,
+                                         args.finetune_epochs * 2, 1e-3, device,
                                          sampler=tgt_sampler,
-                                         batch_size=batch_size)
+                                         batch_size=batch_size,
+                                         patience=args.patience)
     print(f"  Fine-tuned accuracy: {fine_tuned_acc:.3f}")
 
     # --- Random baseline ---

@@ -157,11 +157,11 @@ After completing both FB15k-237 runs above, switch to WN18RR:
 
 ```python
 # Full-scale cross-domain transfer: FB15k-237 → WN18RR
-# Logs every epoch by default when --full
-!python experiments/phase32_cross_graph_transfer.py --full --epochs 100
+# Early stopping (patience=10) stops source training once converged (~20 epochs)
+!python experiments/phase32_cross_graph_transfer.py --full --epochs 250 --log_every 5 --patience 10
 
-# Or with custom epoch count and logging:
-!python experiments/phase32_cross_graph_transfer.py --full --epochs 50 --log_every 5
+# Or with custom finetune epochs and logging:
+!python experiments/phase32_cross_graph_transfer.py --full --epochs 250 --log_every 5 --patience 10 --finetune_epochs 50
 ```
 
 The Colab-ready infrastructure script automates GPU setup and experiment execution:

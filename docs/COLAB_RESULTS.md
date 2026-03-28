@@ -237,14 +237,61 @@ PHASE 31 RESULTS
 
 **Status:** Source domain training complete; zero-shot and fine-tuned transfer pending rerun.
 
-**Command:**
-```
-!python experiments/phase32_cross_graph_transfer.py --full --epochs 250 --log_every 5
-```
-
 **Rerun command (with early stopping):**
 ```
-!python experiments/phase32_cross_graph_transfer.py --full --epochs 250 --log_every 5 --patience 10
+GPU detected: NVIDIA RTX PRO 6000 Blackwell Server Edition (102GB)
+  G4/H100-NVL scaling: max_neighbors=750, batch_size=128
+======================================================================
+PHASE 32: Cross-Graph Transfer
+======================================================================
+  Source: 14505 entities, Target: 40943 entities
+  Device: cuda, Epochs: 250, Log every: 5 epoch(s)
+  Fine-tune epochs: 125, Patience: 10
+
+Creating source domain data (FB15k-237-like)...
+  Source: 14505 nodes, 304605 edges, 20 relations
+Creating target domain data (WN18RR-like)...
+  Target: 40943 nodes, 81886 edges
+
+Creating source domain sampler (mini-batch training)...
+Creating target domain sampler (mini-batch evaluation)...
+
+Training DELTA on source domain...
+    Epoch   5  Loss: 0.0017  Val Acc: 1.000  Best: 1.000
+    Epoch  10  Loss: 0.0003  Val Acc: 1.000  Best: 1.000
+    Epoch  15  Loss: 0.0001  Val Acc: 1.000  Best: 1.000
+    Epoch  20  Loss: 0.0000  Val Acc: 1.000  Best: 1.000
+    Epoch  25  Loss: 0.0000  Val Acc: 1.000  Best: 1.000
+    Epoch  30  Loss: 0.0000  Val Acc: 1.000  Best: 1.000
+    Epoch  35  Loss: 0.0000  Val Acc: 1.000  Best: 1.000
+    Epoch  40  Loss: 0.0000  Val Acc: 1.000  Best: 1.000
+    Epoch  45  Loss: 0.0000  Val Acc: 1.000  Best: 1.000
+    Epoch  50  Loss: 0.0000  Val Acc: 1.000  Best: 1.000
+    Epoch  55  Loss: 0.0000  Val Acc: 1.000  Best: 1.000
+    Early stopping at epoch 55 (patience=10)
+  Source domain accuracy: 1.000
+
+Zero-shot transfer to target domain (frozen encoder)...
+  Zero-shot accuracy: 0.048
+Fine-tuned transfer (20% target data, 125 epochs)...
+    Fine-tune early stop at epoch 125 (patience=10)
+  Fine-tuned accuracy: 1.000
+  Random baseline: 0.050
+
+======================================================================
+PHASE 32 RESULTS
+======================================================================
+  Source domain accuracy:  1.000
+  Zero-shot transfer:      0.048
+  Fine-tuned transfer:     1.000
+  Random baseline:         0.050
+
+  Zero-shot transfer is weak — features may be domain-specific.
+  Fine-tuning improves significantly → pre-training helps.
+
+  Next steps:
+    - Run on full FB15k-237 → WN18RR with Phase 31 mini-batching
+    - Compare DELTA transfer vs GraphGPS/GRIT transfer
 ```
 
 ### Source Domain Training (FB15k-237-like) — COMPLETE
@@ -682,6 +729,143 @@ Command used:
 ```
 
 ```
-(paste phase34b output here)
+======================================================================
+PHASE 34: DELTA vs GraphGPS vs GRIT — Controlled Comparison
+======================================================================
+Config: seeds=5, epochs=500, d_node=64, d_edge=32, device=cuda
+
+======================================================================
+TASK 1: Edge Classification (Synthetic KG)
+======================================================================
+  Classify relation types — DELTA's edge-first attention should shine.
+
+  Seed 0: 96 nodes, 48 edges
+    DELTA       Test Acc: 0.933  (3.3s)
+    GraphGPS    Test Acc: 0.200  (1.8s)
+    GRIT        Test Acc: 0.467  (2.6s)
+  Seed 1: 96 nodes, 48 edges
+    DELTA       Test Acc: 0.867  (3.2s)
+    GraphGPS    Test Acc: 0.400  (1.7s)
+    GRIT        Test Acc: 0.200  (2.5s)
+  Seed 2: 96 nodes, 48 edges
+    DELTA       Test Acc: 0.933  (3.2s)
+    GraphGPS    Test Acc: 0.267  (1.7s)
+    GRIT        Test Acc: 0.200  (2.5s)
+  Seed 3: 96 nodes, 48 edges
+    DELTA       Test Acc: 0.867  (3.2s)
+    GraphGPS    Test Acc: 0.267  (1.7s)
+    GRIT        Test Acc: 0.400  (2.5s)
+  Seed 4: 96 nodes, 48 edges
+    DELTA       Test Acc: 0.800  (3.2s)
+    GraphGPS    Test Acc: 0.333  (1.7s)
+    GRIT        Test Acc: 0.267  (2.5s)
+
+======================================================================
+TASK 2: Noise Robustness (Edge Classification Under Noise)
+======================================================================
+  Phase 28 showed DELTA +24% at extreme noise. Replicate vs baselines.
+
+  --- Noise level: 0.0 ---
+    Seed 0: DELTA: 1.000  GraphGPS: 0.767  GRIT: 0.867
+    Seed 1: DELTA: 1.000  GraphGPS: 0.733  GRIT: 0.883
+    Seed 2: DELTA: 1.000  GraphGPS: 0.717  GRIT: 0.983
+    Seed 3: DELTA: 1.000  GraphGPS: 0.817  GRIT: 0.983
+    Seed 4: DELTA: 1.000  GraphGPS: 0.683  GRIT: 0.900
+  --- Noise level: 0.2 ---
+    Seed 0: DELTA: 1.000  GraphGPS: 0.717  GRIT: 0.750
+    Seed 1: DELTA: 1.000  GraphGPS: 0.817  GRIT: 0.867
+    Seed 2: DELTA: 1.000  GraphGPS: 0.850  GRIT: 0.917
+    Seed 3: DELTA: 1.000  GraphGPS: 0.733  GRIT: 0.767
+    Seed 4: DELTA: 1.000  GraphGPS: 0.700  GRIT: 0.850
+  --- Noise level: 0.5 ---
+    Seed 0: DELTA: 1.000  GraphGPS: 0.600  GRIT: 0.733
+    Seed 1: DELTA: 1.000  GraphGPS: 0.783  GRIT: 0.867
+    Seed 2: DELTA: 1.000  GraphGPS: 0.800  GRIT: 0.817
+    Seed 3: DELTA: 1.000  GraphGPS: 0.650  GRIT: 0.800
+    Seed 4: DELTA: 1.000  GraphGPS: 0.817  GRIT: 0.850
+  --- Noise level: 0.8 ---
+    Seed 0: DELTA: 1.000  GraphGPS: 0.800  GRIT: 0.767
+    Seed 1: DELTA: 1.000  GraphGPS: 0.717  GRIT: 0.717
+    Seed 2: DELTA: 1.000  GraphGPS: 0.617  GRIT: 0.633
+    Seed 3: DELTA: 1.000  GraphGPS: 0.633  GRIT: 0.633
+    Seed 4: DELTA: 1.000  GraphGPS: 0.717  GRIT: 0.800
+
+======================================================================
+TASK 3: Compositional Relational Reasoning
+======================================================================
+  Phase 27b: fixed graph +4.4% over transformer. Test vs GraphGPS/GRIT.
+
+  Seed 0: 60 nodes, 111 edges, 7 classes (82 base + 29 derived)
+    DELTA       Test Acc: 1.000  (4.6s)
+    GraphGPS    Test Acc: 0.882  (1.8s)
+    GRIT        Test Acc: 0.882  (2.6s)
+  Seed 1: 60 nodes, 111 edges, 7 classes (82 base + 29 derived)
+    DELTA       Test Acc: 1.000  (4.6s)
+    GraphGPS    Test Acc: 0.882  (1.7s)
+    GRIT        Test Acc: 0.853  (2.6s)
+  Seed 2: 60 nodes, 110 edges, 7 classes (82 base + 28 derived)
+    DELTA       Test Acc: 1.000  (4.6s)
+    GraphGPS    Test Acc: 0.879  (1.8s)
+    GRIT        Test Acc: 0.848  (2.6s)
+  Seed 3: 60 nodes, 112 edges, 7 classes (82 base + 30 derived)
+    DELTA       Test Acc: 1.000  (4.6s)
+    GraphGPS    Test Acc: 0.941  (1.7s)
+    GRIT        Test Acc: 0.941  (2.6s)
+  Seed 4: 60 nodes, 112 edges, 7 classes (82 base + 30 derived)
+    DELTA       Test Acc: 1.000  (4.6s)
+    GraphGPS    Test Acc: 0.941  (1.8s)
+    GRIT        Test Acc: 0.941  (2.6s)
+
+======================================================================
+PHASE 34 RESULTS SUMMARY
+======================================================================
+
+  Edge Classification (Synthetic KG):
+    DELTA       0.880 ± 0.056  (n=5)
+    GraphGPS    0.293 ± 0.076  (n=5)
+    GRIT        0.307 ± 0.121  (n=5)
+
+  Noise Robustness (noise=0.0):
+    DELTA       1.000 ± 0.000  (n=5)
+    GraphGPS    0.743 ± 0.051  (n=5)
+    GRIT        0.923 ± 0.056  (n=5)
+
+  Noise Robustness (noise=0.2):
+    DELTA       1.000 ± 0.000  (n=5)
+    GraphGPS    0.763 ± 0.066  (n=5)
+    GRIT        0.830 ± 0.070  (n=5)
+
+  Noise Robustness (noise=0.5):
+    DELTA       1.000 ± 0.000  (n=5)
+    GraphGPS    0.730 ± 0.098  (n=5)
+    GRIT        0.813 ± 0.052  (n=5)
+
+  Noise Robustness (noise=0.8):
+    DELTA       1.000 ± 0.000  (n=5)
+    GraphGPS    0.697 ± 0.074  (n=5)
+    GRIT        0.710 ± 0.076  (n=5)
+
+  Path Composition (Multi-Hop):
+    DELTA       1.000 ± 0.000  (n=5)
+    GraphGPS    0.905 ± 0.033  (n=5)
+    GRIT        0.893 ± 0.046  (n=5)
+
+  Total time: 260.4s
+
+======================================================================
+ANALYSIS
+======================================================================
+
+  Edge classification advantage:
+    DELTA vs GraphGPS: +0.587
+    DELTA vs GRIT:     +0.573
+  >> DELTA leads on edge classification ✓
+
+  NOTE: This uses synthetic data. For publication, rerun on full FB15k-237
+  using Google Colab Pro (see docs/COLAB_SETUP.md and notebooks/).
+
+  Next steps:
+    Phase 31: Mini-batching for full-scale FB15k-237
+    Phase 34b: Rerun this comparison on real data with A100 GPU
 ```
 

@@ -79,7 +79,10 @@ DELTA/
 │   ├── phase31_mini_batching.py             # Subgraph sampling + gradient accumulation
 │   ├── phase32_cross_graph_transfer.py      # Train FB15k-237, eval WN18RR (zero-shot)
 │   ├── phase33_task_aware_construction.py   # Hybrid constructor: base topology + learned edges
-│   └── phase34_graphgps_grit_comparison.py  # DELTA vs GraphGPS vs GRIT (Gap 1)
+│   ├── phase34_graphgps_grit_comparison.py  # DELTA vs GraphGPS vs GRIT (Gap 1)
+│   ├── phase35_relational_transfer.py       # Domain-agnostic transfer: linear probe + GRL + ablation
+│   ├── phase36_task_aware_at_scale.py       # Task-aware construction at 500-2000 nodes
+│   └── phase37_real_comparison.py           # Real FB15k-237 parameter-matched comparison
 ├── notebooks/              # Colab-ready infrastructure
 │   └── delta_colab_ready.py  # Automated Colab setup + Phase 34 runner
 ├── tests/                  # Unit tests (44/44 passing)
@@ -245,6 +248,11 @@ python experiments/phase32_cross_graph_transfer.py      # Train FB15k-237, eval 
 python experiments/phase33_task_aware_construction.py   # Hybrid constructor: base topology + learned edges
 python experiments/phase34_graphgps_grit_comparison.py  # DELTA vs GraphGPS vs GRIT (Gap 1)
 
+# Phase 35-37: Transfer, scale, and parameter-matched experiments
+python experiments/phase35_relational_transfer.py       # Domain-agnostic transfer (GRL + linear probe)
+python experiments/phase36_task_aware_at_scale.py       # Task-aware construction at scale (500-2000 nodes)
+python experiments/phase37_real_comparison.py           # Real FB15k-237 parameter-matched (4 models × 5 seeds)
+
 # Run all tests
 python -m pytest tests/ -q  # 44/44 should pass
 ```
@@ -363,6 +371,9 @@ Validated 5 roadmap items and stress-tested a core assumption with help from an 
 - **Curriculum dense→sparse annealing** — temperature annealing (τ: 0.5→5.0) + sparsity ramp (0→50%) integrated with post-attention pruning, achieves 100% accuracy matching full attention
 - **Graph structure adds value on relational tasks** — Phase 27b confirmed Fixed Chain DELTA (40.7%) beats pure Transformer (36.3%) on 2-hop path composition with proper training
 - **Edge adjacency caching + vectorized incidence matrix** — `graph.py` fast path for E≤500 replaces Python for-loop, enabling efficient per-sample training for graph-based models
+- **Mini-batching scales to full FB15k-237** — Phase 31 confirmed 14,505 entities / 304K edges trains to 100% with subgraph sampling on H100. Scale ceiling lifted from 2K→14.5K entities
+- **DELTA dominates GraphGPS and GRIT on synthetic relational tasks** — Phase 34 showed +57% on edge classification, +29% on noise robustness, perfect multi-hop composition. 5 seeds × 500 epochs, zero variance at noise=0.8
+- **Fine-tuned cross-domain transfer works** — Phase 32 fine-tuned transfer reaches 1.000, confirming pre-training helps with adaptation
 - **44/44 unit tests passing**, backward compatibility confirmed
 
 ### ⚠️ Architecturally Sound, Awaiting Scale Proof
@@ -371,10 +382,11 @@ Validated 5 roadmap items and stress-tested a core assumption with help from an 
 - **Ablation differentiation** — at N=1000, vanilla EdgeAttention also reaches 100%, so fix ablations show zero impact. The fixes provide *efficiency and robustness*, not accuracy gains on tasks a baseline can already solve
 
 ### ❌ Open Gaps
-- **Scale ceiling unknown** — Phase 25/30 reached 2000 entities / 69,626 edges on GPU; real KGs have millions. Full-scale training requires mini-batching and subgraph sampling (Phase 31).
-- **GraphConstructor needs task-aware construction** — Phase 27b confirmed attention-thresholding discards sequential/path structure. A constructor that preserves positional ordering would let Bootstrap DELTA match or exceed Fixed Chain (Phase 33).
+- **Zero-shot transfer fails (0.048 ≈ random)** — Phase 32 showed DELTA's edge-attention features are domain-specific: perfect source accuracy but chance-level zero-shot transfer. Fine-tuning recovers to 1.000, proving pre-training helps, but the encoder doesn't learn domain-agnostic relational primitives. Root cause: the current architecture couples *structural attention patterns* with *domain-specific feature statistics* — the edge classifier head, edge feature prototypes, and domain offset all create a distribution shift the frozen encoder can't bridge. Phase 35 addresses this.
+- **Task-aware constructor doesn't improve over fixed topology** — Phase 33 showed augmented (0.344) ≈ fixed (0.347) on 60-node path composition. The task is too small and the base structure too complete for learned edges to add value. Constructor needs harder tasks at scale (Phase 36).
+- **All Phase 34 comparisons are synthetic** — DELTA dominates GraphGPS/GRIT on synthetic data but the comparison hasn't run on real FB15k-237.  Phase 34b on real data is the critical remaining validation (Phase 37).
+- **DELTA uses 2× more parameters than baselines** — 60,594 params vs GraphGPS 33,388 / GRIT 28,130. Controlled parameter-matched comparison needed to isolate the architectural advantage from capacity advantage (Phase 37).
 - **Soft gating marginal on extreme noise** — Phase 28 showed dual attention is the key differentiator at extreme difficulty (+24%); soft gating adds only ±0.6% beyond that. Gating's value remains efficiency, not peak accuracy on current benchmarks.
-- **Cross-domain generalization untested** — All results are within FB15k-237. Whether DELTA's edge-attention representations transfer to WN18RR or other KG domains without retraining is unknown (Phase 32).
 
 ## Roadmap
 
@@ -391,23 +403,53 @@ Validated 5 roadmap items and stress-tested a core assumption with help from an 
 | **Phase 28: Harder ablation benchmark** | At Extreme difficulty (noise=0.8, label_noise=0.35): Dual Attention 64.2% >> Vanilla EdgeAttn 40.2% (+24%). Node context is the key DELTA advantage when edge features are noisy. |
 | **Phase 29: Multi-seed evaluation** | All key results confirmed stable across 5 seeds. DELTA+Gate 97.4% ± 0.1% on FB15k-237. Soft Gate 100% ± 0.0% vs Old Router 79.7% ± 1.1%. |
 | **Phase 30: GPU edge adj sampling** | Uniform, degree-weighted, stratified, and importance-weighted sampling all achieve 97.3–97.5% on FB15k-237 at 26% budget. Random sampling is sufficient at this density. |
+| **Phase 31: Mini-batching (H100)** | DELTA trains perfectly on full FB15k-237 scale (14,505 entities, 304K edges, 20 relations). 100% test accuracy, converges by epoch 10. Mini-batch subgraph sampling + gradient accumulation confirmed on H100 80GB. |
+| **Phase 32: Cross-graph transfer (H100 + RTX PRO 6000)** | Source domain 1.000. **Zero-shot transfer: 0.048 (≈ random 0.050)** — features are domain-specific. Fine-tuned transfer: 1.000 — pre-training helps with adaptation. Early stopping (patience=10) reduces total runtime from 24h → 3-4h. |
+| **Phase 33: Task-aware construction (H100)** | Fixed topology 0.347 ≈ Augmented 0.344 (5 seeds × 500 epochs). No improvement — 60-node path tasks are too small/complete for learned edges to add value. Constructor needs harder tasks at scale. |
+| **Phase 34: DELTA vs GraphGPS vs GRIT — synthetic (H100)** | **DELTA dominates on all three tasks.** Edge classification: DELTA 0.880 vs GraphGPS 0.293 vs GRIT 0.307 (+0.573). Noise robustness at noise=0.8: DELTA 1.000 vs GraphGPS 0.697 vs GRIT 0.710 (+0.290). Path composition: DELTA 1.000 vs GraphGPS 0.905 vs GRIT 0.893. All results 5 seeds × 500 epochs. |
 
 ### Next Steps
 
-**Phase 31: Mini-batching for large graphs** *(experiment ready)*
-Phase 25/30 maxed at 2000 entities (69K edges) on a 12 GB GPU. Real KGs have millions of entities. Implements neighbor-sampling subgraph extraction + gradient accumulation to scale beyond single-GPU VRAM. See `experiments/phase31_mini_batching.py`. Phase 27b demonstrated gradient accumulation works well for DELTA — same technique applies here.
+**Phase 35: Domain-agnostic relational transfer** *(addresses zero-shot failure)*
+Phase 32 zero-shot at 0.048 reveals the core problem: DELTA's edge attention is entangled with domain-specific feature statistics. The current `evaluate_zero_shot` freezes the *entire* model and evaluates on target data whose feature distribution differs (different `domain_seed`, `domain_offset=0.3`). Three architectural interventions to disentangle structural reasoning from domain features:
 
-**Phase 32: Cross-graph transfer** *(experiment ready)*
-Train on FB15k-237, evaluate zero-shot on WN18RR. Measures whether DELTA edge-attention representations generalize across KG domains without retraining. See `experiments/phase32_cross_graph_transfer.py`.
+1. **Relational prototype heads** — Replace the linear edge classifier with a prototype-based classifier that learns *relation archetypes* (structural motifs like transitivity, symmetry, composition) rather than domain-specific feature clusters. At inference, edge-attention patterns are matched against these structural prototypes, making zero-shot transfer about recognizing structural roles rather than interpolating feature distributions.
 
-**Phase 33: Task-aware graph construction** *(experiment ready)*
-Phase 27b confirmed the problem: GraphConstructor's attention-thresholding discards sequential adjacency edges that Fixed Chain DELTA preserves. Result: Fixed Chain (40.7%) > Bootstrap (34.3%) on path composition. Implements hybrid construction: preserve base topology + learn new edges. See `experiments/phase33_task_aware_construction.py`.
+2. **Attention-pattern transfer (freeze encoder, retrain head)** — The current Phase 32 freezes encoder + classifier. A proper zero-shot protocol should freeze only the DELTA layers (which produce attention patterns) and train a lightweight classifier head on the target domain. If the attention patterns genuinely capture relational structure, a small probe should recover target labels. This isolates whether the encoder's *structural representations* transfer even if its *feature-space embeddings* don't.
 
-**Phase 34: DELTA vs GraphGPS vs GRIT comparison** *(infrastructure ready)*
-Critical baseline currency gap (Gap 1 in [RESEARCH_AGENDA.md](./docs/RESEARCH_AGENDA.md)). CompGCN (2020) is the current strongest baseline — the community will ask about GraphGPS (2022) and GRIT (2023). Lightweight implementations in `delta/baselines.py`, 16 tests in `tests/test_baselines.py`, experiment script at `experiments/phase34_graphgps_grit_comparison.py`. Synthetic comparison runs immediately on CPU; full FB15k-237 comparison requires Phase 31 compute. See `docs/COLAB_SETUP.md` for Google Colab Pro+ ($49.99/mo) setup instructions and `notebooks/delta_colab_ready.py` for automated infrastructure.
+3. **Domain-adversarial edge features** — Add a gradient-reversal layer that penalizes the encoder for being able to predict which domain an edge comes from. This forces the edge-attention mechanism to learn domain-invariant structural features — the kind that would actually transfer zero-shot.
+
+See `experiments/phase35_relational_transfer.py`.
+
+**Phase 36: Task-aware construction at scale** *(addresses Phase 33 flat result)*
+Phase 33 ran on 60 nodes / 450 edges / 4 classes — the base topology was already sufficient, leaving no room for learned edges to help. Scale up to graphs where the base structure is *provably incomplete*:
+
+1. **Sparse path graphs (500–2000 nodes)** — Create paths with deliberately *missing intermediate edges* (every 3rd edge removed). The constructor must discover and propose the missing links for path composition to succeed. This directly tests whether `TaskAwareConstructor.propose_new_edges()` can learn to fill structural gaps.
+
+2. **Cross-cluster reasoning** — Create multi-cluster graphs (5–10 clusters of 100–200 nodes each) connected by sparse inter-cluster bridges. The task requires reasoning about cross-cluster relations. Base topology includes only intra-cluster edges; the constructor must learn inter-cluster connections.
+
+3. **Lower edge threshold** — Phase 33 used `edge_threshold=0.3`. With a 60-node graph where most pairs are already connected, the scorer needs to be very confident to propose new edges. Test at 0.1 and 0.05 where the constructor is more permissive.
+
+Feasible on Colab Pro+ H100: 2000-node graphs with 500 epochs, 5 seeds estimated at 2–4 hours using Phase 31 mini-batching. See `experiments/phase36_task_aware_at_scale.py`.
+
+**Phase 37: Real FB15k-237 comparison — DELTA vs GraphGPS vs GRIT** *(parameter-matched)*
+Phase 34 synthetic results show DELTA dominating, but the comparison is confounded by two issues: (a) synthetic data may play to DELTA's strengths artificially, and (b) DELTA uses 60,594 parameters vs GraphGPS 33,388 / GRIT 28,130 — a 1.8–2.2× capacity advantage.
+
+Parameter matching approach — rather than creating a "DELTA-Lite" spinoff, simply adjust the existing `DELTAModel` hyperparameters to bring parameter count in line:
+
+| Config | `d_node` | `d_edge` | `num_heads` | `num_layers` | Approx Params |
+|--------|----------|----------|-------------|--------------|---------------|
+| DELTA (current) | 64 | 32 | 4 | 3 | ~60K |
+| DELTA-Matched | 48 | 24 | 4 | 2 | ~30K |
+| GraphGPS | 64 | 32 | 4 | 3 | ~33K |
+| GRIT | 64 | 32 | 4 | 3 | ~28K |
+
+DELTA-Matched is the *same architecture* with `d_node=48, d_edge=24, num_layers=2` — no new code, just different constructor args. This answers the question: does DELTA's edge-first attention win because of architectural induction bias, or because it has more parameters? If DELTA-Matched (30K params) still beats GraphGPS (33K params) on real FB15k-237, the case is closed.
+
+Run on Colab Pro+ H100 using Phase 31 mini-batching: estimated 6–10 hours for all three models × 5 seeds on real FB15k-237 (14,505 entities, 310K triples). See `experiments/phase37_real_comparison.py`.
 
 ### Long-Term
-- **Replace transformer bootstrap** — Use trained DELTA models to construct graphs for new inputs (self-bootstrapping), removing the scaffolding dependency
+- **Replace transformer bootstrap** — Requires Phase 35 (domain-agnostic transfer) + Phase 36 (constructor at scale) to both succeed. If DELTA can learn transferable relational primitives AND construct useful graph structure from incomplete inputs, then a trained DELTA encoder can replace the transformer for graph construction on new inputs. **Current assessment: not yet ready** — zero-shot transfer failure and flat constructor results are the two blockers.
 - **Multi-modal input** — Extend graph constructor beyond token sequences (images, tables, structured data)
 - **Real-world application** — Knowledge graph completion, drug-target interaction, or recommendation systems at production scale
 
@@ -419,4 +461,4 @@ Critical baseline currency gap (Gap 1 in [RESEARCH_AGENDA.md](./docs/RESEARCH_AG
 
 ---
 
-*DELTA architecture — conceived March 25, 2026. 35 experiment phases (Phases 1–30 + Phase 27b correction + Phases 31–34), 6 architectural fixes, 44 unit tests. Phases 31–34 experiments ready for GPU execution.*
+*DELTA architecture — conceived March 25, 2026. 38 experiment phases (Phases 1–30 + Phase 27b correction + Phases 31–37), 6 architectural fixes, 44 unit tests. Phases 31–34 complete (H100/RTX PRO 6000). Phases 35–37 scripts ready for GPU execution.*

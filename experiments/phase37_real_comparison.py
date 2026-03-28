@@ -52,6 +52,7 @@ from delta.graph import DeltaGraph
 from delta.model import DELTAModel
 from delta.baselines import GraphGPSModel, GRITModel
 from delta.utils import create_realistic_kg_benchmark
+from delta.datasets import load_real_kg
 from experiments.phase31_mini_batching import NeighborSampler
 
 
@@ -144,17 +145,17 @@ class ProjectedDELTA(nn.Module):
 # ---------------------------------------------------------------------------
 
 def train_and_evaluate(model, graph, labels, epochs, lr, device, label='model',
-                       log_every=50):
+                       log_every=50, sampler=None, batch_size=64, accum_steps=4,
+                       train_idx=None, val_idx=None, test_idx=None):
     """Train and evaluate a single model. Returns dict with metrics."""
     model = model.to(device)
-    graph = graph.to(device)
-    labels = labels.to(device)
 
     E = labels.shape[0]
-    perm = torch.randperm(E, device=device)
-    train_idx = perm[:int(E * 0.7)]
-    val_idx = perm[int(E * 0.7):int(E * 0.85)]
-    test_idx = perm[int(E * 0.85):]
+    if train_idx is None or val_idx is None or test_idx is None:
+        perm = torch.randperm(E)
+        train_idx = perm[:int(E * 0.7)]
+        val_idx = perm[int(E * 0.7):int(E * 0.85)]
+        test_idx = perm[int(E * 0.85):]
 
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     best_val_acc = 0.0
@@ -162,34 +163,96 @@ def train_and_evaluate(model, graph, labels, epochs, lr, device, label='model',
     best_train_acc = 0.0
     start = time.time()
 
-    for epoch in range(epochs):
-        model.train()
-        out = model(graph)
-        logits = model.classify_edges(out)
-        loss = F.cross_entropy(logits[train_idx], labels[train_idx])
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+    if sampler is None:
+        # Small graph: full-graph training
+        graph = graph.to(device)
+        labels = labels.to(device)
+        train_idx_d = train_idx.to(device)
+        val_idx_d = val_idx.to(device)
+        test_idx_d = test_idx.to(device)
 
-        if (epoch + 1) % log_every == 0 or epoch == epochs - 1:
+        for epoch in range(epochs):
+            model.train()
+            out = model(graph)
+            logits = model.classify_edges(out)
+            loss = F.cross_entropy(logits[train_idx_d], labels[train_idx_d])
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            if (epoch + 1) % log_every == 0 or epoch == epochs - 1:
+                model.eval()
+                with torch.no_grad():
+                    out = model(graph)
+                    logits = model.classify_edges(out)
+                    train_acc = (logits[train_idx_d].argmax(-1) == labels[train_idx_d]).float().mean().item()
+                    val_acc = (logits[val_idx_d].argmax(-1) == labels[val_idx_d]).float().mean().item()
+                    test_acc = (logits[test_idx_d].argmax(-1) == labels[test_idx_d]).float().mean().item()
+
+                    if val_acc > best_val_acc:
+                        best_val_acc = val_acc
+                        best_test_acc = test_acc
+                        best_train_acc = train_acc
+
+                print(f"    [{label}] Epoch {epoch+1:3d}  "
+                      f"Loss: {loss.item():.4f}  "
+                      f"Train: {train_acc:.3f}  "
+                      f"Val: {val_acc:.3f}  "
+                      f"Test: {test_acc:.3f}")
+    else:
+        # Large graph: mini-batch training
+        import random as _random
+        train_idx_list = train_idx.tolist()
+        val_idx_list = val_idx.tolist()
+        test_idx_list = test_idx.tolist()
+
+        def _eval_mb(idx_list):
+            correct = 0
             model.eval()
             with torch.no_grad():
-                out = model(graph)
+                for i in range(0, len(idx_list), batch_size * 2):
+                    batch = idx_list[i:i + batch_size * 2]
+                    mg, ml, li = sampler.sample_subgraph(
+                        batch, graph.node_features, graph.edge_features, labels)
+                    mg, ml = mg.to(device), ml.to(device)
+                    out = model(mg)
+                    logits = model.classify_edges(out)
+                    correct += (logits[li].argmax(-1) == ml[li]).sum().item()
+            return correct / max(len(idx_list), 1)
+
+        for epoch in range(epochs):
+            model.train()
+            _random.shuffle(train_idx_list)
+            optimizer.zero_grad()
+
+            for i in range(0, len(train_idx_list), batch_size):
+                batch = train_idx_list[i:i + batch_size]
+                mg, ml, li = sampler.sample_subgraph(
+                    batch, graph.node_features, graph.edge_features, labels)
+                mg, ml, li = mg.to(device), ml.to(device), li.to(device)
+                out = model(mg)
                 logits = model.classify_edges(out)
-                train_acc = (logits[train_idx].argmax(-1) == labels[train_idx]).float().mean().item()
-                val_acc = (logits[val_idx].argmax(-1) == labels[val_idx]).float().mean().item()
-                test_acc = (logits[test_idx].argmax(-1) == labels[test_idx]).float().mean().item()
+                loss = F.cross_entropy(logits[li], ml[li])
+                (loss / accum_steps).backward()
+                step_num = (i // batch_size) + 1
+                if step_num % accum_steps == 0 or (i + batch_size) >= len(train_idx_list):
+                    optimizer.step()
+                    optimizer.zero_grad()
+
+            if (epoch + 1) % log_every == 0 or epoch == epochs - 1:
+                train_acc = _eval_mb(train_idx_list[:min(len(train_idx_list), 500)])
+                val_acc = _eval_mb(val_idx_list)
+                test_acc = _eval_mb(test_idx_list)
 
                 if val_acc > best_val_acc:
                     best_val_acc = val_acc
                     best_test_acc = test_acc
                     best_train_acc = train_acc
 
-            print(f"    [{label}] Epoch {epoch+1:3d}  "
-                  f"Loss: {loss.item():.4f}  "
-                  f"Train: {train_acc:.3f}  "
-                  f"Val: {val_acc:.3f}  "
-                  f"Test: {test_acc:.3f}")
+                print(f"    [{label}] Epoch {epoch+1:3d}  "
+                      f"Train: {train_acc:.3f}  "
+                      f"Val: {val_acc:.3f}  "
+                      f"Test: {test_acc:.3f}")
 
     training_time = time.time() - start
     total_params = sum(p.numel() for p in model.parameters())
@@ -208,7 +271,9 @@ def train_and_evaluate(model, graph, labels, epochs, lr, device, label='model',
 # ---------------------------------------------------------------------------
 
 def run_multi_seed(model_factory, graph, labels, num_seeds, epochs, lr,
-                   device, label='model', log_every=50):
+                   device, label='model', log_every=50,
+                   sampler=None, batch_size=64, accum_steps=4,
+                   train_idx=None, val_idx=None, test_idx=None):
     """Run training across multiple seeds, return aggregated results."""
     all_results = []
 
@@ -223,7 +288,9 @@ def run_multi_seed(model_factory, graph, labels, num_seeds, epochs, lr,
         model = model_factory()
         result = train_and_evaluate(
             model, graph, labels, epochs, lr, device,
-            label=f'{label}-s{seed_idx}', log_every=log_every)
+            label=f'{label}-s{seed_idx}', log_every=log_every,
+            sampler=sampler, batch_size=batch_size, accum_steps=accum_steps,
+            train_idx=train_idx, val_idx=val_idx, test_idx=test_idx)
         all_results.append(result)
 
         # Free memory
@@ -266,38 +333,66 @@ def main():
     parser.add_argument('--device', type=str, default=None)
     parser.add_argument('--skip_full_delta', action='store_true',
                         help='Skip DELTA-Full (save time if only checking param match)')
+    parser.add_argument('--max_neighbors', type=int, default=50,
+                        help='Max nodes per mini-graph subgraph (for large graphs)')
+    parser.add_argument('--batch_size', type=int, default=64,
+                        help='Edge batch size for mini-batch training')
+    parser.add_argument('--accum_steps', type=int, default=4,
+                        help='Gradient accumulation steps')
     args = parser.parse_args()
 
     device = args.device or ('cuda' if torch.cuda.is_available() else 'cpu')
     d_node, d_edge = 64, 32  # Graph generation dimensions
 
     if args.full:
-        args.entities = 14505
         args.num_seeds = 5
         if args.log_every == 50:
             args.log_every = 25
 
+    use_real_data = args.full  # --full uses real FB15k-237
+
     print("=" * 70)
     print("PHASE 37: Real FB15k-237 Parameter-Matched Comparison")
     print("=" * 70)
-    print(f"  Entities: {args.entities}, Epochs: {args.epochs}")
-    print(f"  Seeds: {args.num_seeds}, Device: {device}")
+    print(f"  Epochs: {args.epochs}, Seeds: {args.num_seeds}, Device: {device}")
+    print(f"  Data: {'REAL FB15k-237' if use_real_data else f'synthetic ({args.entities} entities)'}")
     print()
 
-    # --- Generate data ---
-    print("Creating FB15k-237-like benchmark...")
-    num_triples = args.entities * 21
-    graph, labels, metadata = create_realistic_kg_benchmark(
-        num_entities=args.entities,
-        num_triples=num_triples,
-        d_node=d_node, d_edge=d_edge,
-        seed=42,
-    )
-    num_relations = metadata['num_relations']
+    # --- Load or generate data ---
+    train_idx, val_idx, test_idx = None, None, None
+    if use_real_data:
+        print("Loading real FB15k-237 dataset...")
+        graph, labels, metadata = load_real_kg(
+            'fb15k-237', d_node, d_edge)
+        num_relations = metadata['num_relations']
+        train_idx = metadata['train_idx']
+        val_idx = metadata['val_idx']
+        test_idx = metadata['test_idx']
+    else:
+        print("Creating FB15k-237-like synthetic benchmark...")
+        num_triples = args.entities * 21
+        graph, labels, metadata = create_realistic_kg_benchmark(
+            num_entities=args.entities,
+            num_triples=num_triples,
+            d_node=d_node, d_edge=d_edge,
+            seed=42,
+        )
+        num_relations = metadata['num_relations']
     print(f"  {graph.num_nodes} nodes, {graph.num_edges} edges, "
           f"{num_relations} relations")
     print(f"  Random baseline: {1.0 / num_relations:.3f}")
     print()
+
+    # Create mini-batch sampler for large graphs (avoids CUDA OOM on 304K-edge graphs)
+    sampler = None
+    if graph.num_edges > 50000:
+        print(f"  Large graph detected ({graph.num_edges} edges) — "
+              f"using mini-batch training (max_neighbors={args.max_neighbors})")
+        sampler = NeighborSampler(
+            graph.edge_index, graph.num_nodes,
+            k_hops=2, max_neighbors=args.max_neighbors,
+        )
+        print()
 
     # --- Model configurations ---
     matched_d_node, matched_d_edge = 48, 24
@@ -345,7 +440,10 @@ def main():
         results[name] = run_multi_seed(
             cfg['factory'], graph, labels, args.num_seeds,
             args.epochs, args.lr, device,
-            label=name, log_every=args.log_every)
+            label=name, log_every=args.log_every,
+            sampler=sampler, batch_size=args.batch_size,
+            accum_steps=args.accum_steps,
+            train_idx=train_idx, val_idx=val_idx, test_idx=test_idx)
 
         if torch.cuda.is_available():
             torch.cuda.empty_cache()

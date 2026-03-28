@@ -328,7 +328,7 @@ def main():
     parser.add_argument('--num_seeds', type=int, default=3,
                         help='Number of random seeds (5 for publication)')
     parser.add_argument('--full', action='store_true',
-                        help='Full FB15k-237 scale (14505 entities, 5 seeds)')
+                        help='Full FB15k-237 scale (14541 entities, 5 seeds)')
     parser.add_argument('--log_every', type=int, default=50)
     parser.add_argument('--device', type=str, default=None)
     parser.add_argument('--skip_full_delta', action='store_true',

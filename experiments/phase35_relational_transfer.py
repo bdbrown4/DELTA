@@ -27,7 +27,7 @@ This phase runs a three-step diagnostic pipeline:
 
 Success criteria:
   - Linear probe: > 0.5 (encoder transfers, head was the problem)
-  - GRL zero-shot: > 0.3 (genuine structural transfer)
+  - GRL probe > baseline probe (cross-domain: direct zero-shot N/A)
   - GRL + probe: > 0.7 (upper bound with minimal adaptation)
 
 Requirements:
@@ -503,7 +503,7 @@ def main():
                         help='Maximum GRL lambda')
     parser.add_argument('--log_every', type=int, default=20)
     parser.add_argument('--full', action='store_true',
-                        help='Full-scale: FB15k-237 (14505) -> WN18RR (40943)')
+                        help='Full-scale: FB15k-237 (14541) -> WN18RR (40943)')
     parser.add_argument('--device', type=str, default=None)
     parser.add_argument('--max_neighbors', type=int, default=50,
                         help='Max nodes per mini-graph subgraph (for large graphs)')

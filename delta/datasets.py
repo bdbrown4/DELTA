@@ -28,9 +28,9 @@ DATASET_URLS = {
         'test':  f'{_BASE_URL}/FB15k-237/test.txt',
     },
     'wn18rr': {
-        'train': f'{_BASE_URL}/WN18RR/train.txt',
-        'valid': f'{_BASE_URL}/WN18RR/valid.txt',
-        'test':  f'{_BASE_URL}/WN18RR/test.txt',
+        'train': f'{_BASE_URL}/WN18RR/original/train.txt',
+        'valid': f'{_BASE_URL}/WN18RR/original/valid.txt',
+        'test':  f'{_BASE_URL}/WN18RR/original/test.txt',
     },
 }
 

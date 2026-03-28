@@ -214,6 +214,8 @@ def train_and_evaluate(model, graph, labels, epochs, lr, device, label='model',
                     batch = idx_list[i:i + batch_size * 2]
                     mg, ml, li = sampler.sample_subgraph(
                         batch, graph.node_features, graph.edge_features, labels)
+                    if mg is None:
+                        continue
                     mg, ml = mg.to(device), ml.to(device)
                     out = model(mg)
                     logits = model.classify_edges(out)
@@ -229,6 +231,8 @@ def train_and_evaluate(model, graph, labels, epochs, lr, device, label='model',
                 batch = train_idx_list[i:i + batch_size]
                 mg, ml, li = sampler.sample_subgraph(
                     batch, graph.node_features, graph.edge_features, labels)
+                if mg is None:
+                    continue
                 mg, ml, li = mg.to(device), ml.to(device), li.to(device)
                 out = model(mg)
                 logits = model.classify_edges(out)

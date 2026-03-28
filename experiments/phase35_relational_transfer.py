@@ -377,6 +377,8 @@ def train_adversarial(src_graph, src_labels, tgt_graph, num_relations,
                 mg_src, ml_src, li_src = src_sampler.sample_subgraph(
                     batch, src_graph.node_features,
                     src_graph.edge_features, src_labels)
+                if mg_src is None:
+                    continue
                 mg_src, ml_src, li_src = mg_src.to(device), ml_src.to(device), li_src.to(device)
 
                 src_out = model(mg_src)
@@ -430,6 +432,8 @@ def train_adversarial(src_graph, src_labels, tgt_graph, num_relations,
                         mg, ml, li = src_sampler.sample_subgraph(
                             batch, src_graph.node_features,
                             src_graph.edge_features, src_labels)
+                        if mg is None:
+                            continue
                         mg, ml = mg.to(device), ml.to(device)
                         out = model(mg)
                         logits = model.classify_edges(out)
@@ -643,6 +647,8 @@ def main():
                 mg, ml, li = src_sampler.sample_subgraph(
                     batch, src_graph.node_features,
                     src_graph.edge_features, src_labels)
+                if mg is None:
+                    continue
                 mg, ml, li = mg.to(device), ml.to(device), li.to(device)
                 out = baseline_model(mg)
                 logits = baseline_model.classify_edges(out)
@@ -662,6 +668,8 @@ def main():
                         mg, ml, li = src_sampler.sample_subgraph(
                             batch, src_graph.node_features,
                             src_graph.edge_features, src_labels)
+                        if mg is None:
+                            continue
                         mg, ml = mg.to(device), ml.to(device)
                         out = baseline_model(mg)
                         logits = baseline_model.classify_edges(out)

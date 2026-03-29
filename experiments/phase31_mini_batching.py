@@ -69,7 +69,13 @@ class NeighborSampler:
         self.edge_index = edge_index
 
     def sample_neighborhood(self, seed_nodes):
-        """BFS expansion from seed nodes up to k_hops, capped at max_neighbors."""
+        """BFS expansion from seed nodes up to k_hops.
+
+        Seed nodes are ALWAYS preserved.  ``max_neighbors`` caps only the
+        BFS-expanded context nodes so that target-edge endpoints are never
+        discarded.  Total sample size ≤ len(seed_nodes) + max_neighbors.
+        """
+        seed_set = frozenset(seed_nodes)
         visited = set(seed_nodes)
         frontier = set(seed_nodes)
 
@@ -83,9 +89,10 @@ class NeighborSampler:
             visited.update(next_frontier)
             frontier = next_frontier
 
-            if len(visited) >= self.max_neighbors:
-                limited = sorted(visited)[:self.max_neighbors]
-                visited = set(limited)
+            # Cap BFS expansion nodes, but always keep every seed node
+            non_seeds = sorted(visited - seed_set)
+            if len(non_seeds) > self.max_neighbors:
+                visited = seed_set | set(non_seeds[:self.max_neighbors])
                 break
 
         return sorted(visited)

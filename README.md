@@ -29,6 +29,8 @@ Raw Input (any modality)
 
 Proposition tracking, open gaps, compute options, and the publication pathway are maintained in **[RESEARCH_AGENDA.md](./docs/RESEARCH_AGENDA.md)** — including the external Phase 30 assessment and next steps.
 
+The full path to publication (Phases 38–44, target NeurIPS/ICLR) is tracked in **[PUBLICATION_ROADMAP.md](./docs/PUBLICATION_ROADMAP.md)** — including per-phase verification gates, the paper structure outline, and required results tables.
+
 ## Project Structure
 
 ```
@@ -82,7 +84,13 @@ DELTA/
 │   ├── phase34_graphgps_grit_comparison.py  # DELTA vs GraphGPS vs GRIT (Gap 1)
 │   ├── phase35_relational_transfer.py       # Domain-agnostic transfer: linear probe + GRL + ablation
 │   ├── phase36_task_aware_at_scale.py       # Task-aware construction at 500-2000 nodes
-│   └── phase37_real_comparison.py           # Real FB15k-237 parameter-matched comparison
+│   ├── phase37_real_comparison.py           # Real FB15k-237 parameter-matched comparison
+│   ├── phase38_component_ablation.py        # [planned] Real FB15k-237 ablation (5 components × 5 seeds)
+│   ├── phase39_multihop_path_queries.py     # [planned] 1p/2p/3p path query evaluation
+│   ├── phase40_yago3_benchmark.py           # [planned] YAGO3-10 (123K entities, 4-model × 5 seeds)
+│   ├── phase41_codexm_benchmark.py          # [planned] Codex-M (17K entities, 51 relations)
+│   ├── phase42_scaling_analysis.py          # [planned] Sub-quadratic scaling: 500→123K entities
+│   └── phase43_interpretability.py          # [planned] EdgeAttention top-k + t-SNE visualizations
 ├── notebooks/              # Colab-ready infrastructure
 │   └── delta_colab_ready.py  # Automated Colab setup + Phase 34 runner
 ├── tests/                  # Unit tests (44/44 passing)
@@ -461,4 +469,4 @@ Run on Colab Pro+ H100 using Phase 31 mini-batching: estimated 6–10 hours for 
 
 ---
 
-*DELTA architecture — conceived March 25, 2026. 38 experiment phases (Phases 1–30 + Phase 27b correction + Phases 31–37), 6 architectural fixes, 44 unit tests. Phases 31–34 complete (H100/RTX PRO 6000). Phases 35–37 scripts ready for GPU execution.*
+*DELTA architecture — conceived March 25, 2026. 37 experiment phases (Phases 1–30 + Phase 27b correction + Phases 31–37), 6 architectural fixes, 44 unit tests. Phases 31–34 complete (H100/RTX PRO 6000). Phases 35–37 running on Colab Pro+. Phases 38–43 planned — see [docs/PUBLICATION_ROADMAP.md](./docs/PUBLICATION_ROADMAP.md).*

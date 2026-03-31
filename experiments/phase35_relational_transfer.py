@@ -38,6 +38,8 @@ Requirements:
 Usage:
     python experiments/phase35_relational_transfer.py [--source_entities 500]
     python experiments/phase35_relational_transfer.py --full
+    python experiments/phase35_relational_transfer.py --full --skip-to-step 2 \
+        --known-source-acc 0.992 --known-probe-acc 0.961
 """
 
 import sys
@@ -370,6 +372,10 @@ def train_adversarial(src_graph, src_labels, tgt_graph, num_relations,
             tgt_edge_ids = list(range(tgt_graph.num_edges))
             random.shuffle(tgt_edge_ids)
 
+            # Cache target forward once per epoch (not per batch)
+            tgt_out = model(tgt_graph)
+            tgt_all_edge_feats = tgt_out.edge_features.detach()
+
             for i in range(0, len(train_idx_list), batch_size):
                 batch = train_idx_list[i:i + batch_size]
 
@@ -392,8 +398,7 @@ def train_adversarial(src_graph, src_labels, tgt_graph, num_relations,
                 # Target mini-batch: domain loss only (no task labels)
                 tgt_batch_start = (i // batch_size * batch_size) % max(len(tgt_edge_ids) - batch_size, 1)
                 tgt_batch = tgt_edge_ids[tgt_batch_start:tgt_batch_start + batch_size]
-                tgt_out = model(tgt_graph)  # target graph is small — full forward ok
-                tgt_edge_feats = grl(tgt_out.edge_features[tgt_batch])
+                tgt_edge_feats = grl(tgt_all_edge_feats[tgt_batch])
                 tgt_domain_logits = domain_clf(tgt_edge_feats)
                 tgt_domain_labels = torch.ones(len(tgt_batch), 1, device=device)
 
@@ -515,6 +520,13 @@ def main():
                         help='Edge batch size for mini-batch training')
     parser.add_argument('--accum_steps', type=int, default=4,
                         help='Gradient accumulation steps')
+    parser.add_argument('--skip-to-step', type=int, default=0,
+                        choices=[0, 1, 2, 3],
+                        help='Skip to this step (0=full run, 2=skip baseline+probe)')
+    parser.add_argument('--known-source-acc', type=float, default=None,
+                        help='Known source accuracy from previous Step 0 (used with --skip-to-step)')
+    parser.add_argument('--known-probe-acc', type=float, default=None,
+                        help='Known probe accuracy from previous Step 1 (used with --skip-to-step)')
     args = parser.parse_args()
 
     device = args.device or ('cuda' if torch.cuda.is_available() else 'cpu')
@@ -593,133 +605,180 @@ def main():
         )
         print()
 
+    skip_to = getattr(args, 'skip_to_step', 0)
+
     # ==================================================================
     # STEP 0: Baseline — Train source, evaluate zero-shot (Phase 32 repro)
     # ==================================================================
-    print("=" * 70)
-    print("STEP 0: Baseline (Phase 32 reproduction)")
-    print("=" * 70)
+    baseline_model = None
+    source_acc = None
+    frozen_zeroshot = None
 
-    print("Training DELTA on source domain...")
-    baseline_model = DELTAModel(
-        d_node=d_node, d_edge=d_edge, num_layers=3, num_heads=4,
-        num_classes=num_relations,
-    )
-    baseline_model = baseline_model.to(device)
-    optimizer = torch.optim.Adam(baseline_model.parameters(), lr=1e-3)
-
-    if src_sampler is None:
-        # Small graph: full-graph training
-        src_graph_d = src_graph.to(device)
-        src_labels_d = src_labels.to(device)
-        E = src_labels_d.shape[0]
-        perm = torch.randperm(E, device=device)
-        train_idx = perm[:int(E * 0.8)]
-
-        for epoch in range(args.epochs):
-            baseline_model.train()
-            out = baseline_model(src_graph_d)
-            logits = baseline_model.classify_edges(out)
-            loss = F.cross_entropy(logits[train_idx], src_labels_d[train_idx])
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-        baseline_model.eval()
-        with torch.no_grad():
-            out = baseline_model(src_graph_d)
-            logits = baseline_model.classify_edges(out)
-            source_acc = (logits.argmax(-1) == src_labels_d).float().mean().item()
+    if skip_to >= 1:
+        # Skip Step 0 — use known results
+        source_acc = getattr(args, 'known_source_acc', None)
+        if source_acc is None:
+            print("WARNING: --skip-to-step >= 1 but no --known-source-acc provided.")
+            print("         Using placeholder value 0.0")
+            source_acc = 0.0
+        frozen_zeroshot = None  # always N/A in cross-domain
+        print("=" * 70)
+        print("STEP 0: Baseline (SKIPPED — using known results)")
+        print("=" * 70)
+        print(f"  Source accuracy (known): {source_acc:.3f}")
+        if cross_domain:
+            print(f"  Zero-shot: N/A (cross-domain)")
+        print()
     else:
-        # Large graph: mini-batch training
-        E = src_labels.shape[0]
-        perm = torch.randperm(E)
-        train_idx_list = perm[:int(E * 0.8)].tolist()
-        val_idx_list = perm[int(E * 0.8):].tolist()
-        best_val_acc = 0.0
+        print("=" * 70)
+        print("STEP 0: Baseline (Phase 32 reproduction)")
+        print("=" * 70)
 
-        for epoch in range(args.epochs):
-            baseline_model.train()
-            random.shuffle(train_idx_list)
-            optimizer.zero_grad()
-            for i in range(0, len(train_idx_list), args.batch_size):
-                batch = train_idx_list[i:i + args.batch_size]
-                mg, ml, li = src_sampler.sample_subgraph(
-                    batch, src_graph.node_features,
-                    src_graph.edge_features, src_labels)
-                if mg is None:
-                    continue
-                mg, ml, li = mg.to(device), ml.to(device), li.to(device)
-                out = baseline_model(mg)
+        print("Training DELTA on source domain...")
+        baseline_model = DELTAModel(
+            d_node=d_node, d_edge=d_edge, num_layers=3, num_heads=4,
+            num_classes=num_relations,
+        )
+        baseline_model = baseline_model.to(device)
+        optimizer = torch.optim.Adam(baseline_model.parameters(), lr=1e-3)
+
+        if src_sampler is None:
+            # Small graph: full-graph training
+            src_graph_d = src_graph.to(device)
+            src_labels_d = src_labels.to(device)
+            E = src_labels_d.shape[0]
+            perm = torch.randperm(E, device=device)
+            train_idx = perm[:int(E * 0.8)]
+
+            for epoch in range(args.epochs):
+                baseline_model.train()
+                out = baseline_model(src_graph_d)
                 logits = baseline_model.classify_edges(out)
-                loss = F.cross_entropy(logits[li], ml[li])
-                (loss / args.accum_steps).backward()
-                step_num = (i // args.batch_size) + 1
-                if step_num % args.accum_steps == 0 or (i + args.batch_size) >= len(train_idx_list):
-                    optimizer.step()
-                    optimizer.zero_grad()
+                loss = F.cross_entropy(logits[train_idx], src_labels_d[train_idx])
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-            if (epoch + 1) % args.log_every == 0 or epoch == args.epochs - 1:
-                baseline_model.eval()
-                val_correct = 0
-                with torch.no_grad():
-                    for i in range(0, len(val_idx_list), args.batch_size * 2):
-                        batch = val_idx_list[i:i + args.batch_size * 2]
-                        mg, ml, li = src_sampler.sample_subgraph(
-                            batch, src_graph.node_features,
-                            src_graph.edge_features, src_labels)
-                        if mg is None:
-                            continue
-                        mg, ml = mg.to(device), ml.to(device)
-                        out = baseline_model(mg)
-                        logits = baseline_model.classify_edges(out)
-                        val_correct += (logits[li].argmax(-1) == ml[li]).sum().item()
-                val_acc = val_correct / max(len(val_idx_list), 1)
-                best_val_acc = max(best_val_acc, val_acc)
-                print(f"  Epoch {epoch+1:3d}  Val: {val_acc:.3f}  (best: {best_val_acc:.3f})")
+            baseline_model.eval()
+            with torch.no_grad():
+                out = baseline_model(src_graph_d)
+                logits = baseline_model.classify_edges(out)
+                source_acc = (logits.argmax(-1) == src_labels_d).float().mean().item()
+        else:
+            # Large graph: mini-batch training
+            E = src_labels.shape[0]
+            perm = torch.randperm(E)
+            train_idx_list = perm[:int(E * 0.8)].tolist()
+            val_idx_list = perm[int(E * 0.8):].tolist()
+            best_val_acc = 0.0
 
-        source_acc = best_val_acc  # use best val acc as proxy for source performance
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-    print(f"  Source accuracy: {source_acc:.3f}")
+            for epoch in range(args.epochs):
+                baseline_model.train()
+                random.shuffle(train_idx_list)
+                optimizer.zero_grad()
+                for i in range(0, len(train_idx_list), args.batch_size):
+                    batch = train_idx_list[i:i + args.batch_size]
+                    mg, ml, li = src_sampler.sample_subgraph(
+                        batch, src_graph.node_features,
+                        src_graph.edge_features, src_labels)
+                    if mg is None:
+                        continue
+                    mg, ml, li = mg.to(device), ml.to(device), li.to(device)
+                    out = baseline_model(mg)
+                    logits = baseline_model.classify_edges(out)
+                    loss = F.cross_entropy(logits[li], ml[li])
+                    (loss / args.accum_steps).backward()
+                    step_num = (i // args.batch_size) + 1
+                    if step_num % args.accum_steps == 0 or (i + args.batch_size) >= len(train_idx_list):
+                        optimizer.step()
+                        optimizer.zero_grad()
 
-    if cross_domain:
-        frozen_zeroshot = None
-        print(f"  Zero-shot: N/A (source has {src_num_relations} classes, "
-              f"target has {tgt_num_relations}) — using probe instead")
-    else:
-        frozen_zeroshot = evaluate_zero_shot(
-            baseline_model, tgt_graph, tgt_labels, device)
-        print(f"  Zero-shot (frozen full model): {frozen_zeroshot:.3f}")
-    print()
+                if (epoch + 1) % args.log_every == 0 or epoch == args.epochs - 1:
+                    baseline_model.eval()
+                    val_correct = 0
+                    with torch.no_grad():
+                        for i in range(0, len(val_idx_list), args.batch_size * 2):
+                            batch = val_idx_list[i:i + args.batch_size * 2]
+                            mg, ml, li = src_sampler.sample_subgraph(
+                                batch, src_graph.node_features,
+                                src_graph.edge_features, src_labels)
+                            if mg is None:
+                                continue
+                            mg, ml = mg.to(device), ml.to(device)
+                            out = baseline_model(mg)
+                            logits = baseline_model.classify_edges(out)
+                            val_correct += (logits[li].argmax(-1) == ml[li]).sum().item()
+                    val_acc = val_correct / max(len(val_idx_list), 1)
+                    best_val_acc = max(best_val_acc, val_acc)
+                    print(f"  Epoch {epoch+1:3d}  Val: {val_acc:.3f}  (best: {best_val_acc:.3f})")
+
+            source_acc = best_val_acc  # use best val acc as proxy for source performance
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+        print(f"  Source accuracy: {source_acc:.3f}")
+
+        if cross_domain:
+            frozen_zeroshot = None
+            print(f"  Zero-shot: N/A (source has {src_num_relations} classes, "
+                  f"target has {tgt_num_relations}) — using probe instead")
+        else:
+            frozen_zeroshot = evaluate_zero_shot(
+                baseline_model, tgt_graph, tgt_labels, device)
+            print(f"  Zero-shot (frozen full model): {frozen_zeroshot:.3f}")
+        print()
 
     # ==================================================================
     # STEP 1: Linear Probe — Is the entanglement in the encoder or head?
     # ==================================================================
-    print("=" * 70)
-    print("STEP 1: Linear Probe (diagnostic)")
-    print("=" * 70)
-    print(f"  Freezing encoder, training fresh head on {args.probe_samples} "
-          f"target samples...")
+    probe_result = None
 
-    probe_result = run_linear_probe(
-        baseline_model, tgt_graph, tgt_labels, tgt_num_relations, device,
-        num_samples=args.probe_samples,
-        epochs=args.probe_epochs,
-    )
-    print(f"  Probe accuracy: {probe_result['probe_acc']:.3f}")
-    print(f"  Random baseline: {probe_result['random_baseline']:.3f}")
-    print()
-
-    if probe_result['probe_acc'] > 0.5:
-        print("  >> Encoder transfers! Head was the bottleneck.")
-        print("     Attention patterns capture structural features.")
-    elif probe_result['probe_acc'] > random_baseline * 3:
-        print("  >> Partial transfer. Encoder has some structural signal,")
-        print("     but is partially entangled with domain features.")
+    if skip_to >= 2:
+        # Skip Step 1 — use known results
+        known_probe = getattr(args, 'known_probe_acc', None)
+        if known_probe is None:
+            print("WARNING: --skip-to-step >= 2 but no --known-probe-acc provided.")
+            print("         Using placeholder value 0.0")
+            known_probe = 0.0
+        probe_result = {
+            'probe_acc': known_probe,
+            'random_baseline': random_baseline,
+        }
+        print("=" * 70)
+        print("STEP 1: Linear Probe (SKIPPED — using known results)")
+        print("=" * 70)
+        print(f"  Probe accuracy (known): {probe_result['probe_acc']:.3f}")
+        print(f"  Random baseline: {probe_result['random_baseline']:.3f}")
+        print()
     else:
-        print("  >> Encoder is deeply entangled. GRL is urgently needed.")
-    print()
+        if baseline_model is None:
+            print("ERROR: Step 1 requires baseline_model from Step 0.")
+            print("       Run without --skip-to-step or use --skip-to-step 2.")
+            sys.exit(1)
+
+        print("=" * 70)
+        print("STEP 1: Linear Probe (diagnostic)")
+        print("=" * 70)
+        print(f"  Freezing encoder, training fresh head on {args.probe_samples} "
+              f"target samples...")
+
+        probe_result = run_linear_probe(
+            baseline_model, tgt_graph, tgt_labels, tgt_num_relations, device,
+            num_samples=args.probe_samples,
+            epochs=args.probe_epochs,
+        )
+        print(f"  Probe accuracy: {probe_result['probe_acc']:.3f}")
+        print(f"  Random baseline: {probe_result['random_baseline']:.3f}")
+        print()
+
+        if probe_result['probe_acc'] > 0.5:
+            print("  >> Encoder transfers! Head was the bottleneck.")
+            print("     Attention patterns capture structural features.")
+        elif probe_result['probe_acc'] > random_baseline * 3:
+            print("  >> Partial transfer. Encoder has some structural signal,")
+            print("     but is partially entangled with domain features.")
+        else:
+            print("  >> Encoder is deeply entangled. GRL is urgently needed.")
+        print()
 
     # ==================================================================
     # STEP 2: Domain-Adversarial Training (GRL)
@@ -782,7 +841,7 @@ def main():
         print(f"  Improvement:    {grl_improvement:+.3f}")
         fixed_zeroshot = None
         grl_fixed_zeroshot = None
-    else:
+    elif baseline_model is not None:
         # Same label space: direct zero-shot comparison
         fixed_zeroshot = evaluate_zero_shot(
             baseline_model, tgt_graph, tgt_labels, device)
@@ -792,6 +851,13 @@ def main():
         print(f"  GRL zero-shot on target:             {grl_fixed_zeroshot:.3f}")
         print(f"  Improvement from GRL:                "
               f"{grl_fixed_zeroshot - fixed_zeroshot:+.3f}")
+    else:
+        # Same label space but baseline was skipped
+        fixed_zeroshot = None
+        grl_fixed_zeroshot = evaluate_zero_shot(
+            adv_model, tgt_graph, tgt_labels, device)
+        print(f"  Baseline zero-shot: N/A (Step 0 was skipped)")
+        print(f"  GRL zero-shot on target: {grl_fixed_zeroshot:.3f}")
     print()
 
     # ==================================================================

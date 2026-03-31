@@ -42,10 +42,49 @@ All 44 unit tests passing locally. Will re-verify on Colab before running experi
 
 **Estimated Runtime:** 1-2 hours on H100
 
+**Status:** IN PROGRESS (Steps 0–1 complete, Step 2 interrupted)
+
+### Step 0: Baseline (Phase 32 Reproduction)
+
+| Metric | Value |
+|--------|-------|
+| Source accuracy (FB15k-237 val) | **0.992** |
+| Zero-shot on WN18RR | N/A (237 → 11 classes) |
+| Convergence | 85 epochs (plateau at 0.992) |
+
+Training curve:
+```
+Epoch   5  Val: 0.977    Epoch  50  Val: 0.990
+Epoch  10  Val: 0.983    Epoch  65  Val: 0.991
+Epoch  20  Val: 0.987    Epoch  85  Val: 0.992 (best)
+Epoch  30  Val: 0.988    Epoch 100  Val: 0.990
+```
+
+### Step 1: Linear Probe (Diagnostic)
+
+| Metric | Value |
+|--------|-------|
+| Probe accuracy (100 samples) | **0.961** |
+| Random baseline | 0.091 |
+| Verdict | **Encoder transfers! Head was the bottleneck.** |
+
+Key finding: Frozen encoder + fresh 11-class head on just 100 WN18RR samples → 0.961.
+DELTA's attention patterns capture domain-agnostic structural features.
+
+### Step 2: Domain-Adversarial Training (GRL)
+
+**Status:** [PENDING — restarting with `--skip-to-step 2`]
+
+```
+[Will be populated on next run]
+```
+
+### Step 3: Constructor Entanglement Ablation
+
 **Status:** [PENDING]
 
 ```
-[Results will be populated after Colab execution]
+[Will be populated on next run]
 ```
 
 ---

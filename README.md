@@ -461,6 +461,19 @@ Run on Colab Pro+ H100 using Phase 31 mini-batching: estimated 6–10 hours for 
 - **Multi-modal input** — Extend graph constructor beyond token sequences (images, tables, structured data)
 - **Real-world application** — Knowledge graph completion, drug-target interaction, or recommendation systems at production scale
 
+## Research Methodology and AI Assistance
+
+This project was developed by a solo software engineer using LLMs and AI agents as force-multipliers throughout the research process. All architectural decisions, experimental design, and scientific direction were driven by the human researcher. AI tools (primarily Claude, Gemini, and GitHub Copilot) were used extensively for:
+
+- **Code generation** — boilerplate PyTorch, training loops, and data loading utilities
+- **Debugging** — diagnosing gradient issues, tracking down shape mismatches, fixing convergence failures
+- **Sounding board** — stress-testing architectural hypotheses, reviewing experimental designs
+- **Documentation** — drafting and refining explanatory text
+
+What the AI tools did *not* do: identify the three-paradigm gap, formulate the edge-as-first-class-citizen thesis, design the 37-phase ablation structure, recognize when results were confounded (e.g. Phase 27 batch-1 bug), or decide which failures were scientifically meaningful vs. implementation artifacts. Those required the human researcher to look at the numbers and reason about what they meant.
+
+This is consistent with how most modern ML research is conducted. It is disclosed here unapologetically and will be noted in any resulting publication.
+
 ## Requirements
 
 - Python 3.10+

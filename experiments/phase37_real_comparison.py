@@ -42,6 +42,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import argparse
 import copy
+import json
 import time
 import numpy as np
 import torch
@@ -146,8 +147,14 @@ class ProjectedDELTA(nn.Module):
 
 def train_and_evaluate(model, graph, labels, epochs, lr, device, label='model',
                        log_every=50, sampler=None, batch_size=64, accum_steps=4,
-                       train_idx=None, val_idx=None, test_idx=None):
-    """Train and evaluate a single model. Returns dict with metrics."""
+                       train_idx=None, val_idx=None, test_idx=None,
+                       patience=0):
+    """Train and evaluate a single model. Returns dict with metrics.
+
+    Args:
+        patience: Early stopping patience in evaluation intervals. 0 = disabled.
+            E.g. patience=4 with log_every=25 stops after 100 epochs without improvement.
+    """
     model = model.to(device)
 
     E = labels.shape[0]
@@ -161,6 +168,8 @@ def train_and_evaluate(model, graph, labels, epochs, lr, device, label='model',
     best_val_acc = 0.0
     best_test_acc = 0.0
     best_train_acc = 0.0
+    evals_without_improvement = 0
+    stopped_epoch = epochs
     start = time.time()
 
     if sampler is None:
@@ -193,12 +202,21 @@ def train_and_evaluate(model, graph, labels, epochs, lr, device, label='model',
                         best_val_acc = val_acc
                         best_test_acc = test_acc
                         best_train_acc = train_acc
+                        evals_without_improvement = 0
+                    else:
+                        evals_without_improvement += 1
 
                 print(f"    [{label}] Epoch {epoch+1:3d}  "
                       f"Loss: {loss.item():.4f}  "
                       f"Train: {train_acc:.3f}  "
                       f"Val: {val_acc:.3f}  "
                       f"Test: {test_acc:.3f}")
+
+                if patience > 0 and evals_without_improvement >= patience:
+                    print(f"    [{label}] Early stopping at epoch {epoch+1} "
+                          f"(no improvement for {patience} evals)")
+                    stopped_epoch = epoch + 1
+                    break
     else:
         # Large graph: mini-batch training
         import random as _random
@@ -252,11 +270,20 @@ def train_and_evaluate(model, graph, labels, epochs, lr, device, label='model',
                     best_val_acc = val_acc
                     best_test_acc = test_acc
                     best_train_acc = train_acc
+                    evals_without_improvement = 0
+                else:
+                    evals_without_improvement += 1
 
                 print(f"    [{label}] Epoch {epoch+1:3d}  "
                       f"Train: {train_acc:.3f}  "
                       f"Val: {val_acc:.3f}  "
                       f"Test: {test_acc:.3f}")
+
+                if patience > 0 and evals_without_improvement >= patience:
+                    print(f"    [{label}] Early stopping at epoch {epoch+1} "
+                          f"(no improvement for {patience} evals)")
+                    stopped_epoch = epoch + 1
+                    break
 
     training_time = time.time() - start
     total_params = sum(p.numel() for p in model.parameters())
@@ -267,6 +294,7 @@ def train_and_evaluate(model, graph, labels, epochs, lr, device, label='model',
         'best_train_acc': best_train_acc,
         'training_time_s': training_time,
         'total_params': total_params,
+        'stopped_epoch': stopped_epoch,
     }
 
 
@@ -277,7 +305,8 @@ def train_and_evaluate(model, graph, labels, epochs, lr, device, label='model',
 def run_multi_seed(model_factory, graph, labels, num_seeds, epochs, lr,
                    device, label='model', log_every=50,
                    sampler=None, batch_size=64, accum_steps=4,
-                   train_idx=None, val_idx=None, test_idx=None):
+                   train_idx=None, val_idx=None, test_idx=None,
+                   patience=0):
     """Run training across multiple seeds, return aggregated results."""
     all_results = []
 
@@ -294,7 +323,8 @@ def run_multi_seed(model_factory, graph, labels, num_seeds, epochs, lr,
             model, graph, labels, epochs, lr, device,
             label=f'{label}-s{seed_idx}', log_every=log_every,
             sampler=sampler, batch_size=batch_size, accum_steps=accum_steps,
-            train_idx=train_idx, val_idx=val_idx, test_idx=test_idx)
+            train_idx=train_idx, val_idx=val_idx, test_idx=test_idx,
+            patience=patience)
         all_results.append(result)
 
         # Free memory
@@ -337,6 +367,13 @@ def main():
     parser.add_argument('--device', type=str, default=None)
     parser.add_argument('--skip_full_delta', action='store_true',
                         help='Skip DELTA-Full (save time if only checking param match)')
+    parser.add_argument('--skip_models', type=str, default='',
+                        help='Comma-separated model names to skip (e.g. "DELTA-Full,GraphGPS")')
+    parser.add_argument('--patience', type=int, default=0,
+                        help='Early stopping patience in eval intervals. 0=disabled. '
+                             'Recommended: 4 (=100 epochs with log_every=25)')
+    parser.add_argument('--log_file', type=str, default=None,
+                        help='Path to write results log (in addition to stdout)')
     parser.add_argument('--max_neighbors', type=int, default=50,
                         help='Max nodes per mini-graph subgraph (for large graphs)')
     parser.add_argument('--batch_size', type=int, default=64,
@@ -352,6 +389,37 @@ def main():
         args.num_seeds = 5
         if args.log_every == 50:
             args.log_every = 25
+        if args.patience == 0:
+            args.patience = 4  # Default early stopping for --full (4 evals × 25 = 100 epochs)
+
+    # Set up file logging (tee to both stdout and file)
+    if args.log_file:
+        import io
+
+        class TeeWriter:
+            def __init__(self, *streams):
+                self.streams = streams
+
+            def write(self, data):
+                for s in self.streams:
+                    s.write(data)
+                    s.flush()
+
+            def flush(self):
+                for s in self.streams:
+                    s.flush()
+
+        log_fh = open(args.log_file, 'a')
+        sys.stdout = TeeWriter(sys.__stdout__, log_fh)
+    else:
+        log_fh = None
+
+    # Parse skip list
+    skip_models = set()
+    if args.skip_full_delta:
+        skip_models.add('DELTA-Full')
+    if args.skip_models:
+        skip_models.update(name.strip() for name in args.skip_models.split(','))
 
     use_real_data = args.full  # --full uses real FB15k-237
 
@@ -403,7 +471,7 @@ def main():
 
     model_configs = {}
 
-    if not args.skip_full_delta:
+    if 'DELTA-Full' not in skip_models:
         model_configs['DELTA-Full'] = {
             'factory': lambda: create_delta_full(num_relations, d_node, d_edge),
             'desc': f'd_node={d_node}, d_edge={d_edge}, layers=3',
@@ -426,6 +494,14 @@ def main():
         'desc': f'd_node={d_node}, d_edge={d_edge}, layers=3',
     }
 
+    # Remove skipped models
+    for name in skip_models:
+        model_configs.pop(name, None)
+
+    if skip_models:
+        print(f"  Skipping models: {', '.join(sorted(skip_models))}")
+        print()
+
     # Print param counts before training
     print("  Model Parameter Counts:")
     for name, cfg in model_configs.items():
@@ -437,6 +513,7 @@ def main():
 
     # --- Run all models ---
     results = {}
+    results_file = args.log_file.replace('.txt', '.json') if args.log_file else 'phase37_results.json'
     for name, cfg in model_configs.items():
         print(f"\n{'='*70}")
         print(f"Training: {name}")
@@ -447,10 +524,26 @@ def main():
             label=name, log_every=args.log_every,
             sampler=sampler, batch_size=args.batch_size,
             accum_steps=args.accum_steps,
-            train_idx=train_idx, val_idx=val_idx, test_idx=test_idx)
+            train_idx=train_idx, val_idx=val_idx, test_idx=test_idx,
+            patience=args.patience)
 
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+
+        # Save incremental results after each model completes
+        _save = {}
+        for rname, rdata in results.items():
+            _save[rname] = {
+                'test_mean': rdata['test_mean'], 'test_std': rdata['test_std'],
+                'val_mean': rdata['val_mean'], 'val_std': rdata['val_std'],
+                'time_mean': rdata['time_mean'], 'total_params': rdata['total_params'],
+                'per_seed': [{'test': r['best_test_acc'], 'val': r['best_val_acc'],
+                              'time': r['training_time_s'], 'stopped_epoch': r['stopped_epoch']}
+                             for r in rdata['individual']],
+            }
+        with open(results_file, 'w') as f:
+            json.dump(_save, f, indent=2)
+        print(f"\n  [Saved incremental results to {results_file}]")
 
     # ==================================================================
     # RESULTS
@@ -519,6 +612,12 @@ def main():
         passed = full_vs_matched >= 0.0
         print(f"    DELTA-Full ≥ DELTA-Matched:         "
               f"{'✓ PASSED' if passed else '✗ FAILED'} ({full_vs_matched:+.3f})")
+
+    # Cleanup
+    if log_fh:
+        sys.stdout = sys.__stdout__
+        log_fh.close()
+        print(f"\nResults saved to {args.log_file} and {results_file}")
 
 
 if __name__ == '__main__':

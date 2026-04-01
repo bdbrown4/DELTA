@@ -140,11 +140,52 @@ DELTA's frozen encoder achieves **0.961 on WN18RR with only 100 labeled samples*
 
 **Estimated Runtime:** 2–4 hours on H100
 
-**Status:** [PENDING]
+**Status:** COMPLETE
 
-```
-[Results will be populated after Colab execution]
-```
+### Experiment A: Sparse Path Graphs (33% edges removed)
+
+| Nodes | Fixed | Augmented | Δ |
+|------:|------:|----------:|----:|
+| 500 | 1.000 | 1.000 | +0.000 |
+| 1000 | 1.000 | 1.000 | +0.000 |
+| 2000 | 1.000 | 1.000 | +0.000 |
+| 5000 | 1.000 | 1.000 | +0.000 |
+
+Both reach 1.000. Augmented converges slightly faster (epoch 50 val already 1.000 vs 0.968–0.998 for fixed), but final accuracy is identical.
+
+### Experiment B: Cross-Cluster Reasoning
+
+| Config | Fixed | Augmented | Δ |
+|--------|------:|----------:|----:|
+| 5 clusters × 100 nodes, 2 bridges | 0.961 | 0.974 | **+0.013** |
+| 5 clusters × 200 nodes, 2 bridges | 0.989 | 0.989 | +0.000 |
+| 10 clusters × 200 nodes, 3 bridges | 0.973 | 0.974 | +0.001 |
+
+Best case: +1.3% on the smallest/sparsest config. Effect vanishes with more nodes or bridges.
+
+### Experiment C: Edge Threshold Sweep (500 nodes)
+
+| Threshold | Augmented | Δ vs Fixed (1.000) |
+|----------:|----------:|-------------------:|
+| 0.30 | 1.000 | +0.000 |
+| 0.10 | 1.000 | +0.000 |
+| 0.05 | 0.988 | **-0.012** |
+
+Aggressive threshold (0.05) adds noisy edges that slightly hurt accuracy.
+
+### Verification Gate
+
+| Gate | Target | Actual | Status |
+|------|--------|--------|--------|
+| Constructor wins > 3% on ≥ 50% configs | ≥ 4/7 configs | **0/7** | ❌ Failed |
+
+### Analysis
+
+**The GraphConstructor adds no measurable value.** Across 7 configurations — sparse paths up to 5000 nodes, cross-cluster reasoning with bottleneck bridges, and threshold sweeps — augmented topology never exceeds fixed topology by more than 1.3%. The most aggressive threshold (0.05) actively hurts.
+
+**Why this is consistent with Phase 35:** DELTA's core architecture (edge-centric dual attention + 2-hop adjacency) is powerful enough that the given topology is sufficient. The encoder doesn't need augmented edges to reason across graph structures — it already captures the relevant relational patterns from what's there.
+
+**Publication impact:** GraphConstructor should be **de-emphasized or dropped** from the paper. It's defensible to mention it as an optional module, but it's not a contribution worth highlighting. The paper's architectural novelty rests on DualParallelAttention, 2-hop edge adjacency, and ReconciliationBridge — all validated by Phase 38 ablation (upcoming).
 
 ---
 

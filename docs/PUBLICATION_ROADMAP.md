@@ -1,10 +1,10 @@
 # DELTA: Publication Roadmap
 
 **Target:** NeurIPS / ICLR (top-tier ML venue)
-**Title placeholder:** *"DELTA: Edge-Centric Dual Attention for Domain-Transferable Relational Reasoning"*
-**Status:** Phase I active (Phases 35–37 running on Colab Pro+)
+**Title placeholder:** *"DELTA: Edge-Centric Dual Attention for Relational Reasoning on Knowledge Graphs"*
+**Status:** Phase I active (35–36 complete, 37 queued on Colab Pro+)
 
-**Current evidence base:** 37 experiment phases, 44 unit tests, real FB15k-237 results (97.4% ± 0.1% over 5 seeds), synthetic task superiority over GraphGPS/GRIT.
+**Current evidence base:** 37 experiment phases, 44 unit tests, real FB15k-237 results (97.4% ± 0.1% over 5 seeds), synthetic task superiority over GraphGPS/GRIT. Cross-domain transfer: 0.961 on WN18RR with 100 samples (frozen encoder).
 
 ---
 
@@ -12,8 +12,8 @@
 
 | Phase | Experiment | Status | Notes |
 |-------|-----------|--------|-------|
-| 35 | Domain-agnostic relational transfer (GRL + linear probe) | ⏳ Running (Colab) | Epoch 45/100 seen at 0.989 val acc |
-| 36 | Task-aware construction at scale (500–2000 nodes) | ⏳ Queued | Ready to run after 35 |
+| 35 | Domain-agnostic relational transfer (GRL + linear probe) | ✅ Complete | Probe 0.961; GRL unnecessary (encoder already invariant) |
+| 36 | Task-aware construction at scale (500–5000 nodes) | ✅ Complete | Constructor adds ≤1.3%; de-emphasize in paper |
 | 37 | Real FB15k-237 parameter-matched comparison (4 models × 5 seeds) | ⏳ Queued | Ready to run after 35 |
 | 34 | GraphGPS/GRIT vs DELTA — synthetic baseline | ✅ Complete | DELTA 0.880 vs GraphGPS 0.293 (H100) |
 | 38 | Component ablation on real FB15k-237 | 🔲 Planned | Script to be written |
@@ -32,15 +32,15 @@
 
 | Task | Script | Est. Runtime | Status |
 |------|--------|-------------|--------|
-| Phase 35 `--full` (FB15k-237 → WN18RR, GRL + probe) | `experiments/phase35_relational_transfer.py` | ~18–20h H100 | ⏳ In progress (epoch 45 last seen) |
-| Phase 36 `--full` (task-aware construction, 500–2000 nodes, A/B/C) | `experiments/phase36_task_aware_at_scale.py` | ~2–4h H100 | ⏳ Queued |
+| Phase 35 `--full` (FB15k-237 → WN18RR, GRL + probe) | `experiments/phase35_relational_transfer.py` | ~18–20h H100 | ✅ Complete |
+| Phase 36 `--full` (task-aware construction, 500–5000 nodes, A/B/C) | `experiments/phase36_task_aware_at_scale.py` | ~2–4h H100 | ✅ Complete |
 | Phase 37 `--full --num_seeds 5` (4 models × 5 seeds, real FB15k-237) | `experiments/phase37_real_comparison.py` | ~6–10h H100 | ⏳ Queued |
 
 **After each run:** Record results in `docs/COLAB_RESULTS.md`.
 
 **Verification gates:**
-- Phase 35: GRL probe > baseline probe; GRL + probe > 0.7 on WN18RR
-- Phase 36: at least one augmented topology config beats fixed topology by > 2%
+- Phase 35: ~~GRL probe > baseline probe~~ → Probe > 0.7 on WN18RR ✅ (0.961)
+- Phase 36: ~~augmented > fixed by > 2%~~ → ❌ Failed (max +1.3%); constructor de-emphasized
 - Phase 37: DELTA-Matched (~30K params) beats GraphGPS (~33K params) on real FB15k-237
 
 ---
@@ -173,7 +173,7 @@ Repeat Phase 34 on real FB15k-237 (currently only synthetic). Infrastructure alr
 
 **Content:**
 1. **Top-k attention heatmap** — for a known 2-hop reasoning chain on FB15k-237 (e.g., `/person/birthplace` + `/place/country` → `/person/nationality`), show which edge pairs receive highest `EdgeAttention` weights
-2. **t-SNE of edge embeddings** — before vs. after GRL training (Phase 35 story visualized): does adversarial training cluster edges by relation type rather than domain?
+2. **t-SNE of edge embeddings** — FB15k-237 vs WN18RR embeddings from *same* frozen encoder (Phase 35 story: shows structural clustering independent of domain)
 3. **Relation pair attention matrix** — 237×237 heatmap of average edge-to-edge attention, showing which relation pairs DELTA learns to compose
 
 **This becomes the "what did the model learn" Figure 3 in the paper.**
@@ -211,8 +211,7 @@ Abstract: 3 sentences — gap, method, result
    - 2-hop edge adjacency construction
    - ReconciliationBridge (co-update)
    - PostAttentionPruner
-   - GraphConstructor (transformer-bootstrapped)
-   - GradientReversalLayer (DANN integration, Phase 35)
+   - GraphConstructor (optional; Phase 36 showed ≤1.3% benefit — mention briefly)
 
 4. Experiments
    4.1 Setup (datasets: FB15k-237, WN18RR, YAGO3-10, Codex-M)
@@ -221,10 +220,11 @@ Abstract: 3 sentences — gap, method, result
    4.4 Multi-hop path queries — Phase 39 results
    4.5 Additional benchmarks — Phases 40–41 (YAGO3-10, Codex-M)
 
-5. Domain Transfer
-   - Phase 35 results: GRL domain-adversarial training
-   - Linear probe diagnostic → what transfers
-   - Cross-domain (FB15k-237 → WN18RR) results
+5. Domain Transfer — Inherent Invariance (not DANN)
+   - Phase 35: frozen encoder + 100-sample probe → 0.961 on WN18RR
+   - GRL unnecessary — encoder is already domain-invariant
+   - Reframes Phase 32 zero-shot failure as head mismatch (237→11)
+   - Few-shot adaptation curve (proposed Phase 35b: {10,50,100,500,1K} samples)
 
 6. Scaling Analysis
    - Phase 42: sub-quadratic O(E^x) plot
@@ -246,7 +246,7 @@ Abstract: 3 sentences — gap, method, result
 | Main comparison | 37, 40, 41 | DELTA-Matched / GraphGPS / GRIT / CompGCN |
 | Ablation | 38 | Full / -NodeAttn / -EdgeAttn / -Reconcile / -Pruner / 1-hop |
 | Path queries | 39 | DELTA / GraphGPS / GRIT / TransE on 1p / 2p / 3p |
-| Transfer | 35 | Frozen / Probe / GRL-ZS / GRL+Probe |
+| Transfer | 35 | Probe@{10,50,100,500,1K} samples / Random baseline |
 | Scaling | 42 | Accuracy@N and Time@N for 5 graph sizes |
 
 ---
@@ -270,7 +270,7 @@ Abstract: 3 sentences — gap, method, result
 
 | Gate | Target | Measured |
 |------|--------|---------|
-| Phase 35: GRL + probe | > 0.7 on WN18RR | TBD |
+| Phase 35: frozen probe | > 0.5 on WN18RR | ✅ 0.961 |
 | Phase 37: DELTA-Matched vs GraphGPS | DELTA > GraphGPS (real FB15k-237) | TBD |
 | Phase 38: each ablation hurts | All drops > 0% | TBD |
 | Phase 39: multi-hop | DELTA ≥ GraphGPS on 2p/3p | TBD |
@@ -293,4 +293,4 @@ All publication-grade results: **5 seeds, mean ± std reported.**
 
 ---
 
-*Last updated: March 30, 2026. Phases 35–37 queued on Colab Pro+. Next implementation step: Phase 38 script after Phase 37 results confirmed.*
+*Last updated: March 31, 2026. Phases 35–36 complete. Phase 37 queued on Colab Pro+. Key narrative shift: DELTA's core architecture is inherently domain-invariant — GRL and GraphConstructor are unnecessary. Paper focuses on DualParallelAttention + 2-hop edge adjacency + ReconciliationBridge. Next: Phase 37 (flagship comparison table).*

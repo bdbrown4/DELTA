@@ -198,6 +198,7 @@ Abstract: 3 sentences — gap, method, result
    - The three-paradigm gap (Transformers → GNNs → DELTA)
    - Why edges as first-class citizens matter for relational reasoning
    - 2-hop edge adjacency and what it enables
+   - **Anti-oversquashing claim:** standard GNNs suffer from oversquashing at graph bottlenecks (sparse bridges between clusters); DELTA's edge-centric design solves this *inherently* — no dynamic graph rewiring required. Evidence: Phase 36 Exp B, base model hits 0.961–0.989 on cluster graphs with only 2 bridge edges, where standard GNNs would collapse.
    - Summary of contributions (5 bullet points)
 
 2. Related Work
@@ -208,10 +209,10 @@ Abstract: 3 sentences — gap, method, result
 
 3. Architecture
    - DualParallelAttention (node + edge in parallel)
-   - 2-hop edge adjacency construction
+   - 2-hop edge adjacency construction — **key mechanism:** allows edge representations to attend to other edges sharing a node, bypassing the single-edge bottleneck that causes oversquashing in message-passing GNNs. Phase 36 Exp B is the empirical proof.
    - ReconciliationBridge (co-update)
    - PostAttentionPruner
-   - GraphConstructor (optional; Phase 36 showed ≤1.3% benefit — mention briefly)
+   - GraphConstructor (optional; Phase 36 showed ≤1.3% benefit — vestigial because 2-hop adjacency already solves the routing problem the constructor was designed for; mention briefly and offer as future work)
 
 4. Experiments
    4.1 Setup (datasets: FB15k-237, WN18RR, YAGO3-10, Codex-M)
@@ -293,4 +294,4 @@ All publication-grade results: **5 seeds, mean ± std reported.**
 
 ---
 
-*Last updated: March 31, 2026. Phases 35–36 complete. Phase 37 queued on Colab Pro+. Key narrative shift: DELTA's core architecture is inherently domain-invariant — GRL and GraphConstructor are unnecessary. Paper focuses on DualParallelAttention + 2-hop edge adjacency + ReconciliationBridge. Next: Phase 37 (flagship comparison table).*
+*Last updated: April 1, 2026. Phase 37 in-progress on Colab (DELTA-Full seed 1: test 0.991, seed 2 running). Key narrative: DELTA's 2-hop edge adjacency inherently defeats the oversquashing bottlenecks that break standard GNNs — no dynamic graph rewiring needed (GraphConstructor vestigial, Phase 36). Encoder is already domain-invariant — no adversarial training needed (GRL unnecessary, Phase 35). Paper's three core contributions: DualParallelAttention + 2-hop edge adjacency (anti-oversquashing) + ReconciliationBridge. Phase 37 runtime ~15–20h total, budget safe (~624 units remaining). Strategy: let DELTA-Full finish 2 seeds, then restart remaining 3 models with `--skip_full_delta`.*

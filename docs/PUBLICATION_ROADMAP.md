@@ -22,7 +22,8 @@
 | 41 | Codex-M benchmark (17K entities, 51 relations) | 🔲 Planned | Add Codex-M to `datasets.py` first |
 | 42 | Scaling analysis (500→123K entities, O(E^x) characterization) | 🔲 Planned | Script to be written |
 | 43 | Interpretability (EdgeAttention top-k + t-SNE edge embeddings) | 🔲 Planned | Script to be written |
-| 44 | Paper assembly and submission | 🔲 Planned | Depends on 35–43 |
+| 44 | ReasoningMesh — cross-attention gates between node/edge streams | 🔲 Planned (conditional) | Only if Phase 39 shows 3p drop |
+| 45 | Paper assembly and submission | 🔲 Planned | Depends on 35–43 (44 optional) |
 
 ---
 
@@ -182,7 +183,57 @@ Repeat Phase 34 on real FB15k-237 (currently only synthetic). Infrastructure alr
 
 ---
 
-## Phase V — Paper Assembly
+## Phase V — Architectural Evolution (Conditional)
+
+**Goal:** If Phase 39 reveals a multi-hop reasoning gap (e.g., 3p accuracy drops >15% vs 1p), close it with cross-stream interaction during attention. Skip this phase entirely if DELTA handles 3p adequately.
+
+### Phase 44 — ReasoningMesh (Gated Cross-Attention)
+
+**Script:** `experiments/phase44_reasoning_mesh.py` *(to be written)*
+
+**Motivation:** DELTA's ReconciliationBridge provides one cross-talk point per layer *after* both attention streams finish. For multi-step reasoning (2p/3p path queries), iterative hypothesis refinement requires cross-stream interaction *during* attention. Phase 39 results determine if this is needed.
+
+**Design — Option 1 (cross-attention gates):**
+```python
+# Inside DualParallelAttention, per attention head:
+node_out = node_self_attn(node) + g_ne * cross_attn(node_q, edge_kv)
+edge_out = edge_self_attn(edge) + g_en * cross_attn(edge_q, node_kv)
+# g_ne, g_en = learned sigmoid gates (per head or per layer)
+```
+
+**Key design constraints (from Phase 35 GRL stability lesson):**
+- Gates must be learnable sigmoid — model controls interaction strength
+- Residual connections around mesh — mesh is additive, not replacing
+- LayerNorm after mesh injection
+- Per-head gating preferred (finer control, prevents gradient flooding)
+
+**Ablation matrix:**
+| Config | Description |
+|--------|-------------|
+| Baseline | DELTA-Matched (no mesh, current architecture) |
+| Mesh (ungated) | Cross-attention, gate fixed at 1.0 |
+| Mesh (gated) | Cross-attention with learned per-head gates |
+| Mesh + Reconciliation | Gated mesh AND existing ReconciliationBridge |
+| Mesh only (no Reconciliation) | Mesh replaces ReconciliationBridge |
+
+**Evaluation:** Same Phase 39 multi-hop protocol (1p/2p/3p on FB15k-237).
+
+**Success criteria:**
+- Gated mesh improves 3p accuracy by ≥ 3% over baseline
+- 1p accuracy does not degrade (mesh doesn't hurt easy cases)
+- Gate weights are interpretable (later layers use more cross-talk)
+
+**Estimated runtime:** ~6–8h H100 (5 configs × 3 seeds × FB15k-237).
+
+**Future evolution (not for first paper):**
+- Option 2: Message-passing mesh (multi-step within-layer exchange) — if Option 1 shows gains
+- Option 3: Shared latent bottleneck — if scale demands compression
+
+**Verification gate:** ≥ 3% improvement on 3p queries with gated mesh vs baseline.
+
+---
+
+## Phase VI — Paper Assembly
 
 **Goal:** Write and submit to NeurIPS (May deadline) or ICLR (October deadline).
 
@@ -237,7 +288,7 @@ Abstract: 3 sentences — gap, method, result
 
 8. Conclusion
    - Edge-first relational inductive bias generalizes across KG domains
-   - Future: multi-modal graph construction, production KG completion
+   - Future: ReasoningMesh for deeper multi-hop chains, multi-modal graph construction, production KG completion
 ```
 
 ### Results Tables to Compile (all 5 seeds, mean ± std)
@@ -279,6 +330,7 @@ Abstract: 3 sentences — gap, method, result
 | Phase 41: Codex-M | DELTA-Matched > GraphGPS | TBD |
 | Phase 42: scaling | O(E^x), x < 2 | TBD |
 | Phase 43: interpretability | ≥1 interpretable attention pattern | TBD |
+| Phase 44: ReasoningMesh (conditional) | ≥3% improvement on 3p queries | TBD (skip if Phase 39 gap < 15%) |
 
 All publication-grade results: **5 seeds, mean ± std reported.**
 
@@ -288,10 +340,12 @@ All publication-grade results: **5 seeds, mean ± std reported.**
 
 - Target: NeurIPS (May deadline) or ICLR (October deadline) — no hard date, get results right
 - 4 datasets: FB15k-237 (flagship), WN18RR (transfer), YAGO3-10 (scale), Codex-M (hardness)
-- Parameter matching: DELTA-Matched (`d_node=48, d_edge=24, num_layers=2`, ~30K params) vs GraphGPS (~33K) vs GRIT (~28K) — same capacity bracket
+- Parameter matching: DELTA-Matched (`d_node=48, d_edge=24, num_layers=2`, ~128K params on real data) vs GraphGPS (~214K) vs GRIT (~183K) — DELTA-Matched is actually smaller, making wins more impressive
+- ReasoningMesh: conditional on Phase 39 multi-hop gap. If 3p drops >15% vs 1p, implement gated cross-attention (Option 1). If not, current architecture is sufficient — mention mesh as future work in Conclusion.
 - No "DELTA-Lite" spinoff — just constructor args change, same codebase
 - Phase 34 results (synthetic) already establish direction; Phase 37 is the paper-grade result
+- Consensus from ChatGPT + Gemini + code analysis: Option 1 (cross-attention gates) first, Option 2 (message-passing mesh) if warranted, avoid Option 3 (shared latent bottleneck) — it would destroy edge-specific representations that drive DELTA's transfer ability
 
 ---
 
-*Last updated: April 1, 2026. Phase 37 in-progress on Colab (DELTA-Full seed 1: test 0.991, seed 2 running). Key narrative: DELTA's 2-hop edge adjacency inherently defeats the oversquashing bottlenecks that break standard GNNs — no dynamic graph rewiring needed (GraphConstructor vestigial, Phase 36). Encoder is already domain-invariant — no adversarial training needed (GRL unnecessary, Phase 35). Paper's three core contributions: DualParallelAttention + 2-hop edge adjacency (anti-oversquashing) + ReconciliationBridge. Phase 37 runtime ~15–20h total, budget safe (~624 units remaining). Strategy: let DELTA-Full finish 2 seeds, then restart remaining 3 models with `--skip_full_delta`.*
+*Last updated: April 2, 2026. Phase 37 in-progress on Colab (DELTA-Full seed 1 complete: test 0.991; DELTA-Matched seeds 1-2 complete: test 0.986/0.987; resuming remaining seeds with Drive checkpointing). ReasoningMesh (gated cross-attention between node/edge streams) added as conditional Phase 44 — triggers only if Phase 39 multi-hop path queries show significant 3p accuracy drop. Consensus: Option 1 (cross-attention gates) → Option 2 (message-passing mesh) → avoid Option 3 (shared latent bottleneck). Paper thesis: specialized 128K-param architecture beats brute-force scale for structured relational reasoning.*

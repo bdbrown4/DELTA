@@ -426,15 +426,20 @@ def main():
             args.patience = 4  # Default early stopping for --full (4 evals × 25 = 100 epochs)
 
     # --- Set up results directory (Google Drive on Colab) ---
-    is_colab = 'google.colab' in sys.modules or os.path.exists('/content')
+    is_colab = os.path.exists('/content')
     if args.results_dir is None and is_colab:
-        # Auto-mount Google Drive on Colab
-        try:
-            from google.colab import drive
-            drive.mount('/content/drive', force_remount=False)
-        except Exception as e:
-            print(f"  [Warning] Could not mount Google Drive: {e}")
-        args.results_dir = '/content/drive/MyDrive/DELTA_results/phase37'
+        # Drive must be mounted in the notebook cell before running this script.
+        # Check if it's already mounted before using it.
+        drive_path = '/content/drive/MyDrive/DELTA_results/phase37'
+        if os.path.exists('/content/drive/MyDrive'):
+            args.results_dir = drive_path
+            print(f"  Google Drive detected — using {drive_path}")
+        else:
+            # Fall back to local Colab storage (survives within session, not across restarts)
+            args.results_dir = '/content/DELTA_results/phase37'
+            print(f"  [Warning] Google Drive not mounted. Saving to local Colab storage: {args.results_dir}")
+            print(f"  To persist across restarts, run in a notebook cell first:")
+            print(f"    from google.colab import drive; drive.mount('/content/drive')")
 
     if args.results_dir:
         os.makedirs(args.results_dir, exist_ok=True)

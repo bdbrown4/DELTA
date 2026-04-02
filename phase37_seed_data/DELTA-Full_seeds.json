@@ -1,0 +1,10 @@
+{
+  "0": {
+    "best_test_acc": 0.991,
+    "best_val_acc": 0.992,
+    "best_train_acc": 0.998,
+    "training_time_s": 39600,
+    "total_params": 274934,
+    "stopped_epoch": 150
+  }
+}

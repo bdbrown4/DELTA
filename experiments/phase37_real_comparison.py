@@ -306,12 +306,35 @@ def run_multi_seed(model_factory, graph, labels, num_seeds, epochs, lr,
                    device, label='model', log_every=50,
                    sampler=None, batch_size=64, accum_steps=4,
                    train_idx=None, val_idx=None, test_idx=None,
-                   patience=0):
-    """Run training across multiple seeds, return aggregated results."""
+                   patience=0, results_dir=None):
+    """Run training across multiple seeds, return aggregated results.
+
+    If results_dir is set, saves per-seed results incrementally and
+    skips seeds that already have saved results (crash recovery).
+    """
     all_results = []
+
+    # Check for previously completed seeds (resume support)
+    completed_seeds = {}
+    if results_dir:
+        seed_file = os.path.join(results_dir, f'{label}_seeds.json')
+        if os.path.exists(seed_file):
+            with open(seed_file, 'r') as f:
+                completed_seeds = json.load(f)
+            print(f"  [Resume] Found {len(completed_seeds)} completed seed(s) for {label}")
 
     for seed_idx in range(num_seeds):
         seed = 42 + seed_idx * 100
+        seed_key = str(seed_idx)
+
+        # Skip already-completed seeds
+        if seed_key in completed_seeds:
+            print(f"\n  --- Seed {seed_idx + 1}/{num_seeds} (seed={seed}) --- SKIPPED (already complete)")
+            print(f"    Cached: test={completed_seeds[seed_key]['best_test_acc']:.3f}, "
+                  f"val={completed_seeds[seed_key]['best_val_acc']:.3f}")
+            all_results.append(completed_seeds[seed_key])
+            continue
+
         torch.manual_seed(seed)
         np.random.seed(seed)
         if torch.cuda.is_available():
@@ -326,6 +349,13 @@ def run_multi_seed(model_factory, graph, labels, num_seeds, epochs, lr,
             train_idx=train_idx, val_idx=val_idx, test_idx=test_idx,
             patience=patience)
         all_results.append(result)
+
+        # Save per-seed result immediately (crash recovery)
+        if results_dir:
+            completed_seeds[seed_key] = result
+            with open(seed_file, 'w') as f:
+                json.dump(completed_seeds, f, indent=2)
+            print(f"    [Saved seed {seed_idx+1} to {seed_file}]")
 
         # Free memory
         del model
@@ -374,6 +404,9 @@ def main():
                              'Recommended: 4 (=100 epochs with log_every=25)')
     parser.add_argument('--log_file', type=str, default=None,
                         help='Path to write results log (in addition to stdout)')
+    parser.add_argument('--results_dir', type=str, default=None,
+                        help='Directory for results/checkpoints. On Colab, defaults to '
+                             '/content/drive/MyDrive/DELTA_results/phase37')
     parser.add_argument('--max_neighbors', type=int, default=50,
                         help='Max nodes per mini-graph subgraph (for large graphs)')
     parser.add_argument('--batch_size', type=int, default=64,
@@ -391,6 +424,24 @@ def main():
             args.log_every = 25
         if args.patience == 0:
             args.patience = 4  # Default early stopping for --full (4 evals × 25 = 100 epochs)
+
+    # --- Set up results directory (Google Drive on Colab) ---
+    is_colab = 'google.colab' in sys.modules or os.path.exists('/content')
+    if args.results_dir is None and is_colab:
+        # Auto-mount Google Drive on Colab
+        try:
+            from google.colab import drive
+            drive.mount('/content/drive', force_remount=False)
+        except Exception as e:
+            print(f"  [Warning] Could not mount Google Drive: {e}")
+        args.results_dir = '/content/drive/MyDrive/DELTA_results/phase37'
+
+    if args.results_dir:
+        os.makedirs(args.results_dir, exist_ok=True)
+        print(f"  Results directory: {args.results_dir}")
+        # Default log file to results dir if not specified
+        if args.log_file is None:
+            args.log_file = os.path.join(args.results_dir, 'phase37_output.txt')
 
     # Set up file logging (tee to both stdout and file)
     if args.log_file:
@@ -513,7 +564,12 @@ def main():
 
     # --- Run all models ---
     results = {}
-    results_file = args.log_file.replace('.txt', '.json') if args.log_file else 'phase37_results.json'
+    if args.results_dir:
+        results_file = os.path.join(args.results_dir, 'phase37_results.json')
+    elif args.log_file:
+        results_file = args.log_file.replace('.txt', '.json')
+    else:
+        results_file = 'phase37_results.json'
     for name, cfg in model_configs.items():
         print(f"\n{'='*70}")
         print(f"Training: {name}")
@@ -525,7 +581,8 @@ def main():
             sampler=sampler, batch_size=args.batch_size,
             accum_steps=args.accum_steps,
             train_idx=train_idx, val_idx=val_idx, test_idx=test_idx,
-            patience=args.patience)
+            patience=args.patience,
+            results_dir=args.results_dir)
 
         if torch.cuda.is_available():
             torch.cuda.empty_cache()

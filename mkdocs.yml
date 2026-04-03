@@ -1,0 +1,71 @@
+site_name: DELTA Documentation
+site_description: "Dynamic Edge-and-Node Architecture with Layered, Tiered Attention — Edge-Centric Dual Attention for Relational Reasoning on Knowledge Graphs"
+site_url: https://bdbrown4.github.io/DELTA/
+repo_url: https://github.com/bdbrown4/DELTA
+repo_name: bdbrown4/DELTA
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - toc.integrate
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - tables
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.details
+  - attr_list
+  - toc:
+      permalink: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Architecture:
+    - Overview: architecture.md
+    - Visual Explainer: ARCHITECTURE_VISUAL.md
+    - Bootstrap Strategy: bootstrap-strategy.md
+    - Evolution: architecture-evolution.md
+  - Experiments:
+    - Validation Phases: validation-phases.md
+    - Key Findings: key-findings.md
+    - Colab Results: COLAB_RESULTS.md
+    - Backward Compatibility: backward-compatibility.md
+  - Research:
+    - Agenda: RESEARCH_AGENDA.md
+    - Publication Roadmap: PUBLICATION_ROADMAP.md
+    - Methodology: research-methodology.md
+  - Status & Roadmap: status-and-roadmap.md
+  - Setup:
+    - Getting Started: setup-and-running.md
+    - Colab Setup Guide: COLAB_SETUP.md
+    - Project Structure: project-structure.md

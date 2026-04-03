@@ -1,0 +1,1772 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Dynamic Edge-and-Node Architecture with Layered, Tiered Attention — Edge-Centric Dual Attention for Relational Reasoning on Knowledge Graphs">
+      
+      
+      
+        <link rel="canonical" href="https://bdbrown4.github.io/DELTA/validation-phases/">
+      
+      
+        <link rel="prev" href="../architecture-evolution/">
+      
+      
+        <link rel="next" href="../key-findings/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Validation Phases - DELTA Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#validation-phases" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="DELTA Documentation" class="md-header__button md-logo" aria-label="DELTA Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            DELTA Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Validation Phases
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/bdbrown4/DELTA" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    bdbrown4/DELTA
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="DELTA Documentation" class="md-nav__button md-logo" aria-label="DELTA Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    DELTA Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/bdbrown4/DELTA" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    bdbrown4/DELTA
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ARCHITECTURE_VISUAL/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visual Explainer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bootstrap-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bootstrap Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture-evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Experiments
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Experiments
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation Phases
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation Phases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#phase-115-core-architecture-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1–15: Core Architecture Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-1621-architectural-fix-benchmarks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 16–21: Architectural Fix Benchmarks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 16–21: Architectural Fix Benchmarks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-six-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Six Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fix-validation-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fix Validation Results
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-2225-scale-integration-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 22–25: Scale &amp; Integration Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-2630-27b-near-term-roadmap-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 26–30 + 27b: Near-Term Roadmap Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-3134-h100-rtx-pro-6000-experiments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 31–34: H100 / RTX PRO 6000 Experiments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-3537-colab-pro-experiments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 35–37: Colab Pro+ Experiments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps-phases-3845" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps (Phases 38–45)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../key-findings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Findings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../COLAB_RESULTS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Colab Results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backward-compatibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backward Compatibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../RESEARCH_AGENDA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agenda
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PUBLICATION_ROADMAP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Publication Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-methodology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methodology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../status-and-roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status & Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Setup
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setup-and-running/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../COLAB_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Colab Setup Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../project-structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#phase-115-core-architecture-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1–15: Core Architecture Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-1621-architectural-fix-benchmarks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 16–21: Architectural Fix Benchmarks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 16–21: Architectural Fix Benchmarks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-six-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Six Fixes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fix-validation-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fix Validation Results
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-2225-scale-integration-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 22–25: Scale &amp; Integration Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-2630-27b-near-term-roadmap-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 26–30 + 27b: Near-Term Roadmap Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-3134-h100-rtx-pro-6000-experiments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 31–34: H100 / RTX PRO 6000 Experiments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-3537-colab-pro-experiments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 35–37: Colab Pro+ Experiments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps-phases-3845" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps (Phases 38–45)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="validation-phases">Validation Phases<a class="headerlink" href="#validation-phases" title="Permanent link">&para;</a></h1>
+<p>All experiment phases with results. Phases 1–30 validated core architecture and fixes. Phases 31–37 scaled to real-world data and baselines.</p>
+<hr />
+<h2 id="phase-115-core-architecture-validation">Phase 1–15: Core Architecture Validation<a class="headerlink" href="#phase-115-core-architecture-validation" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Validates</th>
+<th>Task</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Edge-to-edge attention discovers relational patterns</td>
+<td>Edge attention vs node attention vs MLP</td>
+<td>Edge 100%, Node 26.7%, MLP 100%</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Dual parallel attention outperforms sequential</td>
+<td>Sequential vs dual (1/2 layers)</td>
+<td>All 100%; dual converges 2.7x faster</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Importance router enables sparse attention</td>
+<td>Accuracy vs sparsity (100% → 20%)</td>
+<td>100% accuracy at 80% sparsity</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Tiered memory maintains recall</td>
+<td>Sequential recall task</td>
+<td>Perfect recall maintained</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Transformer-bootstrapped graph construction</td>
+<td>Transformer alone vs transformer→DELTA (150 epochs each)</td>
+<td>TF: 98.3%, DELTA: 98.3% — pipeline preserves accuracy (non-relational task)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Full DELTA integration</td>
+<td>All components end-to-end</td>
+<td>All 4 sub-tests PASS</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Gumbel-softmax differentiable routing</td>
+<td>Hard top-k vs Gumbel-softmax</td>
+<td>12/12 router params get gradients (vs 0/12)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Scaling behavior</td>
+<td>20 → 400 nodes, time vs accuracy</td>
+<td>O(n^0.81) sub-linear scaling</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Multi-hop relational reasoning</td>
+<td>Knowledge graph with derived relations</td>
+<td>DELTA: 90.6%, Node GNN: 87.5%, MLP: 37.5%</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Analogical reasoning</td>
+<td>"A is to B as C is to ?"</td>
+<td>Edge classification 100%; analogy retrieval needs contrastive training</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Multi-hop edge adjacency</td>
+<td>1-hop vs 2-hop on transitive relations</td>
+<td><strong>2-hop: 100% derived</strong> (vs 1-hop 61.1%, Node GNN 83.3%)</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Gumbel curriculum routing</td>
+<td>Dense→sparse curriculum vs fixed</td>
+<td>Gradient flow confirmed (12/12); curriculum needs larger scale</td>
+</tr>
+<tr>
+<td>13</td>
+<td>Compositional benchmarks</td>
+<td>Logical rule-derived relations (7 types)</td>
+<td><strong>DELTA 100%</strong> all relations (vs Node GNN 87.5% derived)</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Contrastive analogy training</td>
+<td>Classification vs contrastive vs joint</td>
+<td>All methods 100% retrieval — edge attention is inherently discriminative</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Synthetic KG benchmark</td>
+<td>100 entities, 10 relations, 500 triples</td>
+<td>Node GNN, DELTA 1-hop, DELTA 2-hop all reach 100%; router at 50% sparsity degrades to 65.3%</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="phase-1621-architectural-fix-benchmarks">Phase 16–21: Architectural Fix Benchmarks<a class="headerlink" href="#phase-1621-architectural-fix-benchmarks" title="Permanent link">&para;</a></h2>
+<p>After Phase 15, a pitfall analysis identified 6 architectural weaknesses. Each was fixed and validated:</p>
+<h3 id="the-six-fixes">The Six Fixes<a class="headerlink" href="#the-six-fixes" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Fix</th>
+<th>Problem</th>
+<th>Solution</th>
+<th>Phase</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Router scores elements before seeing attention (chicken-and-egg)</td>
+<td>PostAttentionPruner: prune based on <em>observed</em> attention weights</td>
+<td>16</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Spectral partitioning is O(N³) — won't scale</td>
+<td>BFS seed-expansion partitioner in O(N+E)</td>
+<td>20</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Fixed linear memory compression loses information</td>
+<td>Variational bottleneck with KL regularization</td>
+<td>18</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Single averaged edge projection ignores per-layer structure</td>
+<td>Per-layer edge projections + edge combiner + active edge_type_head</td>
+<td>19</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Dense O(E²) multi-hop adjacency times out at ~500 edges</td>
+<td>Sparse COO tensor operations</td>
+<td>17</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Uniform dropout doesn't distinguish structural vs noisy edges</td>
+<td>LearnedAttentionDropout: per-edge dropout conditioned on features</td>
+<td>21</td>
+</tr>
+</tbody>
+</table>
+<h3 id="fix-validation-results">Fix Validation Results<a class="headerlink" href="#fix-validation-results" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Validates</th>
+<th>Benchmark</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>16</td>
+<td>Post-attention soft gating + curriculum</td>
+<td>KG classification at 50% sparsity</td>
+<td><strong>Soft gating 100%, curriculum 100%</strong>, old router 85.3%, hard post-attn 65.3%. Soft differentiable gating eliminates the original 29% gap and beats pre-attention routing by +14.7%</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Sparse COO multi-hop scaling</td>
+<td>1-hop/2-hop timing at 50→2500 edges</td>
+<td><strong>O(E^0.97) scaling confirmed.</strong> 2500-edge 2-hop in 0.18s (was timeout with dense). All correctness checks pass</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Variational memory compression</td>
+<td>Compression quality + downstream accuracy</td>
+<td>Accuracy preserved at 100% with compression. KL converges 0.126→0.026. Gradient flows through bottleneck. Similarity threshold is learnable</td>
+</tr>
+<tr>
+<td>19</td>
+<td>Per-layer edge projections</td>
+<td>Edge type diversity + relational classification</td>
+<td>Both reach 100% accuracy. Per-layer produces higher edge-type entropy (1.632 vs 1.562) — richer type diversity</td>
+</tr>
+<tr>
+<td>20</td>
+<td>BFS partition scaling</td>
+<td>Wall-clock time at 50→2500 nodes</td>
+<td><strong>O(N^0.99) scaling.</strong> 2.0ms→90.8ms. Balance ratio 0.79. Importance-based seed spread: 100%</td>
+</tr>
+<tr>
+<td>21</td>
+<td>Learned attention dropout</td>
+<td>Generalization gap: no dropout vs uniform vs learned</td>
+<td>All modes reach 0 gap on current dataset (saturated). Eval-time passthrough confirmed. Needs harder benchmark</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="phase-2225-scale-integration-validation">Phase 22–25: Scale &amp; Integration Validation<a class="headerlink" href="#phase-2225-scale-integration-validation" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Validates</th>
+<th>Benchmark</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>22</td>
+<td>Soft gating holds at 10× scale with noise</td>
+<td>N=1000, 15 relations, 5000 triples, 15% label noise</td>
+<td><strong>Soft gating 100%, old router 81.6%</strong> (+18.4% gap). Zero generalization gap.</td>
+</tr>
+<tr>
+<td>23</td>
+<td>DELTA vs KG embedding baselines (TransE, RotatE, CompGCN)</td>
+<td>FB15k-237-like: 2000 entities, 20 typed relations, 8000 triples</td>
+<td><strong>DELTA 100%, CompGCN 100%</strong>, TransE 67.6%, RotatE 70.7%. LP: TransE Hits@10=0.020, RotatE 0.010 (4×/2× random; sparse synthetic data). Soft gating maintains accuracy at 50% sparsity</td>
+</tr>
+<tr>
+<td>24</td>
+<td>All fixes integrated at scale</td>
+<td>N=1000, 15% noise, full pipeline + ablations</td>
+<td>All fixes integrate cleanly — zero degradation. 1-hop ablation runs 10× faster (44s vs 490s)</td>
+</tr>
+<tr>
+<td>25</td>
+<td>DELTA on <strong>real</strong> FB15k-237 (GPU)</td>
+<td>Actual Freebase triples: 2000-entity dense subgraph, 69,626 edges, 210 relation types, RTX 3080 Ti</td>
+<td><strong>DELTA+Gate 97.6%, CompGCN 97.2%</strong>, TransE 78.8%, RotatE 77.8%. LP: TransE Hits@10=0.480, RotatE 0.335 (vs random 0.005). First real-data benchmark on GPU.</td>
+</tr>
+</tbody>
+</table>
+<p><em>Phases 22, 23, and 25 were replicated with 5 seeds each in Phase 29 — see Phase 26–30 table for multi-seed statistics.</em></p>
+<hr />
+<h2 id="phase-2630-27b-near-term-roadmap-validation">Phase 26–30 + 27b: Near-Term Roadmap Validation<a class="headerlink" href="#phase-2630-27b-near-term-roadmap-validation" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Validates</th>
+<th>Benchmark</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>26</td>
+<td>Adaptive multi-hop: learn when to use 1-hop vs 2-hop</td>
+<td>N=200, 3 models (FixedHop, AdaptiveHop, AdaptiveHopGating)</td>
+<td>All models 100% at N=200. AdaptiveHopGate learns α→0.019 (suppresses 2-hop). Task saturates — validates cost-efficiency selection architecture.</td>
+</tr>
+<tr>
+<td>27</td>
+<td><em>(initial — broken training)</em> Bootstrap on 2-hop path composition</td>
+<td>N=500, batch=1, 200 epochs, no scheduler</td>
+<td>TF 32.7%, Bootstrap DELTA 8.0%, Fixed Chain 5.3%. <strong>Results confounded by batch-1 training</strong> — see Phase 27b.</td>
+</tr>
+<tr>
+<td><strong>27b</strong></td>
+<td><strong>Corrected</strong> bootstrap evaluation (gradient accum + 2× data)</td>
+<td>N=1000, accum=32, 100 epochs, LR scheduler</td>
+<td><strong>Fixed Chain DELTA 40.7% &gt; Transformer 36.3% &gt; Bootstrap 34.3%.</strong> Graph structure helps (+4.4% over Transformer). GraphConstructor attention-thresholding discards path ordering — the constructor is the bottleneck, not graph processing.</td>
+</tr>
+<tr>
+<td>28</td>
+<td>Hard ablation: find difficulty threshold where DELTA advantages emerge</td>
+<td>4 levels (Easy/Medium/Hard/Extreme) × 3 models (Vanilla EdgeAttn, DualAttn, DELTA+Gate)</td>
+<td>Extreme: <strong>Dual Attention 64.2% &gt;&gt; Vanilla 40.2%</strong> (+24%). Node context is the key DELTA advantage at high noise. Soft gating adds ±0.6% beyond dual attention at extreme difficulty.</td>
+</tr>
+<tr>
+<td>29</td>
+<td>Multi-seed statistical credibility</td>
+<td>Phases 22, 23, 25 re-run with 5 seeds each</td>
+<td>DELTA+Gate <strong>97.4% ± 0.1%</strong> on FB15k-237. Soft Gate 100.0% ± 0.0% vs Old Router 79.7% ± 1.1%. All results statistically stable. Total: 3.6 minutes.</td>
+</tr>
+<tr>
+<td>30</td>
+<td>GPU edge adj sampling strategy vs random</td>
+<td>Uniform, degree-weighted, stratified, importance-weighted sampling at 26% budget on FB15k-237</td>
+<td>All 4 strategies within ±0.2% (~97.5%). Random sampling is sufficient at this graph density.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="phase-3134-h100-rtx-pro-6000-experiments">Phase 31–34: H100 / RTX PRO 6000 Experiments<a class="headerlink" href="#phase-3134-h100-rtx-pro-6000-experiments" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Validates</th>
+<th>Benchmark</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>31</td>
+<td>Mini-batching scales to full FB15k-237</td>
+<td>Full FB15k-237: 14,505 entities, 304K edges, 20 relations</td>
+<td>100% test accuracy, converges by epoch 10. Mini-batch subgraph sampling + gradient accumulation confirmed on H100 80GB.</td>
+</tr>
+<tr>
+<td>32</td>
+<td>Cross-graph transfer</td>
+<td>Train FB15k-237, eval WN18RR</td>
+<td>Source 1.000. <strong>Zero-shot: 0.048 (≈ random 0.050)</strong> — features are domain-specific. Fine-tuned: 1.000 — pre-training helps with adaptation. Early stopping patience=10 reduces runtime from 24h → 3-4h.</td>
+</tr>
+<tr>
+<td>33</td>
+<td>Task-aware construction</td>
+<td>Fixed topology vs augmented with learned edges</td>
+<td>Fixed 0.347 ≈ Augmented 0.344 (5 seeds × 500 epochs). No improvement — 60-node tasks too small for learned edges to add value.</td>
+</tr>
+<tr>
+<td>34</td>
+<td>DELTA vs GraphGPS vs GRIT — synthetic</td>
+<td>Edge classification, noise robustness, path composition (H100)</td>
+<td><strong>DELTA dominates all three tasks.</strong> Edge: DELTA 0.880 vs GraphGPS 0.293 vs GRIT 0.307 (+0.573). Noise@0.8: DELTA 1.000 vs GraphGPS 0.697 vs GRIT 0.710. Path: DELTA 1.000 vs GraphGPS 0.905 vs GRIT 0.893. All 5 seeds × 500 epochs.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="phase-3537-colab-pro-experiments">Phase 35–37: Colab Pro+ Experiments<a class="headerlink" href="#phase-3537-colab-pro-experiments" title="Permanent link">&para;</a></h2>
+<p>For detailed results, see <a href="../COLAB_RESULTS/">Colab Results</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Validates</th>
+<th>Status</th>
+<th>Headline Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>35</td>
+<td>Domain-agnostic relational transfer (GRL + linear probe)</td>
+<td>✅ Complete</td>
+<td>Frozen encoder → <strong>0.961 on WN18RR</strong> with 100 samples. GRL unnecessary — encoder already domain-invariant.</td>
+</tr>
+<tr>
+<td>36</td>
+<td>Task-aware construction at scale (500–5000 nodes)</td>
+<td>✅ Complete</td>
+<td>Constructor adds ≤1.3%. De-emphasize in paper.</td>
+</tr>
+<tr>
+<td>37</td>
+<td>Real FB15k-237 parameter-matched comparison (4 models × 5 seeds)</td>
+<td>⏳ Running</td>
+<td>DELTA-Full seed 1: test 0.991. DELTA-Matched seeds 1-2: test 0.986/0.987. Remaining seeds in progress.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="next-steps-phases-3845">Next Steps (Phases 38–45)<a class="headerlink" href="#next-steps-phases-3845" title="Permanent link">&para;</a></h2>
+<p>See <a href="../PUBLICATION_ROADMAP/">Publication Roadmap</a> for full details.</p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Experiment</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>38</td>
+<td>Component ablation on real FB15k-237</td>
+<td>🔲 Planned</td>
+</tr>
+<tr>
+<td>39</td>
+<td>Multi-hop path queries (1p/2p/3p)</td>
+<td>🔲 Planned</td>
+</tr>
+<tr>
+<td>40</td>
+<td>YAGO3-10 benchmark (123K entities)</td>
+<td>🔲 Planned</td>
+</tr>
+<tr>
+<td>41</td>
+<td>Codex-M benchmark (17K entities, 51 relations)</td>
+<td>🔲 Planned</td>
+</tr>
+<tr>
+<td>42</td>
+<td>Scaling analysis (500→123K entities)</td>
+<td>🔲 Planned</td>
+</tr>
+<tr>
+<td>43</td>
+<td>Interpretability (EdgeAttention top-k + t-SNE)</td>
+<td>🔲 Planned</td>
+</tr>
+<tr>
+<td>44</td>
+<td>ReasoningMesh (gated cross-attention between streams)</td>
+<td>🔲 Conditional — only if Phase 39 shows &gt;15% 3p accuracy drop. Prototype evidence suggests this won't help.</td>
+</tr>
+<tr>
+<td>45</td>
+<td>Paper assembly and NeurIPS/ICLR submission</td>
+<td>🔲 Planned — depends on 38–43 (44 optional)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>All publication-grade results use 5 seeds, mean ± std reported.</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

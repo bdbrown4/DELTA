@@ -28,7 +28,7 @@ coverage.xml
 # Jupyter
 .ipynb_checkpoints/
 
-# MkDocs
+# MkDocs build (output goes to docs/ which IS committed)
 site/
 
 # PyTorch / training artifacts

@@ -4,6 +4,9 @@ site_url: https://bdbrown4.github.io/DELTA/
 repo_url: https://github.com/bdbrown4/DELTA
 repo_name: bdbrown4/DELTA
 
+docs_dir: mkdocs-src
+site_dir: docs
+
 theme:
   name: material
   features:

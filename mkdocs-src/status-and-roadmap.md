@@ -4,80 +4,77 @@
 
 ## What's Working (Validated)
 
+### Core Architecture (Phases 1–30)
+
 - **Edge-first dual attention** — consistently outperforms node-only approaches on relational tasks
-- **Multi-hop edge adjacency** — 100% on derived relations, now sparse and scalable
-- **BFS partitioning** — O(N^0.99) confirmed, balanced partitions with importance-aware seeding
-- **Sparse COO operations** — O(E^0.97) confirmed, handles 2500+ edges where dense timed out
-- **Variational memory** — preserves accuracy, KL converges, threshold is learnable
-- **Per-layer edge projections** — higher type diversity, matching accuracy
-- **Post-attention soft gating** — 100% accuracy at 50% target sparsity, beats pre-attention router (85.3%) by +14.7%. Soft differentiable gates with per-head attention features fully close the original 29% gap
-- **Curriculum dense→sparse annealing** — temperature annealing (τ: 0.5→5.0) + sparsity ramp (0→50%) integrated with post-attention pruning, achieves 100% accuracy matching full attention
-- **Graph structure adds value on relational tasks** — Phase 27b confirmed Fixed Chain DELTA (40.7%) beats pure Transformer (36.3%) on 2-hop path composition with proper training
-- **Edge adjacency caching + vectorized incidence matrix** — `graph.py` fast path for E≤500 replaces Python for-loop, enabling efficient per-sample training for graph-based models
-- **Mini-batching scales to full FB15k-237** — Phase 31 confirmed 14,505 entities / 304K edges trains to 100% with subgraph sampling on H100. Scale ceiling lifted from 2K→14.5K entities
-- **DELTA dominates GraphGPS and GRIT on synthetic relational tasks** — Phase 34 showed +57% on edge classification, +29% on noise robustness, perfect multi-hop composition. 5 seeds × 500 epochs, zero variance at noise=0.8
-- **Fine-tuned cross-domain transfer works** — Phase 32 fine-tuned transfer reaches 1.000, confirming pre-training helps with adaptation
+- **Multi-hop edge adjacency** — 100% on derived relations, sparse and scalable (O(E^0.97))
+- **Post-attention soft gating** — 100% accuracy at 50% sparsity, +14.7% over pre-attention routing
+- **BFS partitioning** — O(N^0.99), balanced with importance-aware seeding
+- **Variational memory** — preserves accuracy, KL converges, threshold learnable
+- **Graph structure adds value** — Phase 27b: FixedChain DELTA 40.7% > Transformer 36.3% on 2-hop paths
+
+### Scale & Baselines (Phases 31–37)
+
+- **Mini-batching scales to full FB15k-237** — 14,505 entities, 304K edges, subgraph sampling on H100
+- **DELTA dominates synthetic relational tasks** — Phase 34: +57% over GraphGPS on edge classification, +29% on noise robustness
+- **Domain-agnostic transfer** — Phase 35: frozen encoder → 0.961 on WN18RR with 100 samples
 - **44/44 unit tests passing**, backward compatibility confirmed
 
----
+### Graph Construction Breakthrough (Phases 38–39)
 
-## Architecturally Sound, Awaiting Scale Proof
-
-- **Learned attention dropout** — mechanisms confirmed (eval passthrough, rate diversity), but all benchmarks including N=1000 are too easy to show gap reduction
-- **Variational compression advantage** — preserves accuracy but hasn't shown improvement over fixed compression yet
-- **Ablation differentiation** — at N=1000, vanilla EdgeAttention also reaches 100%, so fix ablations show zero impact. The fixes provide *efficiency and robustness*, not accuracy gains on tasks a baseline can already solve
+- **Differentiable construction works** — Phase 38: Hybrid Gumbel-sigmoid reaches 98% of FixedChain (0.452 ± 0.006)
+- **Self-bootstrapped DELTA** — Phase 39: **0.757 ± 0.041, 157% of FixedChain**. No transformer needed. DELTA bootstraps DELTA
+- **Correct link prediction** — Phase 40: DELTA MRR 0.497 at 200 epochs on FB15k-237, competitive with GraphGPS (0.513), still converging
 
 ---
 
-## Open Gaps
+## Known Issues
 
-- **Zero-shot transfer fails (0.048 ≈ random)** — Phase 32 showed DELTA's edge-attention features are domain-specific at the head level: perfect source accuracy but chance-level zero-shot transfer. Phase 35 proved this was purely a head mismatch (237→11 classes), not encoder entanglement — frozen encoder + 100-sample probe → 0.961 on WN18RR.
+### Phase 37 Leakage (Invalidated)
 
-- **Task-aware constructor doesn't improve over fixed topology** — Phase 33 showed augmented ≈ fixed on 60-node path composition. Phase 36 confirmed at scale (500–5000 nodes): max +1.3%. Constructor adds no measurable value.
+Phase 37's reported accuracy (0.991–0.994) was invalidated after a systematic audit found 5 critical evaluation issues: edge features encoding the answer, wrong metric, test edges in training graph, no target masking, no negatives. **Scale validation remains valid.** Phase 40 replaces Phase 37 with correct evaluation. See [Validation Phases](validation-phases.md#phase-37-leakage-audit).
 
-- **All Phase 34 comparisons are synthetic** — DELTA dominates GraphGPS/GRIT on synthetic data but the comparison hasn't run on real FB15k-237. Phase 37 is the critical remaining validation.
+### Open Architectural Questions
 
-- **DELTA uses 2× more parameters than baselines** — 60,594 params vs GraphGPS 33,388 / GRIT 28,130. Phase 37 includes a parameter-matched comparison (DELTA-Matched at ~30K params).
-
-- **Soft gating marginal on extreme noise** — Phase 28 showed dual attention is the key differentiator at extreme difficulty (+24%); soft gating adds only ±0.6% beyond that. Gating's value remains efficiency, not peak accuracy on current benchmarks.
+- **Self-bootstrap advantage on real data** — Phase 39's 157% result is on synthetic path composition. Phase 40 tests this on FB15k-237 (in progress)
+- **Speed gap** — DELTA 43-100× slower per epoch than GraphGPS. Competitive at equal epochs but needs optimization for wall-clock parity
+- **Parameter count** — DELTA uses ~2× more parameters than GraphGPS/GRIT. Phase 40 includes parameter-matched variants
 
 ---
 
 ## Roadmap
 
-### Active (Colab Pro+)
+### Recently Completed
+
+| Phase | Goal | Result |
+|-------|------|--------|
+| **38** | Differentiable task-aware constructor (3 variants) | Hybrid 98% of FixedChain (0.452 ± 0.006) |
+| **39** | Self-bootstrapped DELTA | **0.757 ± 0.041** — 157% of FixedChain |
+
+### In Progress
 
 | Phase | Goal | Status |
 |-------|------|--------|
-| **37** | Real FB15k-237 parameter-matched: DELTA vs GraphGPS vs GRIT (4 models × 5 seeds) | ⏳ In progress |
+| **40** | Correct LP evaluation on FB15k-237 (7 models, filtered MRR) | 500-epoch convergence run active |
 
-### Planned (Phases 38–43)
+### Horizon 1: Prove the Core (Phases 41–45)
 
 | Phase | Goal | Priority |
 |-------|------|----------|
-| **38** | Component ablation on real FB15k-237 (5 components × 5 seeds) | 🔴 High |
-| **39** | Multi-hop path queries (1p/2p/3p on FB15k-237) | 🔴 High |
-| **40** | YAGO3-10 benchmark (123K entities) | 🟡 Medium |
-| **41** | Codex-M benchmark (17K entities, 51 relations) | 🟡 Medium |
-| **42** | Scaling analysis (500→123K entities, O(E^x) characterization) | 🟠 Medium |
-| **43** | Edge attention interpretability (top-k + t-SNE) | 🟠 Medium |
+| **41** | Component ablation on real FB15k-237 | High |
+| **42** | Multi-hop path queries (1p/2p/3p) | High |
+| **43** | YAGO3-10 benchmark (123K entities) | Medium |
+| **44** | Scaling analysis (500→123K entities) | Medium |
+| **45** | Interpretability (attention visualization, edge type analysis) | Medium |
 
-### Conditional
+### Horizon 2: Dynamic Reasoning (Phases 46–55)
 
-| Phase | Goal | Trigger |
-|-------|------|---------|
-| **44** | ReasoningMesh (gated cross-attention between streams) | Only if Phase 39 shows >15% drop on 3p vs 1p queries. **Prototype evidence suggests this won't help** — cross-attention gates scored at majority baseline (0.218) vs ReconciliationBridge (0.889). |
-### Paper Assembly
+Iterative graph refinement, temporal reasoning, multi-scale construction, online learning. See [The Brain](the-brain.md) for details.
 
-| Phase | Goal | Depends On |
-|-------|------|------------|
-| **45** | Paper assembly and NeurIPS/ICLR submission | Phases 38–43 (44 optional) |
-### Long-Term
+### Horizon 3: The Brain (Phases 56+)
 
-- **Replace transformer bootstrap** — Requires domain-agnostic transfer + useful constructor. Phase 35 solved the encoder side; constructor remains unhelpful.
-- **Multi-modal input** — Extend graph constructor beyond token sequences (images, tables, structured data)
-- **Real-world application** — Knowledge graph completion, drug-target interaction, or recommendation systems at production scale
+Multi-modal graph construction, associative memory, compositional generalization, autonomous structure discovery. See [The Brain](the-brain.md).
 
 ---
 
-*See [Publication Roadmap](PUBLICATION_ROADMAP.md) for the full path to NeurIPS/ICLR submission including per-phase verification gates.*
+*See [The Brain](the-brain.md) for the long-term vision. See [Publication Roadmap](PUBLICATION_ROADMAP.md) for the path toward publication.*

@@ -52,6 +52,8 @@ plugins:
 
 nav:
   - Home: index.md
+  - Vision:
+    - The Brain: the-brain.md
   - Architecture:
     - Overview: architecture.md
     - Visual Explainer: ARCHITECTURE_VISUAL.md

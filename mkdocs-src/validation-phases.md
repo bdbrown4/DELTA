@@ -1,6 +1,6 @@
 # Validation Phases
 
-All experiment phases with results. Phases 1–30 validated core architecture and fixes. Phases 31–37 scaled to real-world data and baselines.
+All experiment phases with results. Phases 1–30 validated core architecture and fixes. Phases 31–37 scaled to real-world data and baselines. Phases 38–40 address graph construction and honest evaluation.
 
 ---
 
@@ -99,25 +99,130 @@ For detailed results, see [Colab Results](COLAB_RESULTS.md).
 |-------|-----------|--------|-----------------|
 | 35 | Domain-agnostic relational transfer (GRL + linear probe) | ✅ Complete | Frozen encoder → **0.961 on WN18RR** with 100 samples. GRL unnecessary — encoder already domain-invariant. |
 | 36 | Task-aware construction at scale (500–5000 nodes) | ✅ Complete | Constructor adds ≤1.3%. De-emphasize in paper. |
-| 37 | Real FB15k-237 parameter-matched comparison (4 models × 5 seeds) | ⏳ Running | DELTA-Full seed 1: test 0.991. DELTA-Matched seeds 1-2: test 0.986/0.987. Remaining seeds in progress. |
+| 37 | Real FB15k-237 parameter-matched comparison (4 models × 5 seeds) | ⚠️ Invalidated | **Leakage audit failed** — see Phase 37 Leakage Audit below. Scale validation (310K edges, GPU training, mini-batching) remains valid. |
 
 ---
 
-## Next Steps (Phases 38–45)
+## Phase 37: Leakage Audit
 
-See [Publication Roadmap](PUBLICATION_ROADMAP.md) for full details.
+Phase 37's reported accuracy numbers (0.991–0.994) were invalidated after a systematic audit identified **5 critical evaluation issues**:
+
+| Issue | Problem | Impact |
+|-------|---------|--------|
+| **Edge features encode answer** | `relation_prototypes[r_id] + noise(0.1)` in edge features — the model sees the label | Trivial denoising, not relational reasoning |
+| **Wrong evaluation metric** | Edge classification accuracy instead of link prediction MRR/Hits@K | Not comparable to published baselines |
+| **Test edges in training graph** | Test triples included in the message-passing graph | Information leakage from test to train |
+| **No target masking** | Model can attend to the edge it's trying to predict | Circular prediction |
+| **No negatives** | No corrupted triples for ranking evaluation | Can't measure discrimination ability |
+
+**What's still valid:** Mini-batch subgraph sampling, multi-GPU training pipeline, gradient accumulation — the engineering infrastructure works at scale (14,505 entities, 304K edges). These claims are unaffected by the evaluation issues.
+
+**Resolution:** Phase 40 rebuilds the evaluation pipeline from scratch, fixing all 5 issues with learned embeddings, train-only graphs, filtered MRR/Hits@K, and proper negative sampling.
+
+---
+
+## Phase 38: Differentiable Task-Aware Constructor
+
+*(Experiment file: `experiments/phase46_differentiable_constructor.py`)*
+
+Phase 38 addresses the core philosophical tension from Phase 27b/33/36: DELTA's GraphConstructor used **non-differentiable hard attention thresholding** (`attn > 0.1`), meaning task loss couldn't influence which edges were created.
+
+Three genuinely differentiable constructor variants using Gumbel-sigmoid edge selection with straight-through estimators. **Full 3-seed results:**
+
+| Variant | Accuracy (3 seeds) | vs FixedChain |
+|---------|-------------------|---------------|
+| Transformer (control) | 0.387 ± 0.031 | 84% |
+| **FixedChain** (control) | **0.461 ± 0.034** | 100% |
+| DifferentiableConstructor | 0.393 ± 0.017 | 85% |
+| TaskConditionedConstructor | 0.397 ± 0.005 | 86% |
+| **HybridConstructor** | **0.452 ± 0.006** | **98%** |
+
+**Key findings:**
+
+- **Hybrid is the winner** — preserving base sequential topology (gate=1) + learning additional edges reaches 98% of FixedChain with very low variance (±0.006)
+- Pure differentiable and TaskConditioned both plateau at ~85-86% — learning topology from scratch is harder than augmenting known good topology
+- All variants beat Transformer, confirming graph structure adds value
+- Sparsity regularization + temperature annealing (0.5→5.0) control edge density
+
+---
+
+## Phase 39: Self-Bootstrapped DELTA
+
+*(Experiment file: `experiments/phase46b_self_bootstrapped.py`)*
+
+**The breakthrough phase.** Replace the transformer bootstrap with a FixedChain DELTA layer — DELTA constructs its own graph from trivial sequential input, then processes that self-constructed graph with a full DELTA stack. No transformer anywhere in the pipeline.
+
+**Full 3-seed results:**
+
+| Model | Accuracy (3 seeds) | vs FixedChain |
+|-------|-------------------|---------------|
+| Transformer | 0.429 ± 0.021 | 89% |
+| FixedChain | 0.481 ± 0.015 | 100% |
+| P38_Hybrid | 0.459 ± 0.036 | 95% |
+| **SelfBootstrap** | **0.757 ± 0.041** | **157%** |
+| SelfBootstrapHybrid | 0.716 ± 0.038 | 149% |
+
+**Why it works:** The self-bootstrap DELTA runs a full edge-attention + reconciliation pass before the constructor sees the embeddings. These DELTA-enriched embeddings contain relational information that trivial positional embeddings lack — making edge discovery dramatically more reliable.
+
+**Implications:**
+
+- The transformer scaffold is **fully removable** — DELTA bootstraps DELTA
+- DELTA's own pass enriches features more than any external bootstrap (+76% over Transformer)
+- This validates the path toward The Brain: self-constructing relational reasoning without external scaffolding
+
+---
+
+## Phase 40: Correct Link Prediction Evaluation
+
+*(Experiment file: `experiments/phase46c_link_prediction.py`)*
+
+Phase 40 rebuilds the entire evaluation pipeline to fix all 5 issues from the Phase 37 leakage audit:
+
+| Fix | Implementation |
+|-----|---------------|
+| Edge features | `nn.Embedding` for entities and relations (no label information) |
+| Evaluation metric | Filtered MRR, Hits@1, Hits@3, Hits@10 |
+| Graph separation | Train-only graph for message passing |
+| Target masking | Self-bootstrap encoder excludes prediction target |
+| Negative sampling | 1-vs-all BCE loss with label smoothing (0.1) |
+
+**7 models tested:** delta_full, delta_matched, graphgps, grit, distmult, self_bootstrap (1 bootstrap + 2 DELTA layers), self_bootstrap_hybrid (1 bootstrap + 3 DELTA layers).
+
+**200-epoch results** (DELTA models still converging):
+
+| Model | MRR | Hits@1 | Hits@3 | Hits@10 |
+|-------|-----|--------|--------|---------|
+| GraphGPS | 0.513 | 0.413 | 0.568 | 0.684 |
+| DELTA-Matched | 0.497 | 0.397 | 0.553 | 0.674 |
+| SelfBootstrapHybrid | 0.494 | 0.395 | 0.550 | 0.669 |
+| DELTA-Full | 0.493 | 0.394 | 0.549 | 0.667 |
+| SelfBootstrap | 0.489 | 0.389 | 0.545 | 0.665 |
+| GRIT | 0.439 | 0.339 | 0.495 | 0.618 |
+| DistMult | 0.047 | 0.020 | 0.048 | 0.098 |
+
+**500-epoch convergence study (in progress):**
+
+- GraphGPS peaked at epoch 200 (MRR 0.530) and began **declining** — overfitting
+- DistMult climbed from 0.047 → 0.484 — massive late convergence
+- DELTA variants still processing (10-20s/epoch vs GraphGPS 0.2s/epoch)
+
+!!! note "Speed Asymmetry"
+    DELTA runs 43-100× slower per epoch than GraphGPS. At equal wall-clock time, GraphGPS gets far more gradient updates. DELTA's competitiveness at equal epoch count is promising — with optimization work, the convergence ceiling may be higher.
+
+---
+
+## Next Steps (Phases 41+)
+
+See [The Brain](the-brain.md) for the long-term vision and [Publication Roadmap](PUBLICATION_ROADMAP.md) for details.
 
 | Phase | Experiment | Status |
 |-------|-----------|--------|
-| 38 | Component ablation on real FB15k-237 | 🔲 Planned |
-| 39 | Multi-hop path queries (1p/2p/3p) | 🔲 Planned |
-| 40 | YAGO3-10 benchmark (123K entities) | 🔲 Planned |
-| 41 | Codex-M benchmark (17K entities, 51 relations) | 🔲 Planned |
-| 42 | Scaling analysis (500→123K entities) | 🔲 Planned |
-| 43 | Interpretability (EdgeAttention top-k + t-SNE) | 🔲 Planned |
-| 44 | ReasoningMesh (gated cross-attention between streams) | 🔲 Conditional — only if Phase 39 shows >15% 3p accuracy drop. Prototype evidence suggests this won't help. |
-| 45 | Paper assembly and NeurIPS/ICLR submission | 🔲 Planned — depends on 38–43 (44 optional) |
+| 41 | Component ablation on real FB15k-237 | Planned |
+| 42 | Multi-hop path queries (1p/2p/3p) | Planned |
+| 43 | YAGO3-10 benchmark (123K entities) | Planned |
+| 44 | Scaling analysis (500→123K entities) | Planned |
+| 45 | Interpretability (EdgeAttention top-k + t-SNE) | Planned |
 
 ---
 
-*All publication-grade results use 5 seeds, mean ± std reported.*
+*All publication-grade results use 5 seeds, mean ± std reported. Phases 38–40 use 3 seeds for rapid iteration.*

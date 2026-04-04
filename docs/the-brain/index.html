@@ -1,0 +1,1896 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Dynamic Edge-and-Node Architecture with Layered, Tiered Attention — Edge-Centric Dual Attention for Relational Reasoning on Knowledge Graphs">
+      
+      
+      
+        <link rel="canonical" href="https://bdbrown4.github.io/DELTA/the-brain/">
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../architecture/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>The Brain - DELTA Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#the-brain-deltas-end-goal" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="DELTA Documentation" class="md-header__button md-logo" aria-label="DELTA Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            DELTA Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              The Brain
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/bdbrown4/DELTA" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    bdbrown4/DELTA
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="DELTA Documentation" class="md-nav__button md-logo" aria-label="DELTA Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    DELTA Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/bdbrown4/DELTA" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    bdbrown4/DELTA
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vision
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Vision
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Brain
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Brain
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-vision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Vision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-three-paradigms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Three Paradigms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-evidence-trail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Evidence Trail
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Evidence Trail">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#foundation-edges-as-first-class-citizens-phases-115" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Foundation: Edges as First-Class Citizens (Phases 1–15)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scale-real-data-real-comparisons-phases-2237" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scale: Real Data, Real Comparisons (Phases 22–37)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-constructor-bottleneck-phases-27b-33-36-38" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Constructor Bottleneck (Phases 27b, 33, 36, 38)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-breakthrough-delta-bootstraps-delta-phase-39" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Breakthrough: DELTA Bootstraps DELTA (Phase 39)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#honest-evaluation-correct-link-prediction-phase-40" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Honest Evaluation: Correct Link Prediction (Phase 40)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-roadmap-to-the-brain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Roadmap to The Brain
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Roadmap to The Brain">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#where-we-are-now" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where We Are Now
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-comes-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Comes Next
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What Comes Next">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#horizon-1-prove-the-core-phases-4145" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Horizon 1: Prove the Core (Phases 41–45)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#horizon-2-dynamic-reasoning-phases-4655" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Horizon 2: Dynamic Reasoning (Phases 46–55)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#horizon-3-the-brain-phases-56" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Horizon 3: The Brain (Phases 56+)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-not-just-use-transformers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why Not Just Use Transformers?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Open Questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ARCHITECTURE_VISUAL/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visual Explainer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bootstrap-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bootstrap Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture-evolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Experiments
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Experiments
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-phases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Validation Phases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../key-findings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Findings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../COLAB_RESULTS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Colab Results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backward-compatibility/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backward Compatibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../RESEARCH_AGENDA/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agenda
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PUBLICATION_ROADMAP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Publication Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-methodology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methodology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../status-and-roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Status & Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Setup
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setup-and-running/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../COLAB_SETUP/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Colab Setup Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../project-structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-vision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Vision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-three-paradigms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Three Paradigms
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-evidence-trail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Evidence Trail
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Evidence Trail">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#foundation-edges-as-first-class-citizens-phases-115" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Foundation: Edges as First-Class Citizens (Phases 1–15)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scale-real-data-real-comparisons-phases-2237" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scale: Real Data, Real Comparisons (Phases 22–37)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-constructor-bottleneck-phases-27b-33-36-38" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Constructor Bottleneck (Phases 27b, 33, 36, 38)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-breakthrough-delta-bootstraps-delta-phase-39" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Breakthrough: DELTA Bootstraps DELTA (Phase 39)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#honest-evaluation-correct-link-prediction-phase-40" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Honest Evaluation: Correct Link Prediction (Phase 40)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-roadmap-to-the-brain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Roadmap to The Brain
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Roadmap to The Brain">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#where-we-are-now" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where We Are Now
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-comes-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Comes Next
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What Comes Next">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#horizon-1-prove-the-core-phases-4145" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Horizon 1: Prove the Core (Phases 41–45)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#horizon-2-dynamic-reasoning-phases-4655" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Horizon 2: Dynamic Reasoning (Phases 46–55)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#horizon-3-the-brain-phases-56" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Horizon 3: The Brain (Phases 56+)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-not-just-use-transformers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why Not Just Use Transformers?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Open Questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="the-brain-deltas-end-goal">The Brain: DELTA's End Goal<a class="headerlink" href="#the-brain-deltas-end-goal" title="Permanent link">&para;</a></h1>
+<h2 id="the-vision">The Vision<a class="headerlink" href="#the-vision" title="Permanent link">&para;</a></h2>
+<p>The human brain doesn't process information as flat sequences. It builds, strengthens, and prunes synaptic connections — dynamically constructing the graph over which reasoning flows. Every thought creates new pathways; every pathway shapes the next thought.</p>
+<p><strong>DELTA is building toward this:</strong> a system that dynamically constructs its own relational graphs and reasons over them, without relying on pre-defined topology or transformer scaffolding. Not another GNN paper. Not another attention variant. A fundamentally different computational substrate for relational reasoning.</p>
+<hr />
+<h2 id="the-three-paradigms">The Three Paradigms<a class="headerlink" href="#the-three-paradigms" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Paradigm</th>
+<th>Structure</th>
+<th>Edges</th>
+<th>Graph Source</th>
+<th>Limitation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Transformer</strong></td>
+<td>Flat sequence</td>
+<td>Implicit (attention weights)</td>
+<td>None — reconstructs structure from sequences</td>
+<td>Quadratic cost to rediscover what a graph already encodes</td>
+</tr>
+<tr>
+<td><strong>GNN</strong></td>
+<td>Static graph</td>
+<td>Passive scalar wires</td>
+<td>Pre-given, fixed</td>
+<td>Can't learn new structure; edges carry no computation</td>
+</tr>
+<tr>
+<td><strong>DELTA / The Brain</strong></td>
+<td>Dynamic graph</td>
+<td>First-class computational citizens</td>
+<td>Self-constructed, continuously refined</td>
+<td><em>This is what we're building</em></td>
+</tr>
+</tbody>
+</table>
+<p>The key insight: <strong>edges should think.</strong> In a brain, synapses aren't just wires — they have their own plasticity, their own state, their own role in computation. DELTA's edge-to-edge attention makes edges computational citizens that attend to each other, reason about each other, and collectively discover relational patterns that node-only systems miss.</p>
+<hr />
+<h2 id="the-evidence-trail">The Evidence Trail<a class="headerlink" href="#the-evidence-trail" title="Permanent link">&para;</a></h2>
+<h3 id="foundation-edges-as-first-class-citizens-phases-115">Foundation: Edges as First-Class Citizens (Phases 1–15)<a class="headerlink" href="#foundation-edges-as-first-class-citizens-phases-115" title="Permanent link">&para;</a></h3>
+<p>Edge-centric dual attention works. The core mechanism — edges attending to edges — produces measurable advantages:</p>
+<ul>
+<li><strong>Phase 11:</strong> 2-hop edge adjacency achieves 100% on derived/transitive relations (+38.9% over 1-hop)</li>
+<li><strong>Phase 13:</strong> DELTA 100% on all compositional relations (vs Node GNN 87.5% on derived)</li>
+<li><strong>Phase 2:</strong> Dual parallel attention converges 2.7× faster than sequential</li>
+</ul>
+<h3 id="scale-real-data-real-comparisons-phases-2237">Scale: Real Data, Real Comparisons (Phases 22–37)<a class="headerlink" href="#scale-real-data-real-comparisons-phases-2237" title="Permanent link">&para;</a></h3>
+<p>DELTA works on real knowledge graphs and dominates on synthetic relational tasks:</p>
+<ul>
+<li><strong>Phase 25:</strong> DELTA+Gate 97.6% on real FB15k-237 (vs CompGCN 97.2%)</li>
+<li><strong>Phase 34:</strong> DELTA 0.880 vs GraphGPS 0.293 vs GRIT 0.307 on edge classification</li>
+<li><strong>Phase 28:</strong> +24% accuracy over vanilla GNN at 80% feature corruption — relational structure survives noise</li>
+<li><strong>Phase 35:</strong> Frozen encoder → 0.961 on WN18RR with 100 samples (domain-agnostic transfer)</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Phase 37 Leakage Disclosure</p>
+<p>Phase 37's reported accuracy (0.991–0.994) was invalidated after a leakage audit identified 5 critical issues in the evaluation pipeline. The scale validation (310K edges, GPU training, mini-batching) remains valid. See <a href="../validation-phases/#phase-37-leakage-audit">Validation Phases</a> for full details. Phase 40 replaces Phase 37 with correct link prediction evaluation.</p>
+</div>
+<h3 id="the-constructor-bottleneck-phases-27b-33-36-38">The Constructor Bottleneck (Phases 27b, 33, 36, 38)<a class="headerlink" href="#the-constructor-bottleneck-phases-27b-33-36-38" title="Permanent link">&para;</a></h3>
+<p>The original GraphConstructor used non-differentiable hard attention thresholding — task loss couldn't influence which edges were created. This was the philosophical bottleneck: DELTA claimed to "operate on relational structure directly" but couldn't <em>construct</em> that structure end-to-end.</p>
+<ul>
+<li><strong>Phase 27b:</strong> Graph structure helps (+4.4% over Transformer), but the constructor is the bottleneck</li>
+<li><strong>Phase 33/36:</strong> Task-aware construction adds ≤1.3% — not because it's impossible, but because the constructor can't learn</li>
+</ul>
+<p><strong>Phase 38</strong> (Differentiable Constructor) broke through: Gumbel-sigmoid edge selection with straight-through estimators made construction fully differentiable. The Hybrid variant reached 98% of FixedChain (0.452 ± 0.006 vs 0.461 ± 0.034).</p>
+<h3 id="the-breakthrough-delta-bootstraps-delta-phase-39">The Breakthrough: DELTA Bootstraps DELTA (Phase 39)<a class="headerlink" href="#the-breakthrough-delta-bootstraps-delta-phase-39" title="Permanent link">&para;</a></h3>
+<p><strong>This is the moment the transformer scaffold comes down.</strong></p>
+<p>Phase 39 replaced the transformer bootstrap with a FixedChain DELTA layer — DELTA constructs its own graph from trivial sequential input, then processes that self-constructed graph with a full DELTA stack.</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Accuracy</th>
+<th>vs FixedChain</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Transformer</td>
+<td>0.429 ± 0.021</td>
+<td>89%</td>
+</tr>
+<tr>
+<td>FixedChain</td>
+<td>0.481 ± 0.015</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>P38_Hybrid</td>
+<td>0.459 ± 0.036</td>
+<td>95%</td>
+</tr>
+<tr>
+<td><strong>SelfBootstrap</strong></td>
+<td><strong>0.757 ± 0.041</strong></td>
+<td><strong>157%</strong></td>
+</tr>
+<tr>
+<td>SelfBootstrapHybrid</td>
+<td>0.716 ± 0.038</td>
+<td>149%</td>
+</tr>
+</tbody>
+</table>
+<p>The self-bootstrapped DELTA doesn't just match the transformer scaffold — it <strong>obliterates</strong> it. +76% over the transformer, +57% over FixedChain. DELTA-enriched embeddings make edge discovery dramatically more reliable than raw positional embeddings.</p>
+<h3 id="honest-evaluation-correct-link-prediction-phase-40">Honest Evaluation: Correct Link Prediction (Phase 40)<a class="headerlink" href="#honest-evaluation-correct-link-prediction-phase-40" title="Permanent link">&para;</a></h3>
+<p>Phase 40 rebuilt the evaluation pipeline from scratch, fixing all 5 leakage issues from Phase 37:</p>
+<ul>
+<li>Learned entity/relation embeddings (no label leakage in edge features)</li>
+<li>Train-only graph for message passing</li>
+<li>Filtered MRR/Hits@K metrics</li>
+<li>Proper negative sampling</li>
+<li>Target edge masking</li>
+</ul>
+<p><strong>200-epoch results</strong> (all models still converging):</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>MRR</th>
+<th>Hits@1</th>
+<th>Hits@10</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GraphGPS</td>
+<td>0.513</td>
+<td>0.413</td>
+<td>0.684</td>
+</tr>
+<tr>
+<td>DELTA-Matched</td>
+<td>0.497</td>
+<td>0.397</td>
+<td>0.674</td>
+</tr>
+<tr>
+<td>SelfBootstrapHybrid</td>
+<td>0.494</td>
+<td>0.395</td>
+<td>0.669</td>
+</tr>
+<tr>
+<td>DELTA-Full</td>
+<td>0.493</td>
+<td>0.394</td>
+<td>0.667</td>
+</tr>
+<tr>
+<td>SelfBootstrap</td>
+<td>0.489</td>
+<td>0.389</td>
+<td>0.665</td>
+</tr>
+<tr>
+<td>GRIT</td>
+<td>0.439</td>
+<td>0.339</td>
+<td>0.618</td>
+</tr>
+<tr>
+<td>DistMult</td>
+<td>0.047</td>
+<td>0.020</td>
+<td>0.098</td>
+</tr>
+</tbody>
+</table>
+<p>DELTA is competitive with GraphGPS at 200 epochs — but DELTA models were still climbing while GraphGPS had plateaued. The 500-epoch convergence study shows GraphGPS peaked at epoch 200 (MRR 0.530) and began <strong>declining</strong> (overfitting), while DistMult climbed from 0.047 to 0.484. DELTA variants are expected to benefit similarly from extended training.</p>
+<div class="admonition note">
+<p class="admonition-title">Speed vs Convergence</p>
+<p>DELTA runs ~10-20s/epoch vs GraphGPS ~0.2s/epoch (43-100× slower per step). In equal wall-clock time, GraphGPS gets far more gradient updates. DELTA's competitiveness at equal epoch count suggests a higher ceiling with optimization.</p>
+</div>
+<hr />
+<h2 id="the-roadmap-to-the-brain">The Roadmap to The Brain<a class="headerlink" href="#the-roadmap-to-the-brain" title="Permanent link">&para;</a></h2>
+<h3 id="where-we-are-now">Where We Are Now<a class="headerlink" href="#where-we-are-now" title="Permanent link">&para;</a></h3>
+<p>DELTA has proven three critical capabilities:</p>
+<ol>
+<li><strong>Edge-centric reasoning works</strong> — edges as computational citizens produce real advantages on relational tasks</li>
+<li><strong>Self-construction works</strong> — DELTA can build its own graph from scratch, no transformer needed (Phase 39)</li>
+<li><strong>Competitive LP</strong> — On standard benchmarks with correct evaluation, DELTA matches established baselines and shows signs of a higher convergence ceiling (Phase 40)</li>
+</ol>
+<h3 id="what-comes-next">What Comes Next<a class="headerlink" href="#what-comes-next" title="Permanent link">&para;</a></h3>
+<p>The path from "competitive GNN" to "The Brain" follows three horizons:</p>
+<h4 id="horizon-1-prove-the-core-phases-4145">Horizon 1: Prove the Core (Phases 41–45)<a class="headerlink" href="#horizon-1-prove-the-core-phases-4145" title="Permanent link">&para;</a></h4>
+<p>Establish DELTA as a legitimate relational reasoning architecture with publication-quality results.</p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Goal</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>41</td>
+<td>Component ablation on FB15k-237 (which pieces matter?)</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>42</td>
+<td>Multi-hop path queries (1p/2p/3p BETAE-style)</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>43</td>
+<td>YAGO3-10 benchmark (123K entities)</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>44</td>
+<td>Scaling analysis (500 → 123K entities)</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>45</td>
+<td>Interpretability (attention visualization, edge type analysis)</td>
+<td>Planned</td>
+</tr>
+</tbody>
+</table>
+<h4 id="horizon-2-dynamic-reasoning-phases-4655">Horizon 2: Dynamic Reasoning (Phases 46–55)<a class="headerlink" href="#horizon-2-dynamic-reasoning-phases-4655" title="Permanent link">&para;</a></h4>
+<p>Move from static evaluation to dynamic graph evolution — the system that builds and refines its own reasoning substrate.</p>
+<ul>
+<li><strong>Iterative graph refinement:</strong> Multi-pass construction where each DELTA pass restructures the graph for the next</li>
+<li><strong>Temporal reasoning:</strong> Graphs that evolve over time, with edges that strengthen or decay</li>
+<li><strong>Multi-scale construction:</strong> Hierarchical graphs (entity → concept → domain) built bottom-up</li>
+<li><strong>Online learning:</strong> Graph structure adapts during inference, not just training</li>
+</ul>
+<h4 id="horizon-3-the-brain-phases-56">Horizon 3: The Brain (Phases 56+)<a class="headerlink" href="#horizon-3-the-brain-phases-56" title="Permanent link">&para;</a></h4>
+<p>The end goal: a general relational reasoning system that rivals transformer-scale language models on tasks where relational structure matters.</p>
+<ul>
+<li><strong>Multi-modal graph construction:</strong> Build relational graphs from text, images, structured data — any input modality</li>
+<li><strong>Associative memory:</strong> Long-term graph state that persists across tasks (like synaptic weights)</li>
+<li><strong>Compositional generalization:</strong> Combine known relations to infer novel ones without retraining</li>
+<li><strong>Autonomous structure discovery:</strong> The system discovers what entities and relations exist, not just how they connect</li>
+</ul>
+<hr />
+<h2 id="why-not-just-use-transformers">Why Not Just Use Transformers?<a class="headerlink" href="#why-not-just-use-transformers" title="Permanent link">&para;</a></h2>
+<p>Transformers work. They scale. They dominate benchmarks. So why build something different?</p>
+<p>Because transformers pay a <strong>quadratic tax to rediscover structure</strong> that a graph already encodes. Every self-attention layer recomputes "who should talk to whom" from scratch. A brain doesn't do this — it has persistent connections that encode which neurons talk to which others.</p>
+<p>DELTA's bet is that for <strong>relational reasoning</strong> — the kind of reasoning that requires understanding how things connect, not just what things are — operating on explicit relational structure will be fundamentally more efficient than reconstructing it from flat sequences.</p>
+<p>The evidence so far supports this:</p>
+<ul>
+<li><strong>Phase 34:</strong> DELTA 0.880 vs GraphGPS 0.293 on edge classification — a task that <em>is</em> about relational structure</li>
+<li><strong>Phase 28:</strong> +24% noise robustness — relational structure survives feature corruption</li>
+<li><strong>Phase 39:</strong> Self-bootstrapped DELTA at 157% of FixedChain — DELTA's own pass enriches representations more than any external bootstrap</li>
+</ul>
+<p>The Brain isn't about replacing transformers everywhere. It's about building something <strong>better suited for relational reasoning</strong> — and then scaling it to see how far that advantage extends.</p>
+<hr />
+<h2 id="key-open-questions">Key Open Questions<a class="headerlink" href="#key-open-questions" title="Permanent link">&para;</a></h2>
+<ol>
+<li>
+<p><strong>Does the self-bootstrap advantage hold on real data?</strong> Phase 39's 157% result is on a synthetic path composition task. Phase 40 tests this on FB15k-237.</p>
+</li>
+<li>
+<p><strong>Can DELTA match transformer-scale reasoning?</strong> Current experiments use ≤15K entities. The Brain requires scaling to millions.</p>
+</li>
+<li>
+<p><strong>Does iterative refinement help?</strong> Multi-pass graph construction (bootstrap → refine → refine) is theoretically appealing but unvalidated.</p>
+</li>
+<li>
+<p><strong>What's the speed ceiling?</strong> DELTA's per-epoch cost is 43-100× GraphGPS. Can architectural optimizations (sparse attention, approximate adjacency) close this gap?</p>
+</li>
+<li>
+<p><strong>When does explicit structure win?</strong> The hypothesis: relational tasks benefit from explicit graphs, but sequential/generative tasks may not. Where's the crossover?</p>
+</li>
+</ol>
+<hr />
+<p><em>This document captures the long-term vision. For current experiment results, see <a href="../validation-phases/">Validation Phases</a>. For implementation status, see <a href="../status-and-roadmap/">Status &amp; Roadmap</a>.</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

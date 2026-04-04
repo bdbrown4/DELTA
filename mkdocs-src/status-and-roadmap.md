@@ -61,7 +61,7 @@ Phase 37's reported accuracy (0.991–0.994) was invalidated after a systematic 
 
 | Phase | Goal | Priority |
 |-------|------|----------|
-| **41** | Component ablation on real FB15k-237 | High |
+| **41** | Generalization gap investigation — weight decay sweep (delta_matched vs graphgps vs SBH) | **Active** |
 | **42** | Multi-hop path queries (1p/2p/3p) | High |
 | **43** | YAGO3-10 benchmark (123K entities) | Medium |
 | **44** | Scaling analysis (500→123K entities) | Medium |

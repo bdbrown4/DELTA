@@ -505,7 +505,7 @@ def evaluate_lp(model, triples, edge_index, edge_types,
 # ═══════════════════════════════════════════════════════════════════════════
 
 def run_single(model_type, data, epochs, lr, device, batch_size, seed,
-               eval_every=10, patience=5):
+               eval_every=10, patience=5, weight_decay=0.0):
     """Train + evaluate one model on one seed. Returns metrics dict."""
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -518,10 +518,12 @@ def run_single(model_type, data, epochs, lr, device, batch_size, seed,
     n_encoder = (sum(p.numel() for p in model.encoder.parameters())
                  if model.encoder is not None else 0)
     print(f"\n  [{model_type}] seed={seed}, "
-          f"{n_total:,} total params ({n_encoder:,} encoder), device={device}")
+          f"{n_total:,} total params ({n_encoder:,} encoder), device={device}"
+          + (f", wd={weight_decay}" if weight_decay > 0 else ""))
 
     edge_index, edge_types = build_train_graph_tensors(data['train'])
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr,
+                                 weight_decay=weight_decay)
 
     best_val_mrr = 0.0
     best_test = None
@@ -578,10 +580,12 @@ def run_single(model_type, data, epochs, lr, device, batch_size, seed,
 def run_multi_seed(model_type, data, args, device, seeds):
     """Run one model across multiple seeds, return aggregated metrics."""
     results = []
+    wd = getattr(args, 'weight_decay', 0.0)
     for seed in seeds:
         try:
             r = run_single(model_type, data, args.epochs, args.lr, device,
-                           args.batch_size, seed, args.eval_every, args.patience)
+                           args.batch_size, seed, args.eval_every, args.patience,
+                           weight_decay=wd)
             results.append(r)
         except Exception as e:
             print(f"    FAILED seed {seed}: {e}")
@@ -694,6 +698,8 @@ def main():
                         help='Comma-separated model names (default: all)')
     parser.add_argument('--dataset', type=str, default='fb15k-237',
                         choices=['fb15k-237', 'wn18rr'])
+    parser.add_argument('--weight_decay', type=float, default=0.0,
+                        help='L2 weight decay for Adam optimizer (default: 0.0)')
     args = parser.parse_args()
 
     # Defaults based on mode

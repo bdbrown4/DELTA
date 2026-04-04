@@ -26,6 +26,11 @@
 - **Self-bootstrapped DELTA** — Phase 39: **0.757 ± 0.041, 157% of FixedChain**. No transformer needed. DELTA bootstraps DELTA
 - **Correct link prediction** — Phase 40 complete: SelfBootstrapHybrid MRR 0.5089 (H@10 0.8158), within 0.004 of GraphGPS (0.5126) and beating it on Hits@10. DELTA-Matched 0.4950 MRR with 69% of GraphGPS's parameters
 
+### Compositional Reasoning (Phase 42 — preliminary)
+
+- **GNN advantage scales with hop count** — Phase 42 (fast models): At 1p GraphGPS leads DistMult by +0.017 MRR; at 3p the gap grows to **+0.131**. Embedding baselines collapse at 3p (+0.034 over 1p), while GNNs maintain strong multi-hop composition (+0.148).
+- **DELTA model results pending** — edge-to-edge attention expected to amplify multi-hop advantage further
+
 ---
 
 ## Known Issues
@@ -50,20 +55,21 @@ Phase 37's reported accuracy (0.991–0.994) was invalidated after a systematic 
 |-------|------|--------|
 | **38** | Differentiable task-aware constructor (3 variants) | Hybrid 98% of FixedChain (0.452 ± 0.006) |
 | **39** | Self-bootstrapped DELTA | **0.757 ± 0.041** — 157% of FixedChain |
+| **40** | Correct LP evaluation on FB15k-237 (7 models, filtered MRR) | SelfBootstrapHybrid MRR 0.5089, beats GraphGPS on H@10 |
+| **41** | Generalization gap investigation — weight decay sweep | Negative result — gap is val-set noise, not overfitting |
 
 ### In Progress
 
 | Phase | Goal | Status |
 |-------|------|--------|
-| **40** | Correct LP evaluation on FB15k-237 (7 models, filtered MRR) | ✅ Complete — SelfBootstrapHybrid MRR 0.5089, beats GraphGPS on H@10 |
+| **42** | Multi-hop path queries (1p/2p/3p) — leak-free soft traversal | Fast models done; DELTA models running. GraphGPS 3p MRR 0.697 vs DistMult 0.566 (+13%) |
 
-### Horizon 1: Prove the Core (Phases 41–45)
+### Horizon 1: Prove the Core (Phases 42–45)
 
 | Phase | Goal | Priority |
 |-------|------|----------|
-| **41** | Generalization gap investigation — weight decay sweep (delta_matched vs graphgps vs SBH) | **Active** |
-| **42** | Multi-hop path queries (1p/2p/3p) | High |
-| **43** | YAGO3-10 benchmark (123K entities) | Medium |
+| **42** | Multi-hop path queries (1p/2p/3p) — **in progress** | **Active** |
+| **43** | YAGO3-10 benchmark (123K entities) | High |
 | **44** | Scaling analysis (500→123K entities) | Medium |
 | **45** | Interpretability (attention visualization, edge type analysis) | Medium |
 

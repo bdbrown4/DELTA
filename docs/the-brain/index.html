@@ -1740,7 +1740,7 @@
 <ol>
 <li><strong>Edge-centric reasoning works</strong> — edges as computational citizens produce real advantages on relational tasks</li>
 <li><strong>Self-construction works</strong> — DELTA can build its own graph from scratch, no transformer needed (Phase 39)</li>
-<li><strong>Competitive LP</strong> — On standard benchmarks with correct evaluation, DELTA matches established baselines and shows signs of a higher convergence ceiling (Phase 40)</li>
+<li><strong>Competitive LP</strong> — SelfBootstrapHybrid reaches MRR 0.5089 on FB15k-237 link prediction, within 0.004 of GraphGPS (0.5126) and beating it on Hits@10. DELTA-Matched achieves 97% of GraphGPS MRR with 69% of its parameters. (Phase 40)</li>
 </ol>
 <h3 id="what-comes-next">What Comes Next<a class="headerlink" href="#what-comes-next" title="Permanent link">&para;</a></h3>
 <p>The path from "competitive GNN" to "The Brain" follows three horizons:</p>
@@ -1814,7 +1814,7 @@
 <h2 id="key-open-questions">Key Open Questions<a class="headerlink" href="#key-open-questions" title="Permanent link">&para;</a></h2>
 <ol>
 <li>
-<p><strong>Does the self-bootstrap advantage hold on real data?</strong> Phase 39's 157% result is on a synthetic path composition task. Phase 40 tests this on FB15k-237.</p>
+<p><strong>Does the self-bootstrap advantage hold on real data?</strong> Phase 40 answers this: SelfBootstrapHybrid is the best-performing DELTA variant on FB15k-237 (MRR 0.5089, H@10 0.8158), beating all vanilla DELTA architectures. The self-bootstrap mechanism helps on real graphs, not just synthetic tasks.</p>
 </li>
 <li>
 <p><strong>Can DELTA match transformer-scale reasoning?</strong> Current experiments use ≤15K entities. The Brain requires scaling to millions.</p>

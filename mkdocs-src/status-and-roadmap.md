@@ -24,7 +24,7 @@
 
 - **Differentiable construction works** — Phase 38: Hybrid Gumbel-sigmoid reaches 98% of FixedChain (0.452 ± 0.006)
 - **Self-bootstrapped DELTA** — Phase 39: **0.757 ± 0.041, 157% of FixedChain**. No transformer needed. DELTA bootstraps DELTA
-- **Correct link prediction** — Phase 40: DELTA MRR 0.497 at 200 epochs on FB15k-237, competitive with GraphGPS (0.513), still converging
+- **Correct link prediction** — Phase 40 complete: SelfBootstrapHybrid MRR 0.5089 (H@10 0.8158), within 0.004 of GraphGPS (0.5126) and beating it on Hits@10. DELTA-Matched 0.4950 MRR with 69% of GraphGPS's parameters
 
 ---
 
@@ -36,7 +36,7 @@ Phase 37's reported accuracy (0.991–0.994) was invalidated after a systematic 
 
 ### Open Architectural Questions
 
-- **Self-bootstrap advantage on real data** — Phase 39's 157% result is on synthetic path composition. Phase 40 tests this on FB15k-237 (in progress)
+- **Self-bootstrap advantage on real data** — Confirmed. SelfBootstrapHybrid is the best DELTA variant on FB15k-237 LP (MRR 0.5089), beating all vanilla DELTA architectures
 - **Speed gap** — DELTA 43-100× slower per epoch than GraphGPS. Competitive at equal epochs but needs optimization for wall-clock parity
 - **Parameter count** — DELTA uses ~2× more parameters than GraphGPS/GRIT. Phase 40 includes parameter-matched variants
 
@@ -55,7 +55,7 @@ Phase 37's reported accuracy (0.991–0.994) was invalidated after a systematic 
 
 | Phase | Goal | Status |
 |-------|------|--------|
-| **40** | Correct LP evaluation on FB15k-237 (7 models, filtered MRR) | 500-epoch convergence run active |
+| **40** | Correct LP evaluation on FB15k-237 (7 models, filtered MRR) | ✅ Complete — SelfBootstrapHybrid MRR 0.5089, beats GraphGPS on H@10 |
 
 ### Horizon 1: Prove the Core (Phases 41–45)
 

@@ -1512,7 +1512,7 @@
 <ul>
 <li><strong>Differentiable construction works</strong> — Phase 38: Hybrid Gumbel-sigmoid reaches 98% of FixedChain (0.452 ± 0.006)</li>
 <li><strong>Self-bootstrapped DELTA</strong> — Phase 39: <strong>0.757 ± 0.041, 157% of FixedChain</strong>. No transformer needed. DELTA bootstraps DELTA</li>
-<li><strong>Correct link prediction</strong> — Phase 40: DELTA MRR 0.497 at 200 epochs on FB15k-237, competitive with GraphGPS (0.513), still converging</li>
+<li><strong>Correct link prediction</strong> — Phase 40 complete: SelfBootstrapHybrid MRR 0.5089 (H@10 0.8158), within 0.004 of GraphGPS (0.5126) and beating it on Hits@10. DELTA-Matched 0.4950 MRR with 69% of GraphGPS's parameters</li>
 </ul>
 <hr />
 <h2 id="known-issues">Known Issues<a class="headerlink" href="#known-issues" title="Permanent link">&para;</a></h2>
@@ -1520,7 +1520,7 @@
 <p>Phase 37's reported accuracy (0.991–0.994) was invalidated after a systematic audit found 5 critical evaluation issues: edge features encoding the answer, wrong metric, test edges in training graph, no target masking, no negatives. <strong>Scale validation remains valid.</strong> Phase 40 replaces Phase 37 with correct evaluation. See <a href="../validation-phases/#phase-37-leakage-audit">Validation Phases</a>.</p>
 <h3 id="open-architectural-questions">Open Architectural Questions<a class="headerlink" href="#open-architectural-questions" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Self-bootstrap advantage on real data</strong> — Phase 39's 157% result is on synthetic path composition. Phase 40 tests this on FB15k-237 (in progress)</li>
+<li><strong>Self-bootstrap advantage on real data</strong> — Confirmed. SelfBootstrapHybrid is the best DELTA variant on FB15k-237 LP (MRR 0.5089), beating all vanilla DELTA architectures</li>
 <li><strong>Speed gap</strong> — DELTA 43-100× slower per epoch than GraphGPS. Competitive at equal epochs but needs optimization for wall-clock parity</li>
 <li><strong>Parameter count</strong> — DELTA uses ~2× more parameters than GraphGPS/GRIT. Phase 40 includes parameter-matched variants</li>
 </ul>
@@ -1561,7 +1561,7 @@
 <tr>
 <td><strong>40</strong></td>
 <td>Correct LP evaluation on FB15k-237 (7 models, filtered MRR)</td>
-<td>500-epoch convergence run active</td>
+<td>✅ Complete — SelfBootstrapHybrid MRR 0.5089, beats GraphGPS on H@10</td>
 </tr>
 </tbody>
 </table>

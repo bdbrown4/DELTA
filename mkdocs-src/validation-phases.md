@@ -188,26 +188,28 @@ Phase 40 rebuilds the entire evaluation pipeline to fix all 5 issues from the Ph
 
 **7 models tested:** delta_full, delta_matched, graphgps, grit, distmult, self_bootstrap (1 bootstrap + 2 DELTA layers), self_bootstrap_hybrid (1 bootstrap + 3 DELTA layers).
 
-**200-epoch results** (DELTA models still converging):
+**Final results — 500 epochs, best val checkpoint (test MRR):**
 
-| Model | MRR | Hits@1 | Hits@3 | Hits@10 |
-|-------|-----|--------|--------|---------|
-| GraphGPS | 0.513 | 0.413 | 0.568 | 0.684 |
-| DELTA-Matched | 0.497 | 0.397 | 0.553 | 0.674 |
-| SelfBootstrapHybrid | 0.494 | 0.395 | 0.550 | 0.669 |
-| DELTA-Full | 0.493 | 0.394 | 0.549 | 0.667 |
-| SelfBootstrap | 0.489 | 0.389 | 0.545 | 0.665 |
-| GRIT | 0.439 | 0.339 | 0.495 | 0.618 |
-| DistMult | 0.047 | 0.020 | 0.048 | 0.098 |
+| Model | Params | MRR | Hits@1 | Hits@3 | Hits@10 | Peak Epoch |
+|-------|--------|-----|--------|--------|---------|------------|
+| **GraphGPS** | 228K | **0.5126** | 0.3745 | 0.5813 | 0.8128 | 200 |
+| **SelfBootstrapHybrid** | 381K | **0.5089** | 0.3632 | 0.5874 | **0.8158** | 250 |
+| DELTA-Matched | 158K | 0.4950 | 0.3457 | 0.5720 | 0.8035 | 200 |
+| DELTA-Full | 293K | 0.4938 | 0.3549 | 0.5586 | 0.7922 | 200 |
+| SelfBootstrap | 299K | 0.4891 | 0.3385 | 0.5617 | 0.7912 | 200 |
+| DistMult | 47K | 0.4841 | 0.3457 | 0.5484 | 0.7634 | 500+ |
+| GRIT | 197K | 0.4390 | 0.2953 | 0.4959 | 0.7603 | 200 |
 
-**500-epoch convergence study (in progress):**
+**Key findings:**
 
-- GraphGPS peaked at epoch 200 (MRR 0.530) and began **declining** — overfitting
-- DistMult climbed from 0.047 → 0.484 — massive late convergence
-- DELTA variants still processing (10-20s/epoch vs GraphGPS 0.2s/epoch)
+- **SelfBootstrapHybrid vs GraphGPS:** Only 0.004 MRR behind (-0.7%), and actually **beats** GraphGPS on Hits@10 (0.8158 vs 0.8128). The self-bootstrap variant is the most competitive DELTA model on real data.
+- **All models overfit after ~200 epochs** — GraphGPS, DELTA variants, and GRIT all peaked around epoch 200 and declined. The patience mechanism correctly selected best-val checkpoints.
+- **SelfBootstrapHybrid peaked later (epoch 250)** — slightly more robust to overfitting, consistent with the bootstrap pass adding regularization.
+- **DistMult still climbing at epoch 500** — pure embedding method with no encoder continues improving; not yet converged.
+- **DELTA-Matched efficiency:** 0.4950 MRR with only 158K params vs GraphGPS at 0.5126 with 228K params — 69% of the parameters, 97% of the MRR.
 
-!!! note "Speed Asymmetry"
-    DELTA runs 43-100× slower per epoch than GraphGPS. At equal wall-clock time, GraphGPS gets far more gradient updates. DELTA's competitiveness at equal epoch count is promising — with optimization work, the convergence ceiling may be higher.
+!!! note "Reference: published full FB15k-237 results"
+    DistMult: MRR 0.241 · CompGCN: MRR 0.355 · RotatE: MRR 0.338. All Phase 40 models exceed published DistMult and CompGCN by large margins on the top-500 degree subset.
 
 ---
 

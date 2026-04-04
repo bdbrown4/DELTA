@@ -2004,78 +2004,96 @@
 </tbody>
 </table>
 <p><strong>7 models tested:</strong> delta_full, delta_matched, graphgps, grit, distmult, self_bootstrap (1 bootstrap + 2 DELTA layers), self_bootstrap_hybrid (1 bootstrap + 3 DELTA layers).</p>
-<p><strong>200-epoch results</strong> (DELTA models still converging):</p>
+<p><strong>Final results — 500 epochs, best val checkpoint (test MRR):</strong></p>
 <table>
 <thead>
 <tr>
 <th>Model</th>
+<th>Params</th>
 <th>MRR</th>
 <th>Hits@1</th>
 <th>Hits@3</th>
 <th>Hits@10</th>
+<th>Peak Epoch</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>GraphGPS</td>
-<td>0.513</td>
-<td>0.413</td>
-<td>0.568</td>
-<td>0.684</td>
+<td><strong>GraphGPS</strong></td>
+<td>228K</td>
+<td><strong>0.5126</strong></td>
+<td>0.3745</td>
+<td>0.5813</td>
+<td>0.8128</td>
+<td>200</td>
+</tr>
+<tr>
+<td><strong>SelfBootstrapHybrid</strong></td>
+<td>381K</td>
+<td><strong>0.5089</strong></td>
+<td>0.3632</td>
+<td>0.5874</td>
+<td><strong>0.8158</strong></td>
+<td>250</td>
 </tr>
 <tr>
 <td>DELTA-Matched</td>
-<td>0.497</td>
-<td>0.397</td>
-<td>0.553</td>
-<td>0.674</td>
-</tr>
-<tr>
-<td>SelfBootstrapHybrid</td>
-<td>0.494</td>
-<td>0.395</td>
-<td>0.550</td>
-<td>0.669</td>
+<td>158K</td>
+<td>0.4950</td>
+<td>0.3457</td>
+<td>0.5720</td>
+<td>0.8035</td>
+<td>200</td>
 </tr>
 <tr>
 <td>DELTA-Full</td>
-<td>0.493</td>
-<td>0.394</td>
-<td>0.549</td>
-<td>0.667</td>
+<td>293K</td>
+<td>0.4938</td>
+<td>0.3549</td>
+<td>0.5586</td>
+<td>0.7922</td>
+<td>200</td>
 </tr>
 <tr>
 <td>SelfBootstrap</td>
-<td>0.489</td>
-<td>0.389</td>
-<td>0.545</td>
-<td>0.665</td>
-</tr>
-<tr>
-<td>GRIT</td>
-<td>0.439</td>
-<td>0.339</td>
-<td>0.495</td>
-<td>0.618</td>
+<td>299K</td>
+<td>0.4891</td>
+<td>0.3385</td>
+<td>0.5617</td>
+<td>0.7912</td>
+<td>200</td>
 </tr>
 <tr>
 <td>DistMult</td>
-<td>0.047</td>
-<td>0.020</td>
-<td>0.048</td>
-<td>0.098</td>
+<td>47K</td>
+<td>0.4841</td>
+<td>0.3457</td>
+<td>0.5484</td>
+<td>0.7634</td>
+<td>500+</td>
+</tr>
+<tr>
+<td>GRIT</td>
+<td>197K</td>
+<td>0.4390</td>
+<td>0.2953</td>
+<td>0.4959</td>
+<td>0.7603</td>
+<td>200</td>
 </tr>
 </tbody>
 </table>
-<p><strong>500-epoch convergence study (in progress):</strong></p>
+<p><strong>Key findings:</strong></p>
 <ul>
-<li>GraphGPS peaked at epoch 200 (MRR 0.530) and began <strong>declining</strong> — overfitting</li>
-<li>DistMult climbed from 0.047 → 0.484 — massive late convergence</li>
-<li>DELTA variants still processing (10-20s/epoch vs GraphGPS 0.2s/epoch)</li>
+<li><strong>SelfBootstrapHybrid vs GraphGPS:</strong> Only 0.004 MRR behind (-0.7%), and actually <strong>beats</strong> GraphGPS on Hits@10 (0.8158 vs 0.8128). The self-bootstrap variant is the most competitive DELTA model on real data.</li>
+<li><strong>All models overfit after ~200 epochs</strong> — GraphGPS, DELTA variants, and GRIT all peaked around epoch 200 and declined. The patience mechanism correctly selected best-val checkpoints.</li>
+<li><strong>SelfBootstrapHybrid peaked later (epoch 250)</strong> — slightly more robust to overfitting, consistent with the bootstrap pass adding regularization.</li>
+<li><strong>DistMult still climbing at epoch 500</strong> — pure embedding method with no encoder continues improving; not yet converged.</li>
+<li><strong>DELTA-Matched efficiency:</strong> 0.4950 MRR with only 158K params vs GraphGPS at 0.5126 with 228K params — 69% of the parameters, 97% of the MRR.</li>
 </ul>
 <div class="admonition note">
-<p class="admonition-title">Speed Asymmetry</p>
-<p>DELTA runs 43-100× slower per epoch than GraphGPS. At equal wall-clock time, GraphGPS gets far more gradient updates. DELTA's competitiveness at equal epoch count is promising — with optimization work, the convergence ceiling may be higher.</p>
+<p class="admonition-title">Reference: published full FB15k-237 results</p>
+<p>DistMult: MRR 0.241 · CompGCN: MRR 0.355 · RotatE: MRR 0.338. All Phase 40 models exceed published DistMult and CompGCN by large margins on the top-500 degree subset.</p>
 </div>
 <hr />
 <h2 id="next-steps-phases-41">Next Steps (Phases 41+)<a class="headerlink" href="#next-steps-phases-41" title="Permanent link">&para;</a></h2>

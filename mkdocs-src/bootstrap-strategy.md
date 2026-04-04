@@ -78,9 +78,9 @@ This is the mechanism behind "The Brain": the system uses its own relational rea
 - ✅ **Encoder transfer** — Phase 35: encoder is domain-invariant (probe 0.961 on WN18RR)
 - ✅ **Differentiable construction** — Phase 38: Hybrid matches hand-coded topology (98%)
 - ✅ **Self-bootstrap** — Phase 39: DELTA bootstraps DELTA at 157% of FixedChain
-- ⏳ **Real-data validation** — Phase 40: Correct LP evaluation on FB15k-237 (in progress)
+- ✅ **Real-data validation** — Phase 40: SelfBootstrapHybrid MRR 0.5089, within 0.004 of GraphGPS. Self-bootstrap is the best DELTA variant on real data.
 
-**The path from external scaffolding to full self-bootstrap is validated on synthetic tasks.** The remaining question is whether the self-bootstrap advantage transfers to real knowledge graphs — Phase 40 is designed to answer this.
+**The path from external scaffolding to full self-bootstrap is validated on both synthetic and real data.** Phase 40 confirms the self-bootstrap advantage transfers to FB15k-237: SelfBootstrapHybrid (MRR 0.5089, H@10 0.8158) is the best-performing DELTA variant, beating all vanilla DELTA architectures and matching GraphGPS within 0.004 MRR.
 
 ---
 

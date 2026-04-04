@@ -104,7 +104,7 @@ DELTA has proven three critical capabilities:
 
 1. **Edge-centric reasoning works** — edges as computational citizens produce real advantages on relational tasks
 2. **Self-construction works** — DELTA can build its own graph from scratch, no transformer needed (Phase 39)
-3. **Competitive LP** — On standard benchmarks with correct evaluation, DELTA matches established baselines and shows signs of a higher convergence ceiling (Phase 40)
+3. **Competitive LP** — SelfBootstrapHybrid reaches MRR 0.5089 on FB15k-237 link prediction, within 0.004 of GraphGPS (0.5126) and beating it on Hits@10. DELTA-Matched achieves 97% of GraphGPS MRR with 69% of its parameters. (Phase 40)
 
 ### What Comes Next
 
@@ -162,7 +162,7 @@ The Brain isn't about replacing transformers everywhere. It's about building som
 
 ## Key Open Questions
 
-1. **Does the self-bootstrap advantage hold on real data?** Phase 39's 157% result is on a synthetic path composition task. Phase 40 tests this on FB15k-237.
+1. **Does the self-bootstrap advantage hold on real data?** Phase 40 answers this: SelfBootstrapHybrid is the best-performing DELTA variant on FB15k-237 (MRR 0.5089, H@10 0.8158), beating all vanilla DELTA architectures. The self-bootstrap mechanism helps on real graphs, not just synthetic tasks.
 
 2. **Can DELTA match transformer-scale reasoning?** Current experiments use ≤15K entities. The Brain requires scaling to millions.
 

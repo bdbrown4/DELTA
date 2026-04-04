@@ -21,7 +21,7 @@ A research implementation of the DELTA architecture — building toward **[The B
 | Experiment phases | 40 (Phases 1–40) |
 | Unit tests | 44/44 passing |
 | Self-bootstrap breakthrough | **0.757 ± 0.041** — 157% of FixedChain (Phase 39) |
-| Link prediction (FB15k-237) | MRR **0.497** at 200 epochs, still converging (Phase 40) |
+| Link prediction (FB15k-237) | SelfBootstrapHybrid MRR **0.5089**, H@10 **0.8158** — beats GraphGPS on H@10 (Phase 40) |
 | Cross-domain transfer | **0.961** on WN18RR (100 samples, frozen encoder) |
 | Synthetic dominance | DELTA **0.880** vs GraphGPS 0.293 vs GRIT 0.307 (edge classification) |
 | Noise robustness | **+24%** over vanilla GNN at 80% feature corruption |

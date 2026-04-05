@@ -28,8 +28,8 @@
 
 ### Compositional Reasoning (Phase 42 — preliminary)
 
-- **GNN advantage scales with hop count** — Phase 42 (fast models): At 1p GraphGPS leads DistMult by +0.017 MRR; at 3p the gap grows to **+0.131**. Embedding baselines collapse at 3p (+0.034 over 1p), while GNNs maintain strong multi-hop composition (+0.148).
-- **DELTA model results pending** — edge-to-edge attention expected to amplify multi-hop advantage further
+- **DELTA-Matched dominates multi-hop** — Phase 42: 3p MRR **0.738**, beating GraphGPS (0.697) by +0.041. The only model out of 7 that *improves* from 2p→3p. Edge-to-edge attention with 2-hop adjacency composes without information loss.
+- **Capacity sweet spot** — DELTA-Matched (158K params) beats DELTA-Full (293K) at 3p by +0.046. Constrained capacity forces generalizable relational representations.
 
 ---
 
@@ -57,20 +57,20 @@ Phase 37's reported accuracy (0.991–0.994) was invalidated after a systematic 
 | **39** | Self-bootstrapped DELTA | **0.757 ± 0.041** — 157% of FixedChain |
 | **40** | Correct LP evaluation on FB15k-237 (7 models, filtered MRR) | SelfBootstrapHybrid MRR 0.5089, beats GraphGPS on H@10 |
 | **41** | Generalization gap investigation — weight decay sweep | Negative result — gap is val-set noise, not overfitting |
+| **42** | Multi-hop path queries (1p/2p/3p) — all 7 models | DELTA-Matched 3p MRR **0.738** — only model to improve 2p→3p. Beats GraphGPS by +0.041 |
 
 ### In Progress
 
 | Phase | Goal | Status |
 |-------|------|--------|
-| **42** | Multi-hop path queries (1p/2p/3p) — leak-free soft traversal | Fast models done; DELTA models running. GraphGPS 3p MRR 0.697 vs DistMult 0.566 (+13%) |
+| — | *No active experiments* | See Horizon 1 below |
 
-### Horizon 1: Prove the Core (Phases 42–45)
+### Horizon 1: Prove the Core (Phases 43–45)
 
 | Phase | Goal | Priority |
 |-------|------|----------|
-| **42** | Multi-hop path queries (1p/2p/3p) — **in progress** | **Active** |
-| **43** | YAGO3-10 benchmark (123K entities) | High |
-| **44** | Scaling analysis (500→123K entities) | Medium |
+| **43** | Training stability — graph regularization, edge freezing, entropy constraints | **High** |
+| **44** | YAGO3-10 benchmark (123K entities) | Medium |
 | **45** | Interpretability (attention visualization, edge type analysis) | Medium |
 
 ### Horizon 2: Dynamic Reasoning (Phases 46–55)

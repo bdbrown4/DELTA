@@ -69,7 +69,7 @@ Phase 37's reported accuracy (0.991–0.994) was invalidated after a systematic 
 
 | Phase | Goal | Priority |
 |-------|------|----------|
-| **43** | Training stability — graph regularization, edge freezing, entropy constraints | **High** |
+| **43** | DropEdge regularization — can GNN overfitting reduction push peak MRR higher? | **High** |
 | **44** | YAGO3-10 benchmark (123K entities) | Medium |
 | **45** | Interpretability (attention visualization, edge type analysis) | Medium |
 

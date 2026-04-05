@@ -318,8 +318,8 @@ See [The Brain](the-brain.md) for the long-term vision and [Publication Roadmap]
 |-------|-----------|--------|
 | 41 | Generalization gap investigation — weight decay sweep | ✅ Complete — negative result (val-set noise, not overfitting) |
 | 42 | Multi-hop path queries (1p/2p/3p) | ✅ Complete — DELTA-Matched 3p MRR **0.738** beats GraphGPS (0.697) by +0.041 |
-| 43 | YAGO3-10 benchmark (123K entities) | Planned |
-| 44 | Scaling analysis (500→123K entities) | Planned |
+| 43 | DropEdge regularization for multi-hop | Planned |
+| 44 | YAGO3-10 benchmark (123K entities) | Planned |
 | 45 | Interpretability (EdgeAttention top-k + t-SNE) | Planned |
 
 ---

@@ -392,6 +392,8 @@
       
         
       
+        
+      
     
     
     
@@ -510,6 +512,34 @@
     
   
     Bootstrap Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adaptive-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adaptive Architecture
   
 
     
@@ -1005,6 +1035,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#compositional-reasoning-phase-42-preliminary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compositional Reasoning (Phase 42 — preliminary)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1084,10 +1125,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#horizon-1-prove-the-core-phases-4145" class="md-nav__link">
+  <a href="#horizon-1-prove-the-core-phases-4345" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Horizon 1: Prove the Core (Phases 41–45)
+        Horizon 1: Prove the Core (Phases 43–45)
       
     </span>
   </a>
@@ -1353,6 +1394,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#compositional-reasoning-phase-42-preliminary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compositional Reasoning (Phase 42 — preliminary)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1432,10 +1484,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#horizon-1-prove-the-core-phases-4145" class="md-nav__link">
+  <a href="#horizon-1-prove-the-core-phases-4345" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Horizon 1: Prove the Core (Phases 41–45)
+        Horizon 1: Prove the Core (Phases 43–45)
       
     </span>
   </a>
@@ -1514,6 +1566,11 @@
 <li><strong>Self-bootstrapped DELTA</strong> — Phase 39: <strong>0.757 ± 0.041, 157% of FixedChain</strong>. No transformer needed. DELTA bootstraps DELTA</li>
 <li><strong>Correct link prediction</strong> — Phase 40 complete: SelfBootstrapHybrid MRR 0.5089 (H@10 0.8158), within 0.004 of GraphGPS (0.5126) and beating it on Hits@10. DELTA-Matched 0.4950 MRR with 69% of GraphGPS's parameters</li>
 </ul>
+<h3 id="compositional-reasoning-phase-42-preliminary">Compositional Reasoning (Phase 42 — preliminary)<a class="headerlink" href="#compositional-reasoning-phase-42-preliminary" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>DELTA-Matched dominates multi-hop</strong> — Phase 42: 3p MRR <strong>0.738</strong>, beating GraphGPS (0.697) by +0.041. The only model out of 7 that <em>improves</em> from 2p→3p. Edge-to-edge attention with 2-hop adjacency composes without information loss.</li>
+<li><strong>Capacity sweet spot</strong> — DELTA-Matched (158K params) beats DELTA-Full (293K) at 3p by +0.046. Constrained capacity forces generalizable relational representations.</li>
+</ul>
 <hr />
 <h2 id="known-issues">Known Issues<a class="headerlink" href="#known-issues" title="Permanent link">&para;</a></h2>
 <h3 id="phase-37-leakage-invalidated">Phase 37 Leakage (Invalidated)<a class="headerlink" href="#phase-37-leakage-invalidated" title="Permanent link">&para;</a></h3>
@@ -1546,6 +1603,21 @@
 <td>Self-bootstrapped DELTA</td>
 <td><strong>0.757 ± 0.041</strong> — 157% of FixedChain</td>
 </tr>
+<tr>
+<td><strong>40</strong></td>
+<td>Correct LP evaluation on FB15k-237 (7 models, filtered MRR)</td>
+<td>SelfBootstrapHybrid MRR 0.5089, beats GraphGPS on H@10</td>
+</tr>
+<tr>
+<td><strong>41</strong></td>
+<td>Generalization gap investigation — weight decay sweep</td>
+<td>Negative result — gap is val-set noise, not overfitting</td>
+</tr>
+<tr>
+<td><strong>42</strong></td>
+<td>Multi-hop path queries (1p/2p/3p) — all 7 models</td>
+<td>DELTA-Matched 3p MRR <strong>0.738</strong> — only model to improve 2p→3p. Beats GraphGPS by +0.041</td>
+</tr>
 </tbody>
 </table>
 <h3 id="in-progress">In Progress<a class="headerlink" href="#in-progress" title="Permanent link">&para;</a></h3>
@@ -1559,13 +1631,13 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>40</strong></td>
-<td>Correct LP evaluation on FB15k-237 (7 models, filtered MRR)</td>
-<td>✅ Complete — SelfBootstrapHybrid MRR 0.5089, beats GraphGPS on H@10</td>
+<td>—</td>
+<td><em>No active experiments</em></td>
+<td>See Horizon 1 below</td>
 </tr>
 </tbody>
 </table>
-<h3 id="horizon-1-prove-the-core-phases-4145">Horizon 1: Prove the Core (Phases 41–45)<a class="headerlink" href="#horizon-1-prove-the-core-phases-4145" title="Permanent link">&para;</a></h3>
+<h3 id="horizon-1-prove-the-core-phases-4345">Horizon 1: Prove the Core (Phases 43–45)<a class="headerlink" href="#horizon-1-prove-the-core-phases-4345" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -1576,23 +1648,13 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>41</strong></td>
-<td>Component ablation on real FB15k-237</td>
-<td>High</td>
-</tr>
-<tr>
-<td><strong>42</strong></td>
-<td>Multi-hop path queries (1p/2p/3p)</td>
-<td>High</td>
-</tr>
-<tr>
 <td><strong>43</strong></td>
-<td>YAGO3-10 benchmark (123K entities)</td>
-<td>Medium</td>
+<td>DropEdge regularization — can GNN overfitting reduction push peak MRR higher?</td>
+<td><strong>High</strong></td>
 </tr>
 <tr>
 <td><strong>44</strong></td>
-<td>Scaling analysis (500→123K entities)</td>
+<td>YAGO3-10 benchmark (123K entities)</td>
 <td>Medium</td>
 </tr>
 <tr>

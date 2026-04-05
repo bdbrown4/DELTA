@@ -547,10 +547,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#horizon-2-dynamic-reasoning-phases-4655" class="md-nav__link">
+  <a href="#horizon-2-adaptive-architecture-phases-4650" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Horizon 2: Dynamic Reasoning (Phases 46–55)
+        Horizon 2: Adaptive Architecture (Phases 46–50)
       
     </span>
   </a>
@@ -558,10 +558,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#horizon-3-the-brain-phases-56" class="md-nav__link">
+  <a href="#horizon-3-dynamic-reasoning-phases-5160" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Horizon 3: The Brain (Phases 56+)
+        Horizon 3: Dynamic Reasoning (Phases 51–60)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#horizon-4-the-brain-phases-61" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Horizon 4: The Brain (Phases 61+)
       
     </span>
   </a>
@@ -624,6 +635,8 @@
   
     
     
+      
+        
       
         
       
@@ -751,6 +764,34 @@
     
   
     Bootstrap Strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adaptive-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adaptive Architecture
   
 
     
@@ -1482,10 +1523,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#horizon-2-dynamic-reasoning-phases-4655" class="md-nav__link">
+  <a href="#horizon-2-adaptive-architecture-phases-4650" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Horizon 2: Dynamic Reasoning (Phases 46–55)
+        Horizon 2: Adaptive Architecture (Phases 46–50)
       
     </span>
   </a>
@@ -1493,10 +1534,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#horizon-3-the-brain-phases-56" class="md-nav__link">
+  <a href="#horizon-3-dynamic-reasoning-phases-5160" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Horizon 3: The Brain (Phases 56+)
+        Horizon 3: Dynamic Reasoning (Phases 51–60)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#horizon-4-the-brain-phases-61" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Horizon 4: The Brain (Phases 61+)
       
     </span>
   </a>
@@ -1757,32 +1809,70 @@
 <tbody>
 <tr>
 <td>41</td>
-<td>Component ablation on FB15k-237 (which pieces matter?)</td>
-<td>Planned</td>
+<td>Generalization gap investigation</td>
+<td>✅ Negative result (val-set noise)</td>
 </tr>
 <tr>
 <td>42</td>
-<td>Multi-hop path queries (1p/2p/3p BETAE-style)</td>
-<td>Planned</td>
+<td>Multi-hop path queries (1p/2p/3p)</td>
+<td>✅ DELTA-Matched only model improving 2p→3p</td>
 </tr>
 <tr>
 <td>43</td>
-<td>YAGO3-10 benchmark (123K entities)</td>
-<td>Planned</td>
+<td>DropEdge robustness check</td>
+<td>✅ Advantage holds at all 5 drop rates</td>
 </tr>
 <tr>
 <td>44</td>
-<td>Scaling analysis (500 → 123K entities)</td>
-<td>Planned</td>
+<td>Extended depth (4p/5p)</td>
+<td>✅ Advantage accelerates: +0.004 → +0.100</td>
 </tr>
 <tr>
 <td>45</td>
-<td>Interpretability (attention visualization, edge type analysis)</td>
+<td>Inference timing + multi-seed headline</td>
+<td>🔄 Running</td>
+</tr>
+</tbody>
+</table>
+<h4 id="horizon-2-adaptive-architecture-phases-4650">Horizon 2: Adaptive Architecture (Phases 46–50)<a class="headerlink" href="#horizon-2-adaptive-architecture-phases-4650" title="Permanent link">&para;</a></h4>
+<p>The capacity paradox — smaller DELTA beats larger on composition — is a signal. The model needs to discover its own optimal capacity from the data. See <a href="../adaptive-architecture/">Adaptive Architecture</a> for the full proposal.</p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Goal</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>46</td>
+<td>Capacity signal measurement (router entropy + gate sparsity)</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>47</td>
+<td>Static importance-driven pruning (DELTA-Full → compressed)</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>48</td>
+<td>Curriculum compression (gradual pruning during training)</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>49</td>
+<td>Bidirectional adaptive architecture (compress + expand)</td>
+<td>Planned</td>
+</tr>
+<tr>
+<td>50</td>
+<td>Multi-scale adaptive (depth-conditioned routing)</td>
 <td>Planned</td>
 </tr>
 </tbody>
 </table>
-<h4 id="horizon-2-dynamic-reasoning-phases-4655">Horizon 2: Dynamic Reasoning (Phases 46–55)<a class="headerlink" href="#horizon-2-dynamic-reasoning-phases-4655" title="Permanent link">&para;</a></h4>
+<h4 id="horizon-3-dynamic-reasoning-phases-5160">Horizon 3: Dynamic Reasoning (Phases 51–60)<a class="headerlink" href="#horizon-3-dynamic-reasoning-phases-5160" title="Permanent link">&para;</a></h4>
 <p>Move from static evaluation to dynamic graph evolution — the system that builds and refines its own reasoning substrate.</p>
 <ul>
 <li><strong>Iterative graph refinement:</strong> Multi-pass construction where each DELTA pass restructures the graph for the next</li>
@@ -1790,7 +1880,7 @@
 <li><strong>Multi-scale construction:</strong> Hierarchical graphs (entity → concept → domain) built bottom-up</li>
 <li><strong>Online learning:</strong> Graph structure adapts during inference, not just training</li>
 </ul>
-<h4 id="horizon-3-the-brain-phases-56">Horizon 3: The Brain (Phases 56+)<a class="headerlink" href="#horizon-3-the-brain-phases-56" title="Permanent link">&para;</a></h4>
+<h4 id="horizon-4-the-brain-phases-61">Horizon 4: The Brain (Phases 61+)<a class="headerlink" href="#horizon-4-the-brain-phases-61" title="Permanent link">&para;</a></h4>
 <p>The end goal: a general relational reasoning system that rivals transformer-scale language models on tasks where relational structure matters.</p>
 <ul>
 <li><strong>Multi-modal graph construction:</strong> Build relational graphs from text, images, structured data — any input modality</li>
@@ -1817,13 +1907,16 @@
 <p><strong>Does the self-bootstrap advantage hold on real data?</strong> Phase 40 answers this: SelfBootstrapHybrid is the best-performing DELTA variant on FB15k-237 (MRR 0.5089, H@10 0.8158), beating all vanilla DELTA architectures. The self-bootstrap mechanism helps on real graphs, not just synthetic tasks.</p>
 </li>
 <li>
+<p><strong>Can DELTA discover its own optimal capacity?</strong> Phase 42/44 show smaller DELTA beats larger on composition — the capacity paradox. Phase 46+ will test whether the router's importance signals contain enough information for the model to prune itself to the right size. See <a href="../adaptive-architecture/">Adaptive Architecture</a>.</p>
+</li>
+<li>
 <p><strong>Can DELTA match transformer-scale reasoning?</strong> Current experiments use ≤15K entities. The Brain requires scaling to millions.</p>
 </li>
 <li>
 <p><strong>Does iterative refinement help?</strong> Multi-pass graph construction (bootstrap → refine → refine) is theoretically appealing but unvalidated.</p>
 </li>
 <li>
-<p><strong>What's the speed ceiling?</strong> DELTA's per-epoch cost is 43-100× GraphGPS. Can architectural optimizations (sparse attention, approximate adjacency) close this gap?</p>
+<p><strong>What's the speed ceiling?</strong> DELTA's per-epoch cost is 43-100× GraphGPS. Can architectural optimizations (sparse attention, approximate adjacency) close this gap? Phase 45 will separate training cost from inference cost.</p>
 </li>
 <li>
 <p><strong>When does explicit structure win?</strong> The hypothesis: relational tasks benefit from explicit graphs, but sequential/generative tasks may not. Where's the crossover?</p>

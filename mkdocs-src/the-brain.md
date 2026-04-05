@@ -116,13 +116,25 @@ Establish DELTA as a legitimate relational reasoning architecture with publicati
 
 | Phase | Goal | Status |
 |-------|------|--------|
-| 41 | Component ablation on FB15k-237 (which pieces matter?) | Planned |
-| 42 | Multi-hop path queries (1p/2p/3p BETAE-style) | Planned |
-| 43 | YAGO3-10 benchmark (123K entities) | Planned |
-| 44 | Scaling analysis (500 → 123K entities) | Planned |
-| 45 | Interpretability (attention visualization, edge type analysis) | Planned |
+| 41 | Generalization gap investigation | ✅ Negative result (val-set noise) |
+| 42 | Multi-hop path queries (1p/2p/3p) | ✅ DELTA-Matched only model improving 2p→3p |
+| 43 | DropEdge robustness check | ✅ Advantage holds at all 5 drop rates |
+| 44 | Extended depth (4p/5p) | ✅ Advantage accelerates: +0.004 → +0.100 |
+| 45 | Inference timing + multi-seed headline | 🔄 Running |
 
-#### Horizon 2: Dynamic Reasoning (Phases 46–55)
+#### Horizon 2: Adaptive Architecture (Phases 46–50)
+
+The capacity paradox — smaller DELTA beats larger on composition — is a signal. The model needs to discover its own optimal capacity from the data. See [Adaptive Architecture](adaptive-architecture.md) for the full proposal.
+
+| Phase | Goal | Status |
+|-------|------|--------|
+| 46 | Capacity signal measurement (router entropy + gate sparsity) | Planned |
+| 47 | Static importance-driven pruning (DELTA-Full → compressed) | Planned |
+| 48 | Curriculum compression (gradual pruning during training) | Planned |
+| 49 | Bidirectional adaptive architecture (compress + expand) | Planned |
+| 50 | Multi-scale adaptive (depth-conditioned routing) | Planned |
+
+#### Horizon 3: Dynamic Reasoning (Phases 51–60)
 
 Move from static evaluation to dynamic graph evolution — the system that builds and refines its own reasoning substrate.
 
@@ -131,7 +143,7 @@ Move from static evaluation to dynamic graph evolution — the system that build
 - **Multi-scale construction:** Hierarchical graphs (entity → concept → domain) built bottom-up
 - **Online learning:** Graph structure adapts during inference, not just training
 
-#### Horizon 3: The Brain (Phases 56+)
+#### Horizon 4: The Brain (Phases 61+)
 
 The end goal: a general relational reasoning system that rivals transformer-scale language models on tasks where relational structure matters.
 
@@ -164,13 +176,15 @@ The Brain isn't about replacing transformers everywhere. It's about building som
 
 1. **Does the self-bootstrap advantage hold on real data?** Phase 40 answers this: SelfBootstrapHybrid is the best-performing DELTA variant on FB15k-237 (MRR 0.5089, H@10 0.8158), beating all vanilla DELTA architectures. The self-bootstrap mechanism helps on real graphs, not just synthetic tasks.
 
-2. **Can DELTA match transformer-scale reasoning?** Current experiments use ≤15K entities. The Brain requires scaling to millions.
+2. **Can DELTA discover its own optimal capacity?** Phase 42/44 show smaller DELTA beats larger on composition — the capacity paradox. Phase 46+ will test whether the router's importance signals contain enough information for the model to prune itself to the right size. See [Adaptive Architecture](adaptive-architecture.md).
 
-3. **Does iterative refinement help?** Multi-pass graph construction (bootstrap → refine → refine) is theoretically appealing but unvalidated.
+3. **Can DELTA match transformer-scale reasoning?** Current experiments use ≤15K entities. The Brain requires scaling to millions.
 
-4. **What's the speed ceiling?** DELTA's per-epoch cost is 43-100× GraphGPS. Can architectural optimizations (sparse attention, approximate adjacency) close this gap?
+4. **Does iterative refinement help?** Multi-pass graph construction (bootstrap → refine → refine) is theoretically appealing but unvalidated.
 
-5. **When does explicit structure win?** The hypothesis: relational tasks benefit from explicit graphs, but sequential/generative tasks may not. Where's the crossover?
+5. **What's the speed ceiling?** DELTA's per-epoch cost is 43-100× GraphGPS. Can architectural optimizations (sparse attention, approximate adjacency) close this gap? Phase 45 will separate training cost from inference cost.
+
+6. **When does explicit structure win?** The hypothesis: relational tasks benefit from explicit graphs, but sequential/generative tasks may not. Where's the crossover?
 
 ---
 

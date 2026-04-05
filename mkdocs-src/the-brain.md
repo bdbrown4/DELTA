@@ -120,7 +120,7 @@ Establish DELTA as a legitimate relational reasoning architecture with publicati
 | 42 | Multi-hop path queries (1p/2p/3p) | ✅ DELTA-Matched only model improving 2p→3p |
 | 43 | DropEdge robustness check | ✅ Advantage holds at all 5 drop rates |
 | 44 | Extended depth (4p/5p) | ✅ Advantage accelerates: +0.004 → +0.100 |
-| 45 | Inference timing + multi-seed headline | 🔄 Running |
+| 45 | Inference timing + multi-seed headline | ✅ Per-query inference 0.8-0.9× GraphGPS; 3-seed robust |
 
 #### Horizon 2: Adaptive Architecture (Phases 46–50)
 

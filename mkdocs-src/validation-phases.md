@@ -418,9 +418,64 @@ Phase 40 rebuilds the entire evaluation pipeline to fix all 5 issues from the Ph
 
 ---
 
-## Next Steps (Phases 45+)
+## Phase 45: Inference Timing + Multi-seed Headline
 
-See [The Brain](the-brain.md) for the long-term vision and [Publication Roadmap](PUBLICATION_ROADMAP.md) for details.
+**Script:** `experiments/phase45_inference_timing.py`
+
+**Question:** Does the multi-hop advantage hold across seeds? Is DELTA's inference cost prohibitive for deployment?
+
+**Protocol:** 2 configs (DELTA-Matched @10% DropEdge, GraphGPS @0% DropEdge) × 3 seeds. Same multi-hop queries as Phase 42 (16,250 total, leak-free). Inference timing: 3 warmup + 10 timed runs with CUDA synchronization. Measures encoding (GNN forward) and per-query scoring separately.
+
+### Multi-hop MRR (mean ± std, 3 seeds)
+
+| Config | Params | 1p MRR | 2p MRR | 3p MRR | 2p→3p |
+|--------|--------|--------|--------|--------|-------|
+| **DELTA-Matched @10%** | 157,696 | 0.5428±0.0057 | 0.7302±0.0112 | **0.7423±0.0086** | **+0.012** |
+| GraphGPS @0% | 228,419 | 0.5287±0.0087 | 0.7273±0.0065 | 0.7128±0.0074 | −0.014 |
+
+### Per-seed Breakdown
+
+| Config | Seed | 1p | 2p | 3p |
+|--------|------|-----|-----|-----|
+| DELTA | 1 | 0.5429 | 0.7398 | 0.7460 |
+| DELTA | 2 | 0.5357 | 0.7146 | 0.7305 |
+| DELTA | 3 | 0.5497 | 0.7363 | 0.7504 |
+| GraphGPS | 1 | 0.5237 | 0.7250 | 0.7042 |
+| GraphGPS | 2 | 0.5215 | 0.7360 | 0.7121 |
+| GraphGPS | 3 | 0.5410 | 0.7207 | 0.7222 |
+
+### Standard LP (mean ± std)
+
+| Config | test MRR | test H@10 | Train time | Peak epoch |
+|--------|----------|-----------|------------|------------|
+| DELTA-Matched @10% | 0.4992±0.0076 | 0.7973±0.0196 | 3,782±81s | 125 |
+| GraphGPS @0% | 0.5005±0.0067 | 0.8141±0.0088 | 110±6s | 167 |
+
+### Inference Timing
+
+| Metric | DELTA-Matched | GraphGPS | Ratio |
+|--------|--------------|----------|-------|
+| Encoding | 454.08 ms | 8.76 ms | 51.8× |
+| 1p per-query | 777.7 μs | 921.9 μs | 0.8× |
+| 2p per-query | 1,380.4 μs | 1,475.9 μs | 0.9× |
+| 3p per-query | 1,250.7 μs | 1,371.2 μs | 0.9× |
+| Training | 3,782 s | 110 s | 34.2× |
+
+### Key Findings
+
+1. **Multi-seed confirms the advantage.** DELTA 3p MRR 0.742±0.009 vs GraphGPS 0.713±0.007. Std bars don't overlap. DELTA's worst seed (0.731) beats GraphGPS's best (0.722).
+
+2. **Inference timing inverts the cost narrative.** Encoding is 51.8× slower (2-hop edge adjacency), but per-query scoring is 0.8-0.9× GraphGPS — DELTA is *faster* per query. Encoding happens once; queries are scored many times. Deployment cost is comparable or better.
+
+3. **Training cost is the honest limitation.** 34.2× (3,782s vs 110s). This is a one-time cost dominated by edge adjacency computation, not a fundamental algorithmic limitation.
+
+4. **Both models peak early and overtrain.** DELTA peaks at ep 125 (all 3 seeds), GraphGPS at ep 150-200. Early stopping is critical for both.
+
+---
+
+## Next Steps (Phases 46+)
+
+See [The Brain](the-brain.md) for the long-term vision, [Adaptive Architecture](adaptive-architecture.md) for the capacity self-modification proposal, and [Publication Roadmap](PUBLICATION_ROADMAP.md) for details.
 
 | Phase | Experiment | Status |
 |-------|-----------|--------|
@@ -428,7 +483,8 @@ See [The Brain](the-brain.md) for the long-term vision and [Publication Roadmap]
 | 42 | Multi-hop path queries (1p/2p/3p) | ✅ Complete — DELTA-Matched 3p MRR **0.738** beats GraphGPS (0.697) by +0.041 |
 | 43 | DropEdge robustness check | ✅ Complete — DELTA leads on 3p at all 5 drop rates; advantage is structural |
 | 44 | Extended multi-hop depth (4p/5p compositional queries) | ✅ Complete — DELTA improves with depth (MRR 0.753→0.767→0.790); advantage over GraphGPS grows to +0.100 at 5p |
-| 45 | Inference timing + multi-seed headline | 🔄 Running |
+| 45 | Inference timing + multi-seed headline | ✅ Complete — 3-seed: DELTA 0.742±0.009 vs GraphGPS 0.713±0.007; per-query inference 0.8-0.9× GraphGPS |
+| 46 | Capacity signal measurement (router entropy + gate sparsity) | 🔄 Running |
 
 ---
 

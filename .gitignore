@@ -53,3 +53,6 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# prompt md file
+prompt.md

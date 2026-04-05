@@ -1051,10 +1051,82 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#next-steps-phases-45" class="md-nav__link">
+  <a href="#phase-45-inference-timing-multi-seed-headline" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Next Steps (Phases 45+)
+        Phase 45: Inference Timing + Multi-seed Headline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 45: Inference Timing + Multi-seed Headline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#multi-hop-mrr-mean-std-3-seeds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-hop MRR (mean ± std, 3 seeds)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#per-seed-breakdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-seed Breakdown
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#standard-lp-mean-std" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Standard LP (mean ± std)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inference-timing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inference Timing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-findings_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Findings
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps-phases-46" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps (Phases 46+)
       
     </span>
   </a>
@@ -1853,10 +1925,82 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#next-steps-phases-45" class="md-nav__link">
+  <a href="#phase-45-inference-timing-multi-seed-headline" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Next Steps (Phases 45+)
+        Phase 45: Inference Timing + Multi-seed Headline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 45: Inference Timing + Multi-seed Headline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#multi-hop-mrr-mean-std-3-seeds" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-hop MRR (mean ± std, 3 seeds)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#per-seed-breakdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-seed Breakdown
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#standard-lp-mean-std" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Standard LP (mean ± std)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inference-timing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inference Timing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-findings_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Findings
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps-phases-46" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next Steps (Phases 46+)
       
     </span>
   </a>
@@ -3173,8 +3317,186 @@
 </li>
 </ol>
 <hr />
-<h2 id="next-steps-phases-45">Next Steps (Phases 45+)<a class="headerlink" href="#next-steps-phases-45" title="Permanent link">&para;</a></h2>
-<p>See <a href="../the-brain/">The Brain</a> for the long-term vision and <a href="../PUBLICATION_ROADMAP/">Publication Roadmap</a> for details.</p>
+<h2 id="phase-45-inference-timing-multi-seed-headline">Phase 45: Inference Timing + Multi-seed Headline<a class="headerlink" href="#phase-45-inference-timing-multi-seed-headline" title="Permanent link">&para;</a></h2>
+<p><strong>Script:</strong> <code>experiments/phase45_inference_timing.py</code></p>
+<p><strong>Question:</strong> Does the multi-hop advantage hold across seeds? Is DELTA's inference cost prohibitive for deployment?</p>
+<p><strong>Protocol:</strong> 2 configs (DELTA-Matched @10% DropEdge, GraphGPS @0% DropEdge) × 3 seeds. Same multi-hop queries as Phase 42 (16,250 total, leak-free). Inference timing: 3 warmup + 10 timed runs with CUDA synchronization. Measures encoding (GNN forward) and per-query scoring separately.</p>
+<h3 id="multi-hop-mrr-mean-std-3-seeds">Multi-hop MRR (mean ± std, 3 seeds)<a class="headerlink" href="#multi-hop-mrr-mean-std-3-seeds" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Config</th>
+<th>Params</th>
+<th>1p MRR</th>
+<th>2p MRR</th>
+<th>3p MRR</th>
+<th>2p→3p</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>DELTA-Matched @10%</strong></td>
+<td>157,696</td>
+<td>0.5428±0.0057</td>
+<td>0.7302±0.0112</td>
+<td><strong>0.7423±0.0086</strong></td>
+<td><strong>+0.012</strong></td>
+</tr>
+<tr>
+<td>GraphGPS @0%</td>
+<td>228,419</td>
+<td>0.5287±0.0087</td>
+<td>0.7273±0.0065</td>
+<td>0.7128±0.0074</td>
+<td>−0.014</td>
+</tr>
+</tbody>
+</table>
+<h3 id="per-seed-breakdown">Per-seed Breakdown<a class="headerlink" href="#per-seed-breakdown" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Config</th>
+<th>Seed</th>
+<th>1p</th>
+<th>2p</th>
+<th>3p</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DELTA</td>
+<td>1</td>
+<td>0.5429</td>
+<td>0.7398</td>
+<td>0.7460</td>
+</tr>
+<tr>
+<td>DELTA</td>
+<td>2</td>
+<td>0.5357</td>
+<td>0.7146</td>
+<td>0.7305</td>
+</tr>
+<tr>
+<td>DELTA</td>
+<td>3</td>
+<td>0.5497</td>
+<td>0.7363</td>
+<td>0.7504</td>
+</tr>
+<tr>
+<td>GraphGPS</td>
+<td>1</td>
+<td>0.5237</td>
+<td>0.7250</td>
+<td>0.7042</td>
+</tr>
+<tr>
+<td>GraphGPS</td>
+<td>2</td>
+<td>0.5215</td>
+<td>0.7360</td>
+<td>0.7121</td>
+</tr>
+<tr>
+<td>GraphGPS</td>
+<td>3</td>
+<td>0.5410</td>
+<td>0.7207</td>
+<td>0.7222</td>
+</tr>
+</tbody>
+</table>
+<h3 id="standard-lp-mean-std">Standard LP (mean ± std)<a class="headerlink" href="#standard-lp-mean-std" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Config</th>
+<th>test MRR</th>
+<th>test H@10</th>
+<th>Train time</th>
+<th>Peak epoch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DELTA-Matched @10%</td>
+<td>0.4992±0.0076</td>
+<td>0.7973±0.0196</td>
+<td>3,782±81s</td>
+<td>125</td>
+</tr>
+<tr>
+<td>GraphGPS @0%</td>
+<td>0.5005±0.0067</td>
+<td>0.8141±0.0088</td>
+<td>110±6s</td>
+<td>167</td>
+</tr>
+</tbody>
+</table>
+<h3 id="inference-timing">Inference Timing<a class="headerlink" href="#inference-timing" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>DELTA-Matched</th>
+<th>GraphGPS</th>
+<th>Ratio</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Encoding</td>
+<td>454.08 ms</td>
+<td>8.76 ms</td>
+<td>51.8×</td>
+</tr>
+<tr>
+<td>1p per-query</td>
+<td>777.7 μs</td>
+<td>921.9 μs</td>
+<td>0.8×</td>
+</tr>
+<tr>
+<td>2p per-query</td>
+<td>1,380.4 μs</td>
+<td>1,475.9 μs</td>
+<td>0.9×</td>
+</tr>
+<tr>
+<td>3p per-query</td>
+<td>1,250.7 μs</td>
+<td>1,371.2 μs</td>
+<td>0.9×</td>
+</tr>
+<tr>
+<td>Training</td>
+<td>3,782 s</td>
+<td>110 s</td>
+<td>34.2×</td>
+</tr>
+</tbody>
+</table>
+<h3 id="key-findings_3">Key Findings<a class="headerlink" href="#key-findings_3" title="Permanent link">&para;</a></h3>
+<ol>
+<li>
+<p><strong>Multi-seed confirms the advantage.</strong> DELTA 3p MRR 0.742±0.009 vs GraphGPS 0.713±0.007. Std bars don't overlap. DELTA's worst seed (0.731) beats GraphGPS's best (0.722).</p>
+</li>
+<li>
+<p><strong>Inference timing inverts the cost narrative.</strong> Encoding is 51.8× slower (2-hop edge adjacency), but per-query scoring is 0.8-0.9× GraphGPS — DELTA is <em>faster</em> per query. Encoding happens once; queries are scored many times. Deployment cost is comparable or better.</p>
+</li>
+<li>
+<p><strong>Training cost is the honest limitation.</strong> 34.2× (3,782s vs 110s). This is a one-time cost dominated by edge adjacency computation, not a fundamental algorithmic limitation.</p>
+</li>
+<li>
+<p><strong>Both models peak early and overtrain.</strong> DELTA peaks at ep 125 (all 3 seeds), GraphGPS at ep 150-200. Early stopping is critical for both.</p>
+</li>
+</ol>
+<hr />
+<h2 id="next-steps-phases-46">Next Steps (Phases 46+)<a class="headerlink" href="#next-steps-phases-46" title="Permanent link">&para;</a></h2>
+<p>See <a href="../the-brain/">The Brain</a> for the long-term vision, <a href="../adaptive-architecture/">Adaptive Architecture</a> for the capacity self-modification proposal, and <a href="../PUBLICATION_ROADMAP/">Publication Roadmap</a> for details.</p>
 <table>
 <thead>
 <tr>
@@ -3207,6 +3529,11 @@
 <tr>
 <td>45</td>
 <td>Inference timing + multi-seed headline</td>
+<td>✅ Complete — 3-seed: DELTA 0.742±0.009 vs GraphGPS 0.713±0.007; per-query inference 0.8-0.9× GraphGPS</td>
+</tr>
+<tr>
+<td>46</td>
+<td>Capacity signal measurement (router entropy + gate sparsity)</td>
 <td>🔄 Running</td>
 </tr>
 </tbody>

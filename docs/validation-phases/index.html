@@ -1133,6 +1133,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#phase-46-capacity-signal-measurement-in-progress" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 46: Capacity Signal Measurement (In Progress)
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2001,6 +2012,17 @@
     <span class="md-ellipsis">
       
         Next Steps (Phases 46+)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-46-capacity-signal-measurement-in-progress" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 46: Capacity Signal Measurement (In Progress)
       
     </span>
   </a>
@@ -3533,11 +3555,25 @@
 </tr>
 <tr>
 <td>46</td>
-<td>Capacity signal measurement (router entropy + gate sparsity)</td>
+<td>Capacity signal measurement (attention entropy + gate sparsity)</td>
 <td>🔄 Running</td>
 </tr>
 </tbody>
 </table>
+<hr />
+<h2 id="phase-46-capacity-signal-measurement-in-progress">Phase 46: Capacity Signal Measurement (In Progress)<a class="headerlink" href="#phase-46-capacity-signal-measurement-in-progress" title="Permanent link">&para;</a></h2>
+<p><strong>Hypothesis:</strong> DELTA-Full's attention heads show significantly higher redundancy (&gt;25% dead heads with near-uniform attention entropy) than DELTA-Matched (&lt;10%), indicating excess capacity identifiable from attention patterns. Cross-depth routing patterns are query-independent — the compositional advantage lives in the learned representation structure, not depth-dependent routing.</p>
+<p><strong>Measurements:</strong></p>
+<ol>
+<li>Per-layer, per-head attention entropy (per-target-node normalized)</li>
+<li>Per-head Gini sparsity (0=uniform, 1=maximally sparse)</li>
+<li>Head utilization: fraction of "dead" heads (entropy &gt; 90% of uniform)</li>
+<li>Cross-depth attention profile cosine similarity (1p vs 5p)</li>
+<li>Router gate statistics (mean, std, frac below thresholds)</li>
+</ol>
+<p><strong>Protocol:</strong> Train delta_matched (2L×4H, 157K params) and delta_full (3L×4H, 293K params) for 500 epochs with eval every 25. Collect attention stats at each checkpoint. Post-training evaluate on 1p/2p/3p/4p/5p.</p>
+<p><strong>Early finding (from smoke tests):</strong> Cross-depth cosine similarity = 1.0 — encoding is query-independent. The attention pattern is a property of the graph structure, not the query depth. This means the compositional advantage lives entirely in the REPRESENTATION quality, not in depth-dependent routing.</p>
+<p><em>Full results pending experiment completion.</em></p>
 <hr />
 <p><em>All publication-grade results use 5 seeds, mean ± std reported. Phases 38–43 use 1-3 seeds for rapid iteration.</em></p>
 

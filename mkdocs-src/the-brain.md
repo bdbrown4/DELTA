@@ -182,9 +182,11 @@ The Brain isn't about replacing transformers everywhere. It's about building som
 
 4. **Does iterative refinement help?** Multi-pass graph construction (bootstrap → refine → refine) is theoretically appealing but unvalidated.
 
-5. **What's the speed ceiling?** DELTA's per-epoch cost is 43-100× GraphGPS. Can architectural optimizations (sparse attention, approximate adjacency) close this gap? Phase 45 will separate training cost from inference cost.
+5. **What's the speed ceiling?** DELTA's per-epoch cost is 43-100× GraphGPS. Can architectural optimizations (sparse attention, approximate adjacency) close this gap? Phase 45 separated training cost (34×) from inference cost (0.8-0.9× per query) — inference is already comparable.
 
-6. **When does explicit structure win?** The hypothesis: relational tasks benefit from explicit graphs, but sequential/generative tasks may not. Where's the crossover?
+6. **Where does explicit structure win?** The hypothesis: relational tasks benefit from explicit graphs, but sequential/generative tasks may not. Where's the crossover?
+
+7. **What do attention patterns reveal about capacity?** Phase 46 (🔄 running) instruments DELTA-Matched vs DELTA-Full attention heads to measure redundancy, specialization, and the capacity signal that drives the paradox of smaller-beats-larger on composition.
 
 ---
 

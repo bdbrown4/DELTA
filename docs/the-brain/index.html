@@ -1916,10 +1916,13 @@
 <p><strong>Does iterative refinement help?</strong> Multi-pass graph construction (bootstrap → refine → refine) is theoretically appealing but unvalidated.</p>
 </li>
 <li>
-<p><strong>What's the speed ceiling?</strong> DELTA's per-epoch cost is 43-100× GraphGPS. Can architectural optimizations (sparse attention, approximate adjacency) close this gap? Phase 45 will separate training cost from inference cost.</p>
+<p><strong>What's the speed ceiling?</strong> DELTA's per-epoch cost is 43-100× GraphGPS. Can architectural optimizations (sparse attention, approximate adjacency) close this gap? Phase 45 separated training cost (34×) from inference cost (0.8-0.9× per query) — inference is already comparable.</p>
 </li>
 <li>
-<p><strong>When does explicit structure win?</strong> The hypothesis: relational tasks benefit from explicit graphs, but sequential/generative tasks may not. Where's the crossover?</p>
+<p><strong>Where does explicit structure win?</strong> The hypothesis: relational tasks benefit from explicit graphs, but sequential/generative tasks may not. Where's the crossover?</p>
+</li>
+<li>
+<p><strong>What do attention patterns reveal about capacity?</strong> Phase 46 (🔄 running) instruments DELTA-Matched vs DELTA-Full attention heads to measure redundancy, specialization, and the capacity signal that drives the paradox of smaller-beats-larger on composition.</p>
 </li>
 </ol>
 <hr />

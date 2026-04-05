@@ -2,6 +2,15 @@
   "last_updated": "2026-04-05",
   "last_completed_phase": 45,
   "next_phase": 46,
+  "current_phase": {
+    "phase": 46,
+    "title": "Capacity Signal Measurement",
+    "status": "running",
+    "hypothesis": "DELTA-Full's attention heads show significantly higher redundancy (>25% dead heads) than DELTA-Matched (<10%), indicating excess capacity. Cross-depth routing is query-independent.",
+    "script": "experiments/phase46_capacity_signal.py",
+    "command": "python experiments/phase46_capacity_signal.py --epochs 500 --eval_every 25 --patience 10",
+    "measurements": ["per-head attention entropy", "per-head Gini sparsity", "head utilization (dead head fraction)", "cross-depth cosine similarity", "gate statistics"]
+  },
 
   "best_results": {
     "best_overall_lp": {

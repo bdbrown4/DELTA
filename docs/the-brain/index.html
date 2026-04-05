@@ -1922,7 +1922,7 @@
 <p><strong>Where does explicit structure win?</strong> The hypothesis: relational tasks benefit from explicit graphs, but sequential/generative tasks may not. Where's the crossover?</p>
 </li>
 <li>
-<p><strong>What do attention patterns reveal about capacity?</strong> Phase 46 (🔄 running) instruments DELTA-Matched vs DELTA-Full attention heads to measure redundancy, specialization, and the capacity signal that drives the paradox of smaller-beats-larger on composition.</p>
+<p><strong>Attention is mathematically broken — does temperature fix it?</strong> Phase 46 diagnosed that DELTA's attention weights are near-uniform (100% dead heads) due to small d_head (12) + high degree (~40). The model succeeds entirely through entity embeddings + residual bypass. Learnable per-head temperature (init_temp=4.0) is being tested to sharpen attention. Early results: delta_full Layer 1 drops from 100% to 0% dead heads at temp=4.0 (🔄 running).</p>
 </li>
 </ol>
 <hr />

@@ -186,7 +186,7 @@ The Brain isn't about replacing transformers everywhere. It's about building som
 
 6. **Where does explicit structure win?** The hypothesis: relational tasks benefit from explicit graphs, but sequential/generative tasks may not. Where's the crossover?
 
-7. **What do attention patterns reveal about capacity?** Phase 46 (🔄 running) instruments DELTA-Matched vs DELTA-Full attention heads to measure redundancy, specialization, and the capacity signal that drives the paradox of smaller-beats-larger on composition.
+7. **Attention is mathematically broken — does temperature fix it?** Phase 46 diagnosed that DELTA's attention weights are near-uniform (100% dead heads) due to small d_head (12) + high degree (~40). The model succeeds entirely through entity embeddings + residual bypass. Learnable per-head temperature (init_temp=4.0) is being tested to sharpen attention. Early results: delta_full Layer 1 drops from 100% to 0% dead heads at temp=4.0 (🔄 running).
 
 ---
 

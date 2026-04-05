@@ -323,18 +323,18 @@ ALL_MODELS = ['delta_full', 'delta_matched', 'graphgps', 'grit', 'distmult',
 
 
 def create_lp_model(model_type, num_entities, num_relations,
-                     d_node=64, d_edge=32):
+                     d_node=64, d_edge=32, init_temp=1.0):
     """Create a LinkPredictionModel for the specified GNN encoder type."""
 
     if model_type == 'delta_full':
         enc = DELTAModel(d_node=d_node, d_edge=d_edge,
-                         num_layers=3, num_heads=4)
+                         num_layers=3, num_heads=4, init_temp=init_temp)
         return LinkPredictionModel(enc, num_entities, num_relations,
                                    d_node, d_edge)
 
     elif model_type == 'delta_matched':
         md, me = 48, 24
-        enc = DELTAModel(d_node=md, d_edge=me, num_layers=2, num_heads=4)
+        enc = DELTAModel(d_node=md, d_edge=me, num_layers=2, num_heads=4, init_temp=init_temp)
         return LinkPredictionModel(enc, num_entities, num_relations,
                                    d_node, d_edge,
                                    encoder_d_node=md, encoder_d_edge=me)

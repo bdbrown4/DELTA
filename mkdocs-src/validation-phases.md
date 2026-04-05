@@ -484,25 +484,28 @@ See [The Brain](the-brain.md) for the long-term vision, [Adaptive Architecture](
 | 43 | DropEdge robustness check | ✅ Complete — DELTA leads on 3p at all 5 drop rates; advantage is structural |
 | 44 | Extended multi-hop depth (4p/5p compositional queries) | ✅ Complete — DELTA improves with depth (MRR 0.753→0.767→0.790); advantage over GraphGPS grows to +0.100 at 5p |
 | 45 | Inference timing + multi-seed headline | ✅ Complete — 3-seed: DELTA 0.742±0.009 vs GraphGPS 0.713±0.007; per-query inference 0.8-0.9× GraphGPS |
-| 46 | Capacity signal measurement (attention entropy + gate sparsity) | 🔄 Running |
+| 46 | Attention sharpening via learnable temperature (fix dead heads) | 🔄 Running |
 
 ---
 
-## Phase 46: Capacity Signal Measurement (In Progress)
+## Phase 46: Attention Sharpening via Learnable Temperature (In Progress)
 
-**Hypothesis:** DELTA-Full's attention heads show significantly higher redundancy (>25% dead heads with near-uniform attention entropy) than DELTA-Matched (<10%), indicating excess capacity identifiable from attention patterns. Cross-depth routing patterns are query-independent — the compositional advantage lives in the learned representation structure, not depth-dependent routing.
+**Root cause (diagnostic):** DELTA's attention weights are near-uniform after training. With `d_head=12` (delta_matched: 48/4) and average degree ~40, softmax over 40 scores at std≈1.0 gives normalized entropy ≈ 0.87 — mathematically near-uniform. The model succeeds at LP/multi-hop entirely through entity embeddings + DistMult, bypassing attention via residual connections. Phase 45's 100% dead heads across all conditions confirm this.
+
+**Fix:** Learnable per-head temperature (multiplier on attention scores before softmax). Stored as log-space parameter: `temp = exp(_log_temp)`, always positive. Default `init_temp=1.0` preserves backward compatibility. Higher init_temp → sharper attention.
+
+**Hypothesis:** Starting with `init_temp=4.0`, dead-head fraction will drop from ~100% (temp=1.0 control) to < 50% for delta_matched. Learned per-head temperatures at convergence will be > 2.0 for ≥ 50% of heads, confirming the model benefits from sharp attention. Multi-hop 3p MRR ≥ 0.35 (regression safety).
+
+**Design:** 4 conditions — delta_matched × {temp=1.0, temp=4.0} and delta_full × {temp=1.0, temp=4.0}. Same LP training pipeline as Phases 42–45. 500 epochs, early stopping patience=10.
 
 **Measurements:**
 
-1. Per-layer, per-head attention entropy (per-target-node normalized)
-2. Per-head Gini sparsity (0=uniform, 1=maximally sparse)
-3. Head utilization: fraction of "dead" heads (entropy > 90% of uniform)
-4. Cross-depth attention profile cosine similarity (1p vs 5p)
-5. Router gate statistics (mean, std, frac below thresholds)
+1. Per-layer, per-head attention entropy + dead head fraction
+2. Learned per-head temperature at each checkpoint (temperature evolution)
+3. Gate statistics (post-attention pruner importance scores)
+4. Standard LP MRR/H@10 + multi-hop 1p–5p MRR
 
-**Protocol:** Train delta_matched (2L×4H, 157K params) and delta_full (3L×4H, 293K params) for 500 epochs with eval every 25. Collect attention stats at each checkpoint. Post-training evaluate on 1p/2p/3p/4p/5p.
-
-**Early finding (from smoke tests):** Cross-depth cosine similarity = 1.0 — encoding is query-independent. The attention pattern is a property of the graph structure, not the query depth. This means the compositional advantage lives entirely in the REPRESENTATION quality, not in depth-dependent routing.
+**Early finding (5-epoch smoke test):** delta_full temp=4.0 Layer 1 shows 0% dead heads (entropy 0.784–0.878) vs 100% dead (0.989–0.991) at temp=1.0. Temperature sharpening produces measurable attention differentiation even before the model has learned meaningful features.
 
 *Full results pending experiment completion.*
 

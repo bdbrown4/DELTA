@@ -4,12 +4,15 @@
   "next_phase": 46,
   "current_phase": {
     "phase": 46,
-    "title": "Capacity Signal Measurement",
+    "title": "Attention Sharpening via Learnable Temperature",
     "status": "running",
-    "hypothesis": "DELTA-Full's attention heads show significantly higher redundancy (>25% dead heads) than DELTA-Matched (<10%), indicating excess capacity. Cross-depth routing is query-independent.",
+    "hypothesis": "Starting with init_temp=4.0, dead-head fraction drops from ~100% to <50% for delta_matched. Learned per-head temps stay >2.0 for >=50% of heads. 3p MRR >= 0.35.",
     "script": "experiments/phase46_capacity_signal.py",
     "command": "python experiments/phase46_capacity_signal.py --epochs 500 --eval_every 25 --patience 10",
-    "measurements": ["per-head attention entropy", "per-head Gini sparsity", "head utilization (dead head fraction)", "cross-depth cosine similarity", "gate statistics"]
+    "root_cause": "d_head=12 + avg_degree~40 -> softmax over 40 scores at std~1.0 -> normalized entropy 0.87 (near-uniform). Residual connections let model bypass attention entirely.",
+    "fix": "Learnable per-head temperature (log-space param, always positive). temp=exp(_log_temp). Default init_temp=1.0 for backward compat.",
+    "conditions": ["delta_matched temp=1.0 (control)", "delta_matched temp=4.0", "delta_full temp=1.0 (control)", "delta_full temp=4.0"],
+    "measurements": ["per-head attention entropy", "learned temperature per head", "temperature evolution over training", "dead head fraction", "standard LP MRR", "multi-hop 1p-5p MRR"]
   },
 
   "best_results": {
@@ -95,7 +98,9 @@
     "training cost is dominated by 2-hop edge adjacency computation (34x slower per epoch)",
     "both models peak at ep 125-150, overtrain after -- early stopping critical",
     "DELTA-Matched consistently peaks at ep 125 across all seeds and experiments",
-    "GraphGPS benefits more from DropEdge in absolute terms but can't close architectural gap"
+    "GraphGPS benefits more from DropEdge in absolute terms but can't close architectural gap",
+    "DELTA attention is mathematically degenerate: d_head=12 + degree~40 -> normalized entropy 0.87 (near-uniform). Model bypasses attention via residual connections.",
+    "cross-depth cosine similarity = 1.0 everywhere — encoding is query-independent. Compositional advantage lives in representation structure, not depth-dependent routing."
   ],
 
   "open_questions": [

@@ -1,33 +1,45 @@
-"""Phase 46: Capacity Signal Measurement
-========================================
+"""Phase 46: Attention Sharpening via Learnable Temperature
+============================================================
+
+Root-cause finding (diagnostic, pre-experiment):
+  DELTA's attention weights are near-uniform after training.  With d_head=12
+  (delta_matched: 48/4) and average degree ~40, softmax over 40 scores at
+  std≈1.0 gives normalized entropy ≈ 0.87 — mathematically near-uniform.
+  The model succeeds at LP/multi-hop entirely through entity-embedding +
+  DistMult, bypassing attention via residual connections.
+
+Fix applied:
+  Learnable per-head temperature (multiplier on attention scores before
+  softmax).  Stored as log-space parameter: temp = exp(_log_temp), so always
+  positive.  Default init_temp=1.0 preserves backward compatibility.
+  Higher init_temp → sharper initial attention.
 
 Hypothesis (falsifiable):
-  "DELTA-Full's attention heads show significantly higher redundancy than
-  DELTA-Matched's — at least 25% of per-head attention distributions will be
-  near-uniform (entropy > 90% of maximum), indicating excess capacity. DELTA-
-  Matched will have <10% near-uniform heads. Additionally, attention routing
-  patterns will measurably differ between 1p and 5p queries (cosine similarity
-  of per-layer edge attention profiles < 0.85), confirming depth-dependent
-  computation paths."
+  "Starting with init_temp=4.0, dead-head fraction (norm entropy > 0.90)
+  will drop from ~100% (temp=1.0 control) to < 50% for delta_matched.
+  Learned per-head temperatures at convergence will be > 2.0 for ≥ 50% of
+  heads, confirming the model benefits from sharp attention.  Multi-hop 3p
+  MRR will be ≥ 0.35 (Phase-45 regression safety)."
+
+Design:
+  4 conditions:
+    1. delta_matched  init_temp=1.0  (control)
+    2. delta_matched  init_temp=4.0  (treatment)
+    3. delta_full     init_temp=1.0  (control)
+    4. delta_full     init_temp=4.0  (treatment)
 
 Measurements:
-  1. Per-layer, per-head attention entropy (averaged over target nodes)
-  2. Per-layer, per-head attention sparsity (Gini coefficient)
-  3. Head utilization: fraction of "dead" heads (near-uniform attention)
-  4. Cross-depth attention consistency (1p vs 3p vs 5p cosine similarity)
-  5. Layer similarity (attention pattern correlation across layers)
-
-Protocol:
-  - Train delta_matched and delta_full normally (same LP pipeline as Phase 45)
-  - Post-training, run instrumentation passes to collect per-layer attention
-  - Evaluate on 1p/2p/3p/4p/5p with attention collection per query depth
-  - Compare distributions between models and across depths
+  - Per-layer, per-head attention entropy + Gini + dead-head fraction
+  - Learned per-head temperature at each eval checkpoint
+  - Gate statistics (post-attention pruner importance scores)
+  - Standard LP (MRR, H@10) + multi-hop (1p-5p MRR)
+  - Cross-depth attention cosine similarity
 
 Regression safety:
-  - Must reproduce Phase 45 LP/multi-hop baselines within 1 std
+  - Standard LP MRR must stay ≥ Phase 45 baselines within 1 std
 
 Usage:
-  # Smoke test
+  # Smoke test (5 epochs)
   python experiments/phase46_capacity_signal.py --epochs 5
 
   # Full run
@@ -360,23 +372,39 @@ def _gate_gini(gates):
 # Training with capacity instrumentation
 # ═══════════════════════════════════════════════════════════════════════════
 
+def get_learned_temperatures(model):
+    """Extract learned per-head temperatures from a LinkPredictionModel."""
+    temps = {}
+    encoder = model.encoder
+    if encoder is None or not isinstance(encoder, DELTAModel):
+        return temps
+    for i, layer in enumerate(encoder.layers):
+        node_temp = layer.dual_attn.node_attn._log_temp.exp().detach().cpu().tolist()
+        edge_temp = layer.dual_attn.edge_attn._log_temp.exp().detach().cpu().tolist()
+        temps[f'L{i}_node'] = node_temp
+        temps[f'L{i}_edge'] = edge_temp
+    return temps
+
+
 def train_instrumented(model_type, data, epochs, lr, device, batch_size, seed,
-                       eval_every=25, patience=10):
+                       eval_every=25, patience=10, init_temp=1.0):
     """Train a model and collect attention stats at each eval checkpoint.
 
-    Returns (model, edge_index, edge_types, checkpoint_stats, best_val_mrr).
+    Returns (model, edge_index, edge_types, checkpoint_stats, best_val_mrr,
+             attn_collector, gate_collector).
     """
     torch.manual_seed(seed)
     np.random.seed(seed)
 
     model = create_lp_model(model_type,
-                            data['num_entities'], data['num_relations'])
+                            data['num_entities'], data['num_relations'],
+                            init_temp=init_temp)
     model = model.to(device)
 
     n_params = sum(p.numel() for p in model.parameters())
     n_enc = (sum(p.numel() for p in model.encoder.parameters())
              if model.encoder is not None else 0)
-    print(f"\n  [{model_type}] seed={seed}, {n_params:,} params "
+    print(f"\n  [{model_type}] seed={seed}, init_temp={init_temp}, {n_params:,} params "
           f"({n_enc:,} encoder), device={device}")
 
     # Set up instrumentation
@@ -425,6 +453,7 @@ def train_instrumented(model_type, data, epochs, lr, device, batch_size, seed,
                     'val_MRR': val['MRR'],
                     'attention': attn_collector.get_stats(),
                     'gates': gate_collector.get_stats(),
+                    'temperatures': get_learned_temperatures(model),
                 }
                 checkpoint_stats.append(cp)
 
@@ -601,6 +630,38 @@ def print_attention_report(model_type, attn_stats, gate_stats):
                   f"entropy={gs['entropy']:.3f}  gini={gs['gini']:.3f}")
 
 
+def print_temperature_report(label, final_temps, checkpoint_stats):
+    """Print learned temperature analysis."""
+    if not final_temps:
+        return
+
+    print(f"\n{'='*70}")
+    print(f"  LEARNED TEMPERATURES: {label}")
+    print(f"{'='*70}")
+
+    for key in sorted(final_temps.keys()):
+        temps = final_temps[key]
+        print(f"    {key}: {' '.join(f'{t:.3f}' for t in temps)}")
+
+    # Temperature evolution over training
+    if checkpoint_stats and any(cp.get('temperatures') for cp in checkpoint_stats):
+        print(f"\n  Temperature evolution (mean across heads):")
+        all_keys = sorted(checkpoint_stats[0].get('temperatures', {}).keys())
+        if all_keys:
+            header = f"  {'Epoch':>6}  {'val_MRR':>8}"
+            for k in all_keys:
+                header += f"  {k:>12}"
+            print(header)
+            for cp in checkpoint_stats:
+                temps = cp.get('temperatures', {})
+                line = f"  {cp['epoch']:6d}  {cp['val_MRR']:8.4f}"
+                for k in all_keys:
+                    vs = temps.get(k, [])
+                    mean_t = np.mean(vs) if vs else 0.0
+                    line += f"  {mean_t:12.3f}"
+                print(line)
+
+
 def print_cross_depth_report(cross_depth_data):
     """Print cross-depth attention analysis."""
     print(f"\n{'='*70}")
@@ -693,7 +754,7 @@ def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     print("=" * 70)
-    print("PHASE 46: CAPACITY SIGNAL MEASUREMENT")
+    print("PHASE 46: ATTENTION SHARPENING VIA LEARNABLE TEMPERATURE")
     print("=" * 70)
     print(f"  Device: {device}")
     print(f"  Epochs: {args.epochs}, eval_every: {args.eval_every}")
@@ -704,19 +765,26 @@ def main():
     print("\n  Loading data...")
     data = load_lp_data('fb15k-237', max_entities=max_ent)
 
-    # Models to compare
-    models_to_run = ['delta_matched', 'delta_full']
+    # ── Conditions: model_type × init_temp ─────────────────────────────
+    conditions = [
+        ('delta_matched', 1.0),
+        ('delta_matched', 4.0),
+        ('delta_full',    1.0),
+        ('delta_full',    4.0),
+    ]
     all_results = {}
 
-    for model_type in models_to_run:
+    for model_type, init_temp in conditions:
+        label = f"{model_type}_temp{init_temp:.0f}"
         print(f"\n{'='*70}")
-        print(f"  TRAINING: {model_type}")
+        print(f"  TRAINING: {label}")
         print(f"{'='*70}")
 
         (model, edge_index, edge_types, checkpoint_stats,
          best_val_mrr, attn_collector, gate_collector) = train_instrumented(
             model_type, data, args.epochs, args.lr, device,
-            args.batch_size, args.seed, args.eval_every, args.patience)
+            args.batch_size, args.seed, args.eval_every, args.patience,
+            init_temp=init_temp)
 
         # Regression check: standard LP
         lp_test = evaluate_lp(model, data['test'], edge_index, edge_types,
@@ -727,9 +795,11 @@ def main():
         # Final attention stats
         attn_stats = attn_collector.get_stats()
         gate_stats = gate_collector.get_stats()
+        final_temps = get_learned_temperatures(model)
 
-        print_attention_report(model_type, attn_stats, gate_stats)
-        print_training_dynamics(checkpoint_stats, model_type)
+        print_attention_report(label, attn_stats, gate_stats)
+        print_temperature_report(label, final_temps, checkpoint_stats)
+        print_training_dynamics(checkpoint_stats, label)
 
         # Cross-depth analysis
         is_delta = (model.encoder is not None and
@@ -740,81 +810,73 @@ def main():
                 model, data, attn_collector, device, edge_index, edge_types)
             print_cross_depth_report(cross_depth)
 
-        all_results[model_type] = {
+        all_results[label] = {
+            'model_type': model_type,
+            'init_temp': init_temp,
             'best_val_mrr': best_val_mrr,
             'lp_test': lp_test,
             'attention_stats': _serialize_stats(attn_stats),
             'gate_stats': gate_stats,
+            'final_temperatures': final_temps,
             'checkpoint_stats': _serialize_checkpoints(checkpoint_stats),
             'cross_depth': cross_depth,
         }
 
     # ═══════════════════════════════════════════════════════════════════
-    # Comparative analysis
+    # Comparative analysis: temp=1.0 vs temp=4.0
     # ═══════════════════════════════════════════════════════════════════
 
     print(f"\n{'='*70}")
     print(f"  COMPARATIVE ANALYSIS")
     print(f"{'='*70}")
 
-    dm = all_results.get('delta_matched', {})
-    df = all_results.get('delta_full', {})
+    for model_type in ['delta_matched', 'delta_full']:
+        ctrl = all_results.get(f'{model_type}_temp1', {})
+        treat = all_results.get(f'{model_type}_temp4', {})
+        if not ctrl or not treat:
+            continue
 
-    if dm and df:
-        dm_attn = dm.get('attention_stats', {})
-        df_attn = df.get('attention_stats', {})
+        print(f"\n  -- {model_type}: temp=1.0 vs temp=4.0 --")
 
-        # Count dead heads per model
-        dm_dead = 0
-        dm_total = 0
-        for li in dm_attn:
-            for at in ['node_attn', 'edge_attn']:
-                heads = dm_attn[li].get(at, {})
-                H = len(heads.get('per_head_norm_entropy', []))
-                dead = int(heads.get('dead_head_frac', 0) * H)
-                dm_dead += dead
-                dm_total += H
+        # LP comparison
+        ctrl_mrr = ctrl.get('lp_test', {}).get('MRR', 0)
+        treat_mrr = treat.get('lp_test', {}).get('MRR', 0)
+        print(f"    Standard LP MRR: {ctrl_mrr:.4f} → {treat_mrr:.4f}  "
+              f"(Δ={treat_mrr - ctrl_mrr:+.4f})")
 
-        df_dead = 0
-        df_total = 0
-        for li in df_attn:
-            for at in ['node_attn', 'edge_attn']:
-                heads = df_attn[li].get(at, {})
-                H = len(heads.get('per_head_norm_entropy', []))
-                dead = int(heads.get('dead_head_frac', 0) * H)
-                df_dead += dead
-                df_total += H
+        # Dead head comparison
+        for label_key, result in [('temp=1.0', ctrl), ('temp=4.0', treat)]:
+            attn = result.get('attention_stats', {})
+            dead, total = 0, 0
+            for li in attn:
+                for at in ['node_attn', 'edge_attn']:
+                    heads = attn[li].get(at, {})
+                    H = len(heads.get('per_head_norm_entropy', []))
+                    dead += int(heads.get('dead_head_frac', 0) * H)
+                    total += H
+            pct = dead / max(total, 1) * 100
+            print(f"    Dead heads ({label_key}): {dead}/{total} ({pct:.0f}%)")
 
-        print(f"\n  Head utilization:")
-        print(f"    DELTA-Matched: {dm_dead}/{dm_total} dead heads "
-              f"({dm_dead/max(dm_total,1)*100:.0f}%)")
-        print(f"    DELTA-Full:    {df_dead}/{df_total} dead heads "
-              f"({df_dead/max(df_total,1)*100:.0f}%)")
+        # Final temperatures
+        treat_temps = treat.get('final_temperatures', {})
+        if treat_temps:
+            all_temps = []
+            for k, v in treat_temps.items():
+                all_temps.extend(v)
+            if all_temps:
+                above2 = sum(1 for t in all_temps if t > 2.0)
+                print(f"    Learned temps (temp=4.0 start): "
+                      f"mean={np.mean(all_temps):.2f}, "
+                      f"min={min(all_temps):.2f}, max={max(all_temps):.2f}, "
+                      f"{above2}/{len(all_temps)} > 2.0")
 
-        # Gate sparsity comparison
-        dm_gates = dm.get('gate_stats', {})
-        df_gates = df.get('gate_stats', {})
-
-        if dm_gates and df_gates:
-            dm_sparse = np.mean([v['frac_below_0.1'] for v in dm_gates.values()])
-            df_sparse = np.mean([v['frac_below_0.1'] for v in df_gates.values()])
-            print(f"\n  Edge gate sparsity (mean frac < 0.1):")
-            print(f"    DELTA-Matched: {dm_sparse:.3f}")
-            print(f"    DELTA-Full:    {df_sparse:.3f}")
-
-        # Cross-depth consistency
-        dm_cos = dm.get('cross_depth', {}).get('cross_depth_cosine', {})
-        df_cos = df.get('cross_depth', {}).get('cross_depth_cosine', {})
-
-        if dm_cos or df_cos:
-            print(f"\n  Cross-depth attention consistency (cosine sim):")
-            all_pairs = sorted(set(list(dm_cos.keys()) + list(df_cos.keys())))
-            for pair in all_pairs:
-                dm_v = dm_cos.get(pair, None)
-                df_v = df_cos.get(pair, None)
-                dm_str = f"{dm_v:.4f}" if dm_v is not None else "  N/A "
-                df_str = f"{df_v:.4f}" if df_v is not None else "  N/A "
-                print(f"    {pair}: Matched={dm_str}  Full={df_str}")
+        # Multi-hop comparison (3p)
+        ctrl_3p = ctrl.get('cross_depth', {}).get('depth_metrics', {}).get('3p', {})
+        treat_3p = treat.get('cross_depth', {}).get('depth_metrics', {}).get('3p', {})
+        if ctrl_3p and treat_3p:
+            c3 = ctrl_3p.get('MRR', 0)
+            t3 = treat_3p.get('MRR', 0)
+            print(f"    3p MRR: {c3:.4f} → {t3:.4f}  (Δ={t3 - c3:+.4f})")
 
     # ═══════════════════════════════════════════════════════════════════
     # Hypothesis evaluation
@@ -824,35 +886,52 @@ def main():
     print(f"  HYPOTHESIS EVALUATION")
     print(f"{'='*70}")
 
-    if dm and df:
-        # H1: DELTA-Full has >25% dead heads, DELTA-Matched has <10%
-        df_dead_pct = df_dead / max(df_total, 1) * 100
-        dm_dead_pct = dm_dead / max(dm_total, 1) * 100
-        h1_full = df_dead_pct > 25
-        h1_matched = dm_dead_pct < 10
-        h1 = h1_full and h1_matched
-        print(f"\n  H1 (excess capacity → dead heads):")
-        print(f"    DELTA-Full dead heads: {df_dead_pct:.1f}% (need >25%): "
-              f"{'CONFIRMED' if h1_full else 'REJECTED'}")
-        print(f"    DELTA-Matched dead heads: {dm_dead_pct:.1f}% (need <10%): "
-              f"{'CONFIRMED' if h1_matched else 'REJECTED'}")
-        print(f"    → H1 overall: {'CONFIRMED' if h1 else 'REJECTED'}")
+    dm_ctrl = all_results.get('delta_matched_temp1', {})
+    dm_treat = all_results.get('delta_matched_temp4', {})
 
-        # H2: Cross-depth cosine < 0.85 for 1p vs 5p
-        cos_1p_5p = dm_cos.get('1p_vs_5p', df_cos.get('1p_vs_5p', None))
-        if cos_1p_5p is not None:
-            h2 = cos_1p_5p < 0.85
-            print(f"\n  H2 (depth-dependent routing):")
-            print(f"    1p vs 5p cosine similarity: {cos_1p_5p:.4f} (need <0.85): "
-                  f"{'CONFIRMED' if h2 else 'REJECTED'}")
-            if cos_1p_5p > 0.99:
-                print(f"    NOTE: Cosine ≈ 1.0 is expected — graph encoding is")
-                print(f"    query-independent. The attention pattern is a property")
-                print(f"    of the graph structure, not the query depth.")
-                print(f"    → Compositional advantage lives in the REPRESENTATION,")
-                print(f"      not in depth-dependent routing.")
-        else:
-            print(f"\n  H2 (depth-dependent routing): INSUFFICIENT DATA")
+    if dm_ctrl and dm_treat:
+        # H1: Dead-head fraction drops from ~100% to < 50%
+        def count_dead(result):
+            attn = result.get('attention_stats', {})
+            dead, total = 0, 0
+            for li in attn:
+                for at in ['node_attn', 'edge_attn']:
+                    heads = attn[li].get(at, {})
+                    H = len(heads.get('per_head_norm_entropy', []))
+                    dead += int(heads.get('dead_head_frac', 0) * H)
+                    total += H
+            return dead, total
+
+        ctrl_dead, ctrl_total = count_dead(dm_ctrl)
+        treat_dead, treat_total = count_dead(dm_treat)
+        ctrl_pct = ctrl_dead / max(ctrl_total, 1) * 100
+        treat_pct = treat_dead / max(treat_total, 1) * 100
+
+        h1 = treat_pct < 50
+        print(f"\n  H1 (temperature reduces dead heads):")
+        print(f"    Control (temp=1.0): {ctrl_pct:.0f}% dead")
+        print(f"    Treatment (temp=4.0): {treat_pct:.0f}% dead (need < 50%)")
+        print(f"    → H1: {'CONFIRMED' if h1 else 'REJECTED'}")
+
+        # H2: Learned temperatures stay > 2.0 for ≥ 50% of heads
+        treat_temps = dm_treat.get('final_temperatures', {})
+        all_temps = []
+        for v in treat_temps.values():
+            all_temps.extend(v)
+        if all_temps:
+            above2 = sum(1 for t in all_temps if t > 2.0)
+            h2 = above2 >= len(all_temps) * 0.5
+            print(f"\n  H2 (model retains sharp attention):")
+            print(f"    Heads with learned temp > 2.0: {above2}/{len(all_temps)}")
+            print(f"    → H2: {'CONFIRMED' if h2 else 'REJECTED'}")
+
+        # H3: Regression safety — 3p MRR ≥ 0.35
+        treat_3p = dm_treat.get('cross_depth', {}).get('depth_metrics', {}).get('3p', {})
+        mrr_3p = treat_3p.get('MRR', 0)
+        h3 = mrr_3p >= 0.35
+        print(f"\n  H3 (regression safety):")
+        print(f"    3p MRR: {mrr_3p:.4f} (need ≥ 0.35)")
+        print(f"    → H3: {'CONFIRMED' if h3 else 'REJECTED'}")
 
     # Save results
     output_path = os.path.join(os.path.dirname(__file__), '..', 'phase46_output.json')
@@ -889,6 +968,8 @@ def _serialize_checkpoints(checkpoint_stats):
             ser['attention'] = _serialize_stats(cp['attention'])
         if 'gates' in cp:
             ser['gates'] = cp['gates']
+        if 'temperatures' in cp:
+            ser['temperatures'] = cp['temperatures']
         result.append(ser)
     return result
 

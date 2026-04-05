@@ -30,7 +30,8 @@ class NodeAttention(nn.Module):
     as bias/gating on the attention scores.
     """
 
-    def __init__(self, d_node: int, d_edge: int, num_heads: int = 4, dropout: float = 0.1):
+    def __init__(self, d_node: int, d_edge: int, num_heads: int = 4, dropout: float = 0.1,
+                 init_temp: float = 1.0):
         super().__init__()
         self.d_node = d_node
         self.num_heads = num_heads
@@ -44,6 +45,10 @@ class NodeAttention(nn.Module):
         self.W_out = nn.Linear(d_node, d_node)
         self.dropout = nn.Dropout(dropout)
         self.norm = nn.LayerNorm(d_node)
+
+        # Learnable per-head temperature (multiplier on attn scores before softmax).
+        # Higher → sharper attention.  Default 1.0 = standard scaled dot-product.
+        self._log_temp = nn.Parameter(torch.full((num_heads,), math.log(init_temp)))
 
     def forward(self, graph: DeltaGraph, mask: Optional[torch.Tensor] = None,
                 return_weights: bool = False):
@@ -77,6 +82,10 @@ class NodeAttention(nn.Module):
         # Add edge feature bias
         edge_bias = self.W_edge_bias(graph.edge_features)  # [E, H]
         attn_scores = attn_scores + edge_bias
+
+        # Apply learnable per-head temperature (sharpen/soften attention)
+        temp = self._log_temp.exp()  # [H], always positive
+        attn_scores = attn_scores * temp  # [E, H]
 
         # Softmax over incoming edges per target node
         attn_weights = self._scatter_softmax(attn_scores, tgt, N)  # [E, H]
@@ -130,7 +139,8 @@ class EdgeAttention(nn.Module):
     pattern regardless of the specific nodes involved.
     """
 
-    def __init__(self, d_edge: int, d_node: int, num_heads: int = 4, dropout: float = 0.1):
+    def __init__(self, d_edge: int, d_node: int, num_heads: int = 4, dropout: float = 0.1,
+                 init_temp: float = 1.0):
         super().__init__()
         self.d_edge = d_edge
         self.num_heads = num_heads
@@ -145,6 +155,9 @@ class EdgeAttention(nn.Module):
         self.W_out = nn.Linear(d_edge, d_edge)
         self.dropout = nn.Dropout(dropout)
         self.norm = nn.LayerNorm(d_edge)
+
+        # Learnable per-head temperature (same semantics as NodeAttention)
+        self._log_temp = nn.Parameter(torch.full((num_heads,), math.log(init_temp)))
 
     def forward(self, graph: DeltaGraph, edge_adj: Optional[torch.Tensor] = None,
                 return_weights: bool = False):
@@ -190,6 +203,10 @@ class EdgeAttention(nn.Module):
         ctx_bias = self.W_ctx(src_edge_ctx)  # [E_adj, H]
         attn_scores = attn_scores + ctx_bias
 
+        # Apply learnable per-head temperature
+        temp = self._log_temp.exp()  # [H], always positive
+        attn_scores = attn_scores * temp  # [E_adj, H]
+
         # Softmax over neighbor edges per target edge
         attn_weights = self._scatter_softmax(attn_scores, tgt_edges, E)
         attn_weights = self.dropout(attn_weights)
@@ -230,10 +247,11 @@ class DualParallelAttention(nn.Module):
     step ensures the updated node features inform edges and vice versa.
     """
 
-    def __init__(self, d_node: int, d_edge: int, num_heads: int = 4, dropout: float = 0.1):
+    def __init__(self, d_node: int, d_edge: int, num_heads: int = 4, dropout: float = 0.1,
+                 init_temp: float = 1.0):
         super().__init__()
-        self.node_attn = NodeAttention(d_node, d_edge, num_heads, dropout)
-        self.edge_attn = EdgeAttention(d_edge, d_node, num_heads, dropout)
+        self.node_attn = NodeAttention(d_node, d_edge, num_heads, dropout, init_temp=init_temp)
+        self.edge_attn = EdgeAttention(d_edge, d_node, num_heads, dropout, init_temp=init_temp)
         self.reconciliation = ReconciliationBridge(d_node, d_edge)
 
     def forward(self, graph: DeltaGraph,

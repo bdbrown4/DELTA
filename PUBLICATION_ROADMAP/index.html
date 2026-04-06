@@ -1,0 +1,1585 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Dynamic Edge-and-Node Architecture with Layered, Tiered Attention — Edge-Centric Dual Attention for Relational Reasoning on Knowledge Graphs">
+      
+      
+      
+        <link rel="canonical" href="https://bdbrown4.github.io/DELTA/PUBLICATION_ROADMAP/">
+      
+      
+        <link rel="prev" href="../RESEARCH_AGENDA/">
+      
+      
+        <link rel="next" href="../research-methodology/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.47">
+    
+    
+      
+        <title>Publication Roadmap - DELTA Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.6f8fc17f.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#delta-publication-roadmap" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="DELTA Documentation" class="md-header__button md-logo" aria-label="DELTA Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            DELTA Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Publication Roadmap
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/bdbrown4/DELTA" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    bdbrown4/DELTA
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="DELTA Documentation" class="md-nav__button md-logo" aria-label="DELTA Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    DELTA Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/bdbrown4/DELTA" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    bdbrown4/DELTA
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Vision
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Vision
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../the-brain/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    The Brain
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Architecture
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Architecture
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ARCHITECTURE_VISUAL/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Visual Explainer
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bootstrap-strategy/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Bootstrap Strategy
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adaptive-architecture/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Adaptive Architecture
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture-evolution/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Evolution
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Experiments
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Experiments
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validation-phases/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Validation Phases
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../key-findings/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Key Findings
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../COLAB_RESULTS/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Colab Results
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backward-compatibility/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Backward Compatibility
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Research
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Research
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../RESEARCH_AGENDA/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Agenda
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Publication Roadmap
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Publication Roadmap
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#phase-completion-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase Completion Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verified-publication-claims" class="md-nav__link">
+    <span class="md-ellipsis">
+      Verified Publication Claims
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Verified Publication Claims">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#claim-1-edge-centric-dual-attention-excels-at-relational-reasoning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Claim 1: Edge-centric dual attention excels at relational reasoning
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#claim-2-delta-is-competitive-on-real-link-prediction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Claim 2: DELTA is competitive on real link prediction
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#claim-3-delta-dominates-multi-hop-compositional-reasoning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Claim 3: DELTA dominates multi-hop compositional reasoning
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#claim-4-inference-cost-is-deployment-friendly" class="md-nav__link">
+    <span class="md-ellipsis">
+      Claim 4: Inference cost is deployment-friendly
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#claim-5-learnable-temperature-reveals-attention-asymmetry" class="md-nav__link">
+    <span class="md-ellipsis">
+      Claim 5: Learnable temperature reveals attention asymmetry
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remaining-gaps-before-submission" class="md-nav__link">
+    <span class="md-ellipsis">
+      Remaining Gaps Before Submission
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#paper-structure-draft" class="md-nav__link">
+    <span class="md-ellipsis">
+      Paper Structure (Draft)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verification-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      Verification Summary
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-methodology/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Methodology
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../status-and-roadmap/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Status & Roadmap
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Setup
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Setup
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setup-and-running/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Getting Started
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../COLAB_SETUP/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Colab Setup Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../project-structure/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Project Structure
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#phase-completion-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase Completion Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verified-publication-claims" class="md-nav__link">
+    <span class="md-ellipsis">
+      Verified Publication Claims
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Verified Publication Claims">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#claim-1-edge-centric-dual-attention-excels-at-relational-reasoning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Claim 1: Edge-centric dual attention excels at relational reasoning
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#claim-2-delta-is-competitive-on-real-link-prediction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Claim 2: DELTA is competitive on real link prediction
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#claim-3-delta-dominates-multi-hop-compositional-reasoning" class="md-nav__link">
+    <span class="md-ellipsis">
+      Claim 3: DELTA dominates multi-hop compositional reasoning
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#claim-4-inference-cost-is-deployment-friendly" class="md-nav__link">
+    <span class="md-ellipsis">
+      Claim 4: Inference cost is deployment-friendly
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#claim-5-learnable-temperature-reveals-attention-asymmetry" class="md-nav__link">
+    <span class="md-ellipsis">
+      Claim 5: Learnable temperature reveals attention asymmetry
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remaining-gaps-before-submission" class="md-nav__link">
+    <span class="md-ellipsis">
+      Remaining Gaps Before Submission
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#paper-structure-draft" class="md-nav__link">
+    <span class="md-ellipsis">
+      Paper Structure (Draft)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verification-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      Verification Summary
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="delta-publication-roadmap">DELTA: Publication Roadmap<a class="headerlink" href="#delta-publication-roadmap" title="Permanent link">&para;</a></h1>
+<p><strong>Target:</strong> NeurIPS / ICLR (top-tier ML venue)
+<strong>Title placeholder:</strong> <em>"DELTA: Edge-Centric Dual Attention for Relational Reasoning on Knowledge Graphs"</em>
+<strong>Status:</strong> 48 experiment phases complete. Active temperature optimization research ongoing.</p>
+<p><strong>Current evidence base:</strong> 48 experiment phases, competitive link prediction on FB15k-237 subset (LP MRR 0.4856), multi-hop compositional reasoning dominance (3p MRR 0.742±0.009, only model improving with depth), per-query inference 0.8–0.9× GraphGPS, learnable temperature revealing edge/node asymmetry.</p>
+<hr />
+<h2 id="phase-completion-overview">Phase Completion Overview<a class="headerlink" href="#phase-completion-overview" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Experiment</th>
+<th>Status</th>
+<th>Key Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>34</td>
+<td>GraphGPS/GRIT vs DELTA — synthetic</td>
+<td>✅</td>
+<td>DELTA 0.880 vs GraphGPS 0.293</td>
+</tr>
+<tr>
+<td>35</td>
+<td>Domain-agnostic relational transfer</td>
+<td>✅</td>
+<td>Probe 0.961 on WN18RR (frozen encoder)</td>
+</tr>
+<tr>
+<td>36</td>
+<td>Task-aware construction at scale</td>
+<td>✅</td>
+<td>Constructor adds ≤1.3%</td>
+</tr>
+<tr>
+<td>37</td>
+<td>FB15k-237 parameter-matched comparison</td>
+<td>⚠️ Invalidated</td>
+<td>5 leakage issues → replaced by Phase 40</td>
+</tr>
+<tr>
+<td>38</td>
+<td>Differentiable task-aware constructor</td>
+<td>✅</td>
+<td>Hybrid 0.452 ± 0.006 (98% of FixedChain)</td>
+</tr>
+<tr>
+<td>39</td>
+<td>Self-bootstrapped DELTA</td>
+<td>✅</td>
+<td>0.757 ± 0.041 (157% of FixedChain)</td>
+</tr>
+<tr>
+<td>40</td>
+<td>Correct LP evaluation (7 models)</td>
+<td>✅</td>
+<td>SBHybrid MRR 0.5089, H@10 0.8158</td>
+</tr>
+<tr>
+<td>41</td>
+<td>Generalization gap investigation</td>
+<td>✅</td>
+<td>Negative result — gap caused by val-set noise</td>
+</tr>
+<tr>
+<td>42</td>
+<td>Multi-hop path queries (1p/2p/3p)</td>
+<td>✅</td>
+<td>DELTA-Matched 3p MRR 0.738, only model with 2p→3p improvement</td>
+</tr>
+<tr>
+<td>43</td>
+<td>DropEdge robustness (5 drop rates)</td>
+<td>✅</td>
+<td>Advantage holds at all drop rates</td>
+</tr>
+<tr>
+<td>44</td>
+<td>Extended depth (4p/5p)</td>
+<td>✅</td>
+<td>5p MRR 0.790; advantage accelerates with depth</td>
+</tr>
+<tr>
+<td>45</td>
+<td>Inference timing + multi-seed</td>
+<td>✅</td>
+<td>Per-query 0.8–0.9× GraphGPS; 3-seed robust</td>
+</tr>
+<tr>
+<td>46</td>
+<td>Learnable attention temperature</td>
+<td>✅</td>
+<td>Dead heads 83%→38%; edge/node asymmetry discovered</td>
+</tr>
+<tr>
+<td>47</td>
+<td>Layer-specific temperature</td>
+<td>✅</td>
+<td>B (L0=1, L1+L2=4) best LP MRR 0.4783</td>
+</tr>
+<tr>
+<td>48</td>
+<td>Asymmetric node/edge temperature</td>
+<td>✅</td>
+<td>E (node=2, edge=6) LP MRR <strong>0.4856</strong> (new record)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="verified-publication-claims">Verified Publication Claims<a class="headerlink" href="#verified-publication-claims" title="Permanent link">&para;</a></h2>
+<h3 id="claim-1-edge-centric-dual-attention-excels-at-relational-reasoning">Claim 1: Edge-centric dual attention excels at relational reasoning<a class="headerlink" href="#claim-1-edge-centric-dual-attention-excels-at-relational-reasoning" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Phase 1/9/11/13: foundational synthetic evidence</li>
+<li>Phase 28: +24% over vanilla at extreme noise</li>
+<li>Phase 34: DELTA 0.880 vs GraphGPS 0.293 on edge classification</li>
+</ul>
+<h3 id="claim-2-delta-is-competitive-on-real-link-prediction">Claim 2: DELTA is competitive on real link prediction<a class="headerlink" href="#claim-2-delta-is-competitive-on-real-link-prediction" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Phase 40: SBHybrid MRR 0.5089 (within 0.004 of GraphGPS, beats on H@10)</li>
+<li>Phase 48: DELTA-Full LP MRR 0.4856 with asymmetric temperature</li>
+</ul>
+<h3 id="claim-3-delta-dominates-multi-hop-compositional-reasoning">Claim 3: DELTA dominates multi-hop compositional reasoning<a class="headerlink" href="#claim-3-delta-dominates-multi-hop-compositional-reasoning" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Phase 42: Only model with positive 2p→3p trajectory</li>
+<li>Phase 44: Advantage accelerates — 5p MRR 0.790 (+0.100 over GraphGPS)</li>
+<li>Phase 43/45: 3-seed robust (3p MRR 0.742±0.009), advantage holds at all DropEdge rates</li>
+</ul>
+<h3 id="claim-4-inference-cost-is-deployment-friendly">Claim 4: Inference cost is deployment-friendly<a class="headerlink" href="#claim-4-inference-cost-is-deployment-friendly" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Phase 45: Per-query scoring 0.8–0.9× GraphGPS (faster)</li>
+<li>Training 34× slower but one-time cost; encoding 52× slower but per-graph (amortized)</li>
+</ul>
+<h3 id="claim-5-learnable-temperature-reveals-attention-asymmetry">Claim 5: Learnable temperature reveals attention asymmetry<a class="headerlink" href="#claim-5-learnable-temperature-reveals-attention-asymmetry" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Phase 46: Edge temps drift UP, node temps drift DOWN — model discovers the distinction</li>
+<li>Phase 47: Selective sharpening (L0 soft + L1+L2 sharp) outperforms uniform</li>
+<li>Phase 48: Asymmetric init (node=2, edge=6) yields new LP record; node temps "set and forget"</li>
+</ul>
+<hr />
+<h2 id="remaining-gaps-before-submission">Remaining Gaps Before Submission<a class="headerlink" href="#remaining-gaps-before-submission" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Gap</th>
+<th>Priority</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Full-scale FB15k-237 (14.5K entities)</td>
+<td>High</td>
+<td>Currently on 494-entity subset</td>
+</tr>
+<tr>
+<td>YAGO3-10 / WN18RR benchmark</td>
+<td>High</td>
+<td>Cross-family generalization</td>
+</tr>
+<tr>
+<td>LP/3p trade-off resolution</td>
+<td>Medium</td>
+<td>Phase 49 targets this</td>
+</tr>
+<tr>
+<td>Scaling analysis (500→14.5K)</td>
+<td>Medium</td>
+<td>Sub-quadratic claim needs verification at scale</td>
+</tr>
+<tr>
+<td>Interpretability figure</td>
+<td>Medium</td>
+<td>Edge attention heatmap for known reasoning chains</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="paper-structure-draft">Paper Structure (Draft)<a class="headerlink" href="#paper-structure-draft" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Title: DELTA: Edge-Centric Dual Attention for Relational Reasoning
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>       with Self-Bootstrapped Graph Construction
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Abstract: 3 sentences — gap, method, result
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>1. Introduction
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>   - The three-paradigm gap (Transformers → GNNs → DELTA)
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>   - Edges as first-class computational citizens
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>   - Self-bootstrapped graph construction
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>2. Related Work
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>   - Message-passing GNNs (CompGCN, RGCN)
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>   - Transformers on graphs (GraphGPS, GRIT)
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>   - KG completion (TransE, RotatE, BetaE)
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>3. Architecture
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>   - DualParallelAttention (node + edge in parallel)
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>   - 2-hop edge adjacency construction
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>   - ReconciliationBridge (co-update)
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>   - Self-bootstrapped graph construction
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>   - Learnable per-head temperature with edge/node asymmetry
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>4. Experiments
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>   4.1 Setup (FB15k-237 subset, evaluation protocol)
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>   4.2 Link prediction — Phase 40 table + Phase 48 temperature table
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>   4.3 Multi-hop path queries — Phase 42/44 (1p–5p results)
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>   4.4 Robustness — Phase 43 (DropEdge), Phase 45 (multi-seed)
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>   4.5 Temperature analysis — Phases 46–48 (asymmetry discovery)
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>5. Inference Efficiency
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>   - Phase 45: per-query faster than GraphGPS
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>6. Self-Bootstrap Results
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>   - Phase 39: 157% of FixedChain
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>7. Conclusion + The Brain vision
+</code></pre></div>
+<hr />
+<p><em>See <a href="../the-brain/">The Brain</a> for the long-term vision beyond publication. See <a href="../key-findings/">Key Findings</a> for all 29 findings.</em></p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>experiments/phase46_differentiable_constructor.py</code></td>
+<td>Phase 38: Differentiable constructor (3 variants)</td>
+</tr>
+<tr>
+<td><code>experiments/phase46b_self_bootstrapped.py</code></td>
+<td>Phase 39: Self-bootstrapped DELTA</td>
+</tr>
+<tr>
+<td><code>experiments/phase46c_link_prediction.py</code></td>
+<td>Phase 40: Correct LP evaluation (7 models)</td>
+</tr>
+<tr>
+<td><code>experiments/phase35_relational_transfer.py</code></td>
+<td>GRL training template; NeighborSampler + real data</td>
+</tr>
+<tr>
+<td><code>experiments/phase37_real_comparison.py</code></td>
+<td>Phase 37 (invalidated): mini-batch training infrastructure</td>
+</tr>
+<tr>
+<td><code>experiments/phase28_hard_ablation.py</code></td>
+<td>Ablation template (synthetic)</td>
+</tr>
+<tr>
+<td><code>delta/datasets.py</code></td>
+<td>Dataset loading; <code>load_lp_data()</code> for Phase 40+</td>
+</tr>
+<tr>
+<td><code>delta/attention.py</code></td>
+<td><code>EdgeAttention</code>, <code>NodeAttention</code>, <code>ReconciliationBridge</code></td>
+</tr>
+<tr>
+<td><code>delta/baselines.py</code></td>
+<td><code>GraphGPSModel</code>, <code>GRITModel</code></td>
+</tr>
+<tr>
+<td><code>mkdocs-src/COLAB_RESULTS.md</code></td>
+<td>Running results log</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="verification-summary">Verification Summary<a class="headerlink" href="#verification-summary" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Gate</th>
+<th>Target</th>
+<th>Measured</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Phase 35: frozen probe</td>
+<td>&gt; 0.5 on WN18RR</td>
+<td>✅ 0.961</td>
+</tr>
+<tr>
+<td>Phase 37: DELTA-Matched vs GraphGPS</td>
+<td>DELTA &gt; GraphGPS (real FB15k-237)</td>
+<td>⚠️ Invalidated (leakage)</td>
+</tr>
+<tr>
+<td>Phase 38: differentiable ≥ 95% FixedChain</td>
+<td>Hybrid ≥ 0.438</td>
+<td>✅ 0.452 (98%)</td>
+</tr>
+<tr>
+<td>Phase 39: self-bootstrap ≥ FixedChain</td>
+<td>SelfBootstrap ≥ 0.481</td>
+<td>✅ 0.757 (157%)</td>
+</tr>
+<tr>
+<td>Phase 40: DELTA competitive on LP</td>
+<td>MRR within 10% of GraphGPS</td>
+<td>✅ SelfBootstrapHybrid 0.5089 vs GraphGPS 0.5126 (99.6%). Beats GraphGPS on H@10</td>
+</tr>
+<tr>
+<td>Phase 41: each ablation hurts</td>
+<td>All MRR drops &gt; 0%</td>
+<td>TBD</td>
+</tr>
+<tr>
+<td>Phase 42: multi-hop</td>
+<td>DELTA ≥ GraphGPS on 2p/3p</td>
+<td>TBD</td>
+</tr>
+<tr>
+<td>Phase 43: YAGO3-10</td>
+<td>DELTA &gt; GraphGPS</td>
+<td>TBD</td>
+</tr>
+<tr>
+<td>Phase 44: scaling</td>
+<td>O(E^x), x &lt; 2</td>
+<td>TBD</td>
+</tr>
+<tr>
+<td>Phase 45: interpretability</td>
+<td>≥1 interpretable attention pattern</td>
+<td>TBD</td>
+</tr>
+</tbody>
+</table>
+<p>All publication-grade results: <strong>5 seeds, mean ± std reported.</strong> Phases 38–40 use 3 seeds for rapid iteration.</p>
+<hr />
+<p><em>Last updated: April 2026. Phase 39 (self-bootstrapped DELTA) validated: 0.757 ± 0.041, 157% of FixedChain — transformer scaffold removed. Phase 40 (correct LP evaluation) complete: SelfBootstrapHybrid MRR 0.5089 on FB15k-237, within 0.004 of GraphGPS and beating it on Hits@10. Self-bootstrap advantage confirmed on real data. See <a href="../the-brain/">The Brain</a> for the long-term vision.</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.sections", "navigation.expand", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.83f73b43.min.js"></script>
+      
+    
+  </body>
+</html>

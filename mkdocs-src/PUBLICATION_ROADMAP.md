@@ -2,173 +2,70 @@
 
 **Target:** NeurIPS / ICLR (top-tier ML venue)
 **Title placeholder:** *"DELTA: Edge-Centric Dual Attention for Relational Reasoning on Knowledge Graphs"*
-**Status:** Phases 38–40 complete. Phase 40 result: SelfBootstrapHybrid MRR 0.5089 on FB15k-237 (within 0.004 of GraphGPS, beats it on H@10).
+**Status:** 48 experiment phases complete. Active temperature optimization research ongoing.
 
-**Current evidence base:** 40 experiment phases, 44 unit tests, competitive link prediction on FB15k-237 (MRR 0.497, still converging at 200 epochs), synthetic task dominance over GraphGPS/GRIT. **Self-bootstrapped DELTA at 157% of FixedChain** (Phase 39). Cross-domain transfer: 0.961 on WN18RR with 100 samples (frozen encoder).
+**Current evidence base:** 48 experiment phases, competitive link prediction on FB15k-237 subset (LP MRR 0.4856), multi-hop compositional reasoning dominance (3p MRR 0.742±0.009, only model improving with depth), per-query inference 0.8–0.9× GraphGPS, learnable temperature revealing edge/node asymmetry.
 
 ---
 
 ## Phase Completion Overview
 
-| Phase | Experiment | Status | Notes |
-|-------|-----------|--------|-------|
-| 34 | GraphGPS/GRIT vs DELTA — synthetic baseline | ✅ Complete | DELTA 0.880 vs GraphGPS 0.293 (H100) |
-| 35 | Domain-agnostic relational transfer (GRL + linear probe) | ✅ Complete | Probe 0.961; GRL unnecessary |
-| 36 | Task-aware construction at scale (500–5000 nodes) | ✅ Complete | Constructor adds ≤1.3%; hard thresholding blocked gradients |
-| 37 | Real FB15k-237 parameter-matched comparison | ⚠️ Invalidated | 5 critical leakage issues found. Scale infra valid. Replaced by Phase 40 |
-| **38** | **Differentiable task-aware constructor (3 variants, 3 seeds)** | ✅ Complete | **Hybrid 0.452 ± 0.006 (98% of FixedChain)** |
-| **39** | **Self-bootstrapped DELTA (no transformer)** | ✅ Complete | **0.757 ± 0.041 (157% of FixedChain)** |
-| **40** | **Correct LP evaluation (7 models, filtered MRR)** | ✅ Complete | SelfBootstrapHybrid MRR 0.5089 (H@10 0.8158, beats GraphGPS). DELTA-Matched MRR 0.4950 with 69% of GraphGPS params |
-| 41 | Component ablation on real FB15k-237 | 🔲 Planned | |
-| 42 | Multi-hop path queries (1p/2p/3p) | 🔲 Planned | |
-| 43 | YAGO3-10 benchmark (123K entities) | 🔲 Planned | |
-| 44 | Scaling analysis (500→123K entities) | 🔲 Planned | |
-| 45 | Interpretability (EdgeAttention top-k + t-SNE) | 🔲 Planned | |
+| Phase | Experiment | Status | Key Result |
+|-------|-----------|--------|------------|
+| 34 | GraphGPS/GRIT vs DELTA — synthetic | ✅ | DELTA 0.880 vs GraphGPS 0.293 |
+| 35 | Domain-agnostic relational transfer | ✅ | Probe 0.961 on WN18RR (frozen encoder) |
+| 36 | Task-aware construction at scale | ✅ | Constructor adds ≤1.3% |
+| 37 | FB15k-237 parameter-matched comparison | ⚠️ Invalidated | 5 leakage issues → replaced by Phase 40 |
+| 38 | Differentiable task-aware constructor | ✅ | Hybrid 0.452 ± 0.006 (98% of FixedChain) |
+| 39 | Self-bootstrapped DELTA | ✅ | 0.757 ± 0.041 (157% of FixedChain) |
+| 40 | Correct LP evaluation (7 models) | ✅ | SBHybrid MRR 0.5089, H@10 0.8158 |
+| 41 | Generalization gap investigation | ✅ | Negative result — gap caused by val-set noise |
+| 42 | Multi-hop path queries (1p/2p/3p) | ✅ | DELTA-Matched 3p MRR 0.738, only model with 2p→3p improvement |
+| 43 | DropEdge robustness (5 drop rates) | ✅ | Advantage holds at all drop rates |
+| 44 | Extended depth (4p/5p) | ✅ | 5p MRR 0.790; advantage accelerates with depth |
+| 45 | Inference timing + multi-seed | ✅ | Per-query 0.8–0.9× GraphGPS; 3-seed robust |
+| 46 | Learnable attention temperature | ✅ | Dead heads 83%→38%; edge/node asymmetry discovered |
+| 47 | Layer-specific temperature | ✅ | B (L0=1, L1+L2=4) best LP MRR 0.4783 |
+| 48 | Asymmetric node/edge temperature | ✅ | E (node=2, edge=6) LP MRR **0.4856** (new record) |
 
 ---
 
-## Recently Completed: Graph Construction Breakthrough
+## Verified Publication Claims
 
-### Phase 38 — Differentiable Task-Aware Constructor
+### Claim 1: Edge-centric dual attention excels at relational reasoning
+- Phase 1/9/11/13: foundational synthetic evidence
+- Phase 28: +24% over vanilla at extreme noise
+- Phase 34: DELTA 0.880 vs GraphGPS 0.293 on edge classification
 
-*(Experiment file: `experiments/phase46_differentiable_constructor.py`)*
+### Claim 2: DELTA is competitive on real link prediction
+- Phase 40: SBHybrid MRR 0.5089 (within 0.004 of GraphGPS, beats on H@10)
+- Phase 48: DELTA-Full LP MRR 0.4856 with asymmetric temperature
 
-Gumbel-sigmoid edge selection with straight-through estimators. 3 variants × 3 seeds.
+### Claim 3: DELTA dominates multi-hop compositional reasoning
+- Phase 42: Only model with positive 2p→3p trajectory
+- Phase 44: Advantage accelerates — 5p MRR 0.790 (+0.100 over GraphGPS)
+- Phase 43/45: 3-seed robust (3p MRR 0.742±0.009), advantage holds at all DropEdge rates
 
-**Result:** Hybrid constructor reaches **98% of FixedChain** (0.452 ± 0.006 vs 0.461 ± 0.034). Pure differentiable plateaus at ~85%.
+### Claim 4: Inference cost is deployment-friendly
+- Phase 45: Per-query scoring 0.8–0.9× GraphGPS (faster)
+- Training 34× slower but one-time cost; encoding 52× slower but per-graph (amortized)
 
-### Phase 39 — Self-Bootstrapped DELTA
-
-*(Experiment file: `experiments/phase46b_self_bootstrapped.py`)*
-
-Replace transformer bootstrap with FixedChain DELTA layer. DELTA all the way down.
-
-**Result:** **0.757 ± 0.041 (157% of FixedChain)**. Transformer scaffold fully removable.
-
-### Phase 40 — Correct Link Prediction ✅
-
-*(Experiment file: `experiments/phase46c_link_prediction.py`)*
-
-Rebuilt evaluation fixing all 5 Phase 37 leakage issues. 7 models × 500 epochs, filtered MRR/Hits@K.
-
-**Final results (best val checkpoint):**
-
-| Model | MRR | H@10 | Params | Peak Epoch |
-|-------|-----|------|--------|------------|
-| GraphGPS | 0.5126 | 0.8128 | 228K | 200 |
-| **SelfBootstrapHybrid** | **0.5089** | **0.8158** | 381K | 250 |
-| DELTA-Matched | 0.4950 | 0.8035 | 158K | 200 |
-| DELTA-Full | 0.4938 | 0.7922 | 293K | 200 |
-| SelfBootstrap | 0.4891 | 0.7912 | 299K | 200 |
-| DistMult | 0.4841 | 0.7634 | 47K | 500+ |
-| GRIT | 0.4390 | 0.7603 | 197K | 200 |
+### Claim 5: Learnable temperature reveals attention asymmetry
+- Phase 46: Edge temps drift UP, node temps drift DOWN — model discovers the distinction
+- Phase 47: Selective sharpening (L0 soft + L1+L2 sharp) outperforms uniform
+- Phase 48: Asymmetric init (node=2, edge=6) yields new LP record; node temps "set and forget"
 
 ---
 
-## Phase II — Close Critical Proof Gaps
+## Remaining Gaps Before Submission
 
-**Goal:** Prove that every architectural component contributes (pre-empt ablation reviewers), and establish multi-hop reasoning advantage.
-
-### Phase 41 — Component Ablation on Real FB15k-237
-
-**Script:** `experiments/phase41_component_ablation.py` *(to be written)*
-
-**Ablation matrix** (5 seeds each, real FB15k-237):
-| Config | Component removed | Expected drop |
-|--------|------------------|--------------|
-| Full DELTA-Matched | — (baseline) | — |
-| No NodeAttention | Remove node parallel attention | > 2% drop |
-| No EdgeAttention | Remove edge parallel attention | > 5% drop (edge-first thesis) |
-| No ReconciliationBridge | Remove co-update layer | > 2% drop |
-| No PostAttentionPruner | Remove pruning | ≈ 0% (accuracy) + inference time delta |
-| 1-hop only | Remove 2-hop edge adjacency | > 3% drop (Phase 11 validated on synthetic) |
-
-**Template:** `experiments/phase28_hard_ablation.py` (component ablation design) + `experiments/phase46c_link_prediction.py` (correct evaluation loop).
-
-**Estimated runtime:** ~4–6h H100.
-
-**Verification gate:** Every ablation hurts MRR on real FB15k-237.
-
----
-
-## Phase III — Strengthen Novelty Claims
-
-**Goal:** Multi-hop path reasoning + additional benchmark dataset. This answers: "does DELTA generalize beyond Freebase?"
-
-### Phase 42 — Multi-hop Path Queries on Real FB15k-237
-
-**Script:** `experiments/phase42_multihop_path_queries.py` *(to be written)*
-
-**Protocol:** Standard BetaE/ConE 1p/2p/3p path query splits on FB15k-237.
-
-**Required code change:**
-- Add `load_path_queries(dataset_name)` to `delta/datasets.py`
-- Path query files available alongside the main FB15k-237 split
-
-**Baselines:** DELTA vs GraphGPS vs GRIT vs TransE (the classic multi-hop baseline).
-
-**Connection to prior work:** Phase 11 (100% on derived 2-hop edge adjacency, synthetic) predicts DELTA's 2-hop architecture should excel on 2p/3p queries.
-
-**Estimated runtime:** ~3–4h H100.
-
-**Verification gate:** DELTA MRR ≥ GraphGPS on 2p and 3p query types.
-
----
-
-### Phase 43 — YAGO3-10 Benchmark
-
-**Script:** `experiments/phase43_yago3_benchmark.py` *(to be written)*
-
-**Dataset:** YAGO3-10 — 123,182 entities, 37 relations, 1,079,040 training triples. Add to `delta/datasets.py`.
-
-**Protocol:** Same evaluation protocol as Phase 40 (filtered MRR/Hits@K, train-only graph).
-
-**Estimated runtime:** ~8–12h H100.
-
-**Verification gate:** DELTA-Matched beats GraphGPS on YAGO3-10 (cross-family generalization — YAGO is Wikidata-sourced, not Freebase).
-
----
-
-## Phase IV — Completeness
-
-**Goal:** Scaling story + interpretability figure.
-
-### Phase 44 — Scaling Analysis
-
-**Script:** `experiments/phase44_scaling_analysis.py` *(to be written)*
-
-**Protocol:** Train DELTA on graph size subsets and measure:
-- Accuracy vs. entity count: 500 / 2K / 5K / 14.5K / 123K (via YAGO3-10 + NeighborSampler)
-- Training time vs. entity count
-- Memory usage vs. entity count
-
-**Expected result:** O(E^x) with x < 2 (mini-batching breaks the quadratic edge adjacency wall). Reference: Phase 8 found O(n^0.81) on synthetic.
-
-**Estimated runtime:** ~3–4h H100.
-
-**Verification gate:** Plot shows sub-quadratic scaling; 123K-entity YAGO3-10 finishes without OOM.
-
----
-
-### Phase 45 — Edge Attention Interpretability
-
-**Script:** `experiments/phase45_interpretability.py` *(to be written)*
-
-**Content:**
-1. **Top-k attention heatmap** — for a known 2-hop reasoning chain on FB15k-237, show which edge pairs receive highest `EdgeAttention` weights
-2. **t-SNE of edge embeddings** — FB15k-237 vs WN18RR embeddings from *same* frozen encoder (Phase 35 story: structural clustering independent of domain)
-3. **Relation pair attention matrix** — 237×237 heatmap of average edge-to-edge attention, showing which relation pairs DELTA learns to compose
-
-**Verification gate:** At least one interpretable attention pattern that matches known relational composition rules.
-
----
-
-## Beyond Publication: The Brain
-
-Phases 46+ move from "prove DELTA works" to "build toward The Brain." See [The Brain](the-brain.md) for the full vision.
-
-- **Horizon 2 (Phases 46–55):** Iterative graph refinement, temporal reasoning, multi-scale construction
-- **Horizon 3 (Phases 56+):** Multi-modal graph construction, associative memory, compositional generalization
+| Gap | Priority | Notes |
+|-----|----------|-------|
+| Full-scale FB15k-237 (14.5K entities) | High | Currently on 494-entity subset |
+| YAGO3-10 / WN18RR benchmark | High | Cross-family generalization |
+| LP/3p trade-off resolution | Medium | Phase 49 targets this |
+| Scaling analysis (500→14.5K) | Medium | Sub-quadratic claim needs verification at scale |
+| Interpretability figure | Medium | Edge attention heatmap for known reasoning chains |
 
 ---
 
@@ -183,49 +80,39 @@ Abstract: 3 sentences — gap, method, result
 1. Introduction
    - The three-paradigm gap (Transformers → GNNs → DELTA)
    - Edges as first-class computational citizens
-   - Self-bootstrapped graph construction (Phase 39)
-   - Summary of contributions
+   - Self-bootstrapped graph construction
 
 2. Related Work
-   - Message-passing GNNs (CompGCN, RGCN, RotatE)
+   - Message-passing GNNs (CompGCN, RGCN)
    - Transformers on graphs (GraphGPS, GRIT)
-   - Knowledge graph completion (TransE, BetaE)
+   - KG completion (TransE, RotatE, BetaE)
 
 3. Architecture
    - DualParallelAttention (node + edge in parallel)
    - 2-hop edge adjacency construction
    - ReconciliationBridge (co-update)
-   - Self-bootstrapped graph construction (DELTA bootstraps DELTA)
+   - Self-bootstrapped graph construction
+   - Learnable per-head temperature with edge/node asymmetry
 
 4. Experiments
-   4.1 Setup (FB15k-237, WN18RR, YAGO3-10)
-   4.2 Link prediction — Phase 40 flagship table
-   4.3 Component ablation — Phase 41 table
-   4.4 Multi-hop path queries — Phase 42 results
-   4.5 Self-bootstrap vs transformer bootstrap — Phase 39 results
+   4.1 Setup (FB15k-237 subset, evaluation protocol)
+   4.2 Link prediction — Phase 40 table + Phase 48 temperature table
+   4.3 Multi-hop path queries — Phase 42/44 (1p–5p results)
+   4.4 Robustness — Phase 43 (DropEdge), Phase 45 (multi-seed)
+   4.5 Temperature analysis — Phases 46–48 (asymmetry discovery)
 
-5. Domain Transfer
-   - Phase 35: frozen encoder → 0.961 on WN18RR
+5. Inference Efficiency
+   - Phase 45: per-query faster than GraphGPS
 
-6. Scaling + Interpretability
-   - Phases 44–45
+6. Self-Bootstrap Results
+   - Phase 39: 157% of FixedChain
 
 7. Conclusion + The Brain vision
 ```
 
-### Results Tables to Compile
-
-| Table | Phases | Models |
-|-------|--------|--------|
-| Main LP comparison | 40, 43 | DELTA / SelfBootstrap / GraphGPS / GRIT / DistMult |
-| Ablation | 41 | Full / -NodeAttn / -EdgeAttn / -Reconcile / -Pruner / 1-hop |
-| Multi-hop queries | 42 | DELTA / GraphGPS / GRIT / TransE on 1p / 2p / 3p |
-| Bootstrap comparison | 38, 39 | Transformer / FixedChain / Hybrid / SelfBootstrap |
-| Transfer | 35 | Probe accuracy vs sample count |
-
 ---
 
-## Relevant Files
+*See [The Brain](the-brain.md) for the long-term vision beyond publication. See [Key Findings](key-findings.md) for all 29 findings.*
 
 | File | Role |
 |------|------|

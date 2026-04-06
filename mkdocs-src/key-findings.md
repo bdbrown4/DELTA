@@ -1,6 +1,6 @@
 # Key Findings
 
-26 key findings from 45 experiment phases, organized by research stage.
+29 key findings from 48 experiment phases, organized by research stage.
 
 ---
 
@@ -198,6 +198,30 @@ Phase 45 separates encoding time (GNN forward pass, run once) from per-query sco
 DELTA's encoding is 51.8× slower due to 2-hop edge adjacency computation. But encoding happens **once per graph**. Per-query scoring — which dominates any real workload — is 10-20% *faster* than GraphGPS. For any deployment serving >1 query per graph state, DELTA's total inference cost converges to GraphGPS or better.
 
 The 34× training cost is the honest limitation. But it's a one-time cost, not a deployment cost.
+
+---
+
+## Attention Temperature (Phases 46–48)
+
+### 27. Learnable temperature reveals edge/node asymmetry
+
+Phase 46 added per-head learnable temperature (log-parameterized) to DELTA-Full. Uniform init=4.0 (condition D) achieves best 3p MRR (0.4018) and fewest dead heads (38%, down from 83% at temp=1.0). Key discovery: edge attention temperatures drift UP (4.0→4.5) while node temperatures drift DOWN (4.0→3.6). Layer 0 attention is always dead regardless of temperature — the model treats L0 as a fixed encoding pass.
+
+### 28. Selective layer-specific sharpening outperforms uniform
+
+Phase 47 tested 4 temperature configurations: baseline (A, all=1.0), layer-specific (B, L0=1/L1+L2=4), attention-type (C, node=1/edge=4), and uniform sharp (D, all=4.0). B achieves best LP MRR (0.4783) — sharpening only L1+L2 while leaving L0 at 1.0 recovers LP performance that uniform sharpening sacrifices. Edge temperatures consistently drift UP (to 4.4–4.5) while node temperatures drift DOWN (to 3.5–3.7), confirming the asymmetry from Phase 46 is robust across configurations.
+
+### 29. Asymmetric node/edge temperature yields new LP record
+
+Phase 48 tested independent node vs edge temperature initialization across L1+L2. Condition E (node=2, edge=6) achieves LP MRR **0.4856** (+1.5% over previous best), the new DELTA-Full link prediction champion. During training, node temps are "set and forget" (±0.01 drift) while edge temps always drift UP — L2 edge drifts more than L1 (6.0→6.27 vs 6.0→6.68). Condition F (node=3, edge=5) achieves best validation MRR (0.5113) and H@10 (0.8014). A persistent LP/3p trade-off remains: E leads LP but D still leads 3p (0.4018 vs 0.3872).
+
+| Cond | Config | LP MRR | LP H@10 | 3p MRR | Dead Heads |
+|------|--------|--------|---------|--------|------------|
+| A | all temp=1.0 | 0.4744 | 0.7860 | 0.3725 | 83% |
+| B | L0=1, L1+L2=4 | 0.4783 | 0.7757 | 0.3908 | 38% |
+| D | all temp=4.0 | 0.4729 | 0.7901 | **0.4018** | 38% |
+| **E** | **node=2, edge=6** | **0.4856** | 0.8004 | 0.3872 | 38% |
+| F | node=3, edge=5 | 0.4837 | **0.8014** | 0.3750 | 33% |
 
 ---
 

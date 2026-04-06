@@ -1,7 +1,7 @@
 {
   "last_updated": "2026-04-06",
-  "last_completed_phase": 46,
-  "next_phase": 47,
+  "last_completed_phase": 47,
+  "next_phase": 48,
   "current_phase": null,
 
   "best_results": {
@@ -79,6 +79,18 @@
       "hypothesis": "Edge temps drift UP, node temps drift DOWN — edge attention benefits from sharpness, node attention prefers averaging",
       "evidence": "delta_full temp=4.0: L2_edge 4.029->4.524, L2_node 3.992->3.587. Consistent pattern across all layers.",
       "significance": "landmark"
+    },
+    {
+      "phase": 47,
+      "hypothesis": "Layer-specific temperature (L0 soft, L1+L2 sharp) achieves best LP MRR while reducing dead heads",
+      "evidence": "B_layer_sharp: LP MRR=0.4783 (best of 4 conditions), dead=9/24 (38%), 3p MRR=0.3908 (+0.018 vs A)",
+      "significance": "high"
+    },
+    {
+      "phase": 47,
+      "hypothesis": "Node attention requires temperature sharpening to activate — edge-only sharpening insufficient",
+      "evidence": "C_edge_sharp: L1 node heads 100% dead, L2 node 50-100% dead despite edge temps at 4.0. B with node temp=4.0: L1+L2 node heads 0% dead.",
+      "significance": "high"
     }
   ],
 
@@ -100,6 +112,12 @@
       "hypothesis": "Temperature reduces dead heads below 50% for delta_matched",
       "evidence": "69%->50%, missed <50% threshold by 1 head. PARTIAL for matched, CONFIRMED for full (83%->38%)",
       "significance": "partial"
+    },
+    {
+      "phase": 47,
+      "hypothesis": "Layer-specific or edge-only sharpening matches D's 3p improvement",
+      "evidence": "B: 3p=0.3908 (vs D 0.4018, gap=0.011). C: 3p=0.3678 (worse than A). Neither matched D's full 3p benefit.",
+      "significance": "partial"
     }
   ],
 
@@ -117,12 +135,16 @@
     "temperature sharpening helps DELTA-Full 3p (+0.029) but hurts DELTA-Matched 3p (-0.017) — smaller model's residual bypass was already optimal",
     "Layer 0 always 100% dead regardless of temperature — first layer does neighborhood averaging, not selective attention",
     "edge attention benefits from sharpness (temps drift UP), node attention prefers soft averaging (temps drift DOWN) — learned automatically via temperature gradient",
-    "DELTA-Full Layer 2 activates with temp=4.0 (0% dead from epoch 100 onward), explaining 3p improvement — 3rd layer unlocked by sharp attention"
+    "DELTA-Full Layer 2 activates with temp=4.0 (0% dead from epoch 100 onward), explaining 3p improvement — 3rd layer unlocked by sharp attention",
+    "layer-specific temperature (B: L0=1,L1+L2=4) achieves best LP MRR of all conditions (0.4783) — selective sharpening better than uniform",
+    "node attention NEEDS explicit sharpening to activate: C (edge-only sharp) keeps L1 node 100% dead, but B (node+edge sharp at L1+L2) activates all node heads",
+    "in B, node temps at L1+L2 drift DOWN from 4.0→3.5-3.7 — optimal node temp likely between 2-3, not 4.0",
+    "condition C shows edge temps drift to 4.5 even starting from 4.0 (L0 edge → 4.46, L2 edge → 4.49) — edge attention consistently wants more sharpness"
   ],
 
   "open_questions": [
-    "Does layer-specific temperature (L0 soft, L1+ sharp) beat global temperature? (Phase 47)",
-    "Does edge-only sharpening (node temp=1, edge temp=4) beat uniform temp=4? (Phase 47)",
+    "What is the optimal node temperature? B's drift (4.0→3.5) suggests ~2-3 may be better than 4.0 (Phase 48)",
+    "Would higher edge init temp (e.g. 6.0) improve results given consistent upward drift?",
     "Can DELTA-Full with targeted temperature match DELTA-Matched's compositional advantage?",
     "Can DELTA-Full be compressed via importance pruning to match DELTA-Matched on 3p/5p?",
     "Does curriculum compression during training converge to the same optimal capacity?",
@@ -137,7 +159,8 @@
     "43": { "title": "DropEdge robustness", "result": "CONFIRMED -- advantage structural at all 5 rates" },
     "44": { "title": "Extended depth 4p/5p", "result": "CONFIRMED -- advantage accelerates with depth" },
     "45": { "title": "Inference timing + multi-seed", "result": "CONFIRMED -- multi-seed robust, inference cost comparable" },
-    "46": { "title": "Attention sharpening via learnable temperature", "result": "PARTIAL -- dead heads reduced (full 83%->38%), edge/node temp divergence discovered, full 3p +0.029 but matched 3p -0.017" }
+    "46": { "title": "Attention sharpening via learnable temperature", "result": "PARTIAL -- dead heads reduced (full 83%->38%), edge/node temp divergence discovered, full 3p +0.029 but matched 3p -0.017" },
+    "47": { "title": "Layer-specific temperature initialization", "result": "PARTIAL -- B (L0 soft, L1+L2 sharp) achieves best LP MRR (0.4783) but 3p (0.3908) short of D (0.4018). Node attention requires sharpening to activate. Optimal node temp likely 2-3." }
   },
 
   "timing_baselines": {

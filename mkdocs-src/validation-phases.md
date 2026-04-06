@@ -561,4 +561,83 @@ See [The Brain](the-brain.md) for the long-term vision, [Adaptive Architecture](
 
 ---
 
+## Phase 47: Layer-Specific Temperature Initialization
+
+**Script:** `experiments/phase47_layer_specific_temp.py`
+
+**Question:** Can selective temperature sharpening (layer-specific or edge-only) achieve DELTA-Full temp=4.0's multi-hop gains without LP degradation? Where exactly does temperature matter?
+
+**Protocol:** DELTA-Full (3 layers, 293K params) on FB15k-237 subset (494 entities). 500 epochs, eval every 25, patience 10. Phase 46 A & D hardcoded as reference. Two new conditions:
+
+- **B (Layer-Sharp):** L0 temp=1.0 (soft), L1+L2 temp=4.0 (sharp) — all attention types
+- **C (Edge-Sharp):** Node temp=1.0 (soft), Edge temp=4.0 (sharp) — all layers
+
+### Link Prediction Results
+
+| Condition | Config | LP MRR | LP H@10 | Best Val MRR |
+|-----------|--------|--------|---------|-------------|
+| A (Phase 46) | All temp=1.0 | 0.4744 | 0.7860 | 0.5030 |
+| D (Phase 46) | All temp=4.0 | 0.4729 | 0.7901 | 0.5106 |
+| **B Layer-Sharp** | **L0=1.0, L1+L2=4.0** | **0.4783** | 0.7757 | 0.5075 |
+| C Edge-Sharp | node=1.0, edge=4.0 | 0.4745 | 0.7870 | 0.5026 |
+
+### Multi-hop Results (MRR)
+
+| Depth | A (temp=1.0) | D (temp=4.0) | B (Layer-Sharp) | C (Edge-Sharp) |
+|-------|-------------|-------------|-----------------|-----------------|
+| 1p | — | — | 0.2713 | 0.2547 |
+| 2p | — | — | 0.2448 | 0.2458 |
+| 3p | 0.3725 | 0.4018 | 0.3908 | 0.3678 |
+| 4p | — | — | 0.1477 | 0.1374 |
+| 5p | — | — | 0.1768 | 0.1485 |
+
+### Attention Health (Final Model)
+
+| Layer.Type | A Dead% | D Dead% | B Dead% | C Dead% |
+|------------|---------|---------|---------|---------|
+| L0.node | 100% | 100% | 100% | 100% |
+| L0.edge | 100% | 100% | 100% | 100% |
+| L1.node | 100% | 0% | 0% | 100% |
+| L1.edge | 100% | 25% | 25% | 0% |
+| L2.node | 75% | 0% | 0% | 50% |
+| L2.edge | 75% | 0% | 0% | 0% |
+| **Total** | **20/24 (83%)** | **9/24 (38%)** | **9/24 (38%)** | **14/24 (58%)** |
+
+### Learned Temperature Evolution (B Layer-Sharp)
+
+| Epoch | val_MRR | L0_edge | L0_node | L1_edge | L1_node | L2_edge | L2_node |
+|-------|---------|---------|---------|---------|---------|---------|---------|
+| 25 | 0.0097 | 1.005 | 1.006 | 4.028 | 4.014 | 4.028 | 3.992 |
+| 175 | **0.5075** | 1.068 | 1.040 | 4.187 | 4.042 | 4.415 | 3.980 |
+| 425 | 0.4306 | 1.110 | 1.051 | 4.150 | 3.685 | 4.520 | 3.583 |
+
+### Learned Temperature Evolution (C Edge-Sharp)
+
+| Epoch | val_MRR | L0_edge | L0_node | L1_edge | L1_node | L2_edge | L2_node |
+|-------|---------|---------|---------|---------|---------|---------|---------|
+| 25 | 0.0085 | 4.017 | 1.007 | 4.033 | 1.001 | 4.033 | 0.999 |
+| 200 | **0.5026** | 4.464 | 1.031 | 4.273 | 1.012 | 4.491 | 1.030 |
+| 450 | 0.4272 | 4.496 | 1.053 | 4.143 | 1.001 | 4.570 | 1.004 |
+
+### Key Findings
+
+1. **B is the new LP MRR champion** (0.4783) — selective sharpening at L1+L2 beats both uniform temp=1.0 and uniform temp=4.0
+2. **Node attention requires explicit sharpening** — C (edge-only sharp) keeps L1 node heads 100% dead; B (all sharp at L1+L2) activates all node heads
+3. **Layer 0 is structurally dead** regardless of temperature — confirmed across all 4 conditions
+4. **B achieves D-level dead head reduction** (both 38%) while improving LP MRR
+5. **The 3p gap remains**: B's 3p (0.3908) is better than A (+0.018) but doesn't match D (0.4018, gap=0.011)
+6. **Node temps drift DOWN from 4.0→3.5-3.7** in B — suggests optimal node temp is between 2-3, not 4.0
+7. **Edge temps drift UP** in both B and C (toward 4.4-4.5) — edge attention consistently wants more sharpness
+
+### Hypothesis Evaluation
+
+| Hypothesis | Result | Evidence |
+|-----------|--------|----------|
+| B or C matches D's 3p (≥0.4018) | **PARTIAL** | B: 0.3908, C: 0.3678 — closer but not matching |
+| B or C maintains LP MRR (≥0.4744) | **CONFIRMED** | B: 0.4783 (best), C: 0.4745 |
+| Regression safety (3p ≥ 0.35) | **CONFIRMED** | Both above 0.35 |
+| Node attention can activate via edge sharpening alone | **REJECTED** | C keeps L1 node 100% dead |
+
+---
+
 *All publication-grade results use 5 seeds, mean ± std reported. Phases 38–43 use 1-3 seeds for rapid iteration.*

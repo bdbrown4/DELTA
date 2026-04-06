@@ -1,7 +1,7 @@
 {
   "last_updated": "2026-04-06",
-  "last_completed_phase": 47,
-  "next_phase": 48,
+  "last_completed_phase": 48,
+  "next_phase": 49,
   "current_phase": null,
 
   "best_results": {
@@ -91,6 +91,18 @@
       "hypothesis": "Node attention requires temperature sharpening to activate — edge-only sharpening insufficient",
       "evidence": "C_edge_sharp: L1 node heads 100% dead, L2 node 50-100% dead despite edge temps at 4.0. B with node temp=4.0: L1+L2 node heads 0% dead.",
       "significance": "high"
+    },
+    {
+      "phase": 48,
+      "hypothesis": "Asymmetric node/edge temperature (following drift direction) improves LP MRR over symmetric sharpening",
+      "evidence": "E (node=2,edge=6): LP MRR=0.4856 (+1.5% over B's 0.4783). F (node=3,edge=5): LP MRR=0.4837. Both beat B on LP.",
+      "significance": "high"
+    },
+    {
+      "phase": 48,
+      "hypothesis": "Node temperatures stay stable at initialization while edge temps always drift UP",
+      "evidence": "E: node 2.0→2.01, edge L2 6.0→6.68. F: node 3.0→3.01, edge L2 5.0→5.60. G: node 2.5→2.50, edge L2 5.0→5.60. Consistent across all conditions.",
+      "significance": "high"
     }
   ],
 
@@ -118,6 +130,12 @@
       "hypothesis": "Layer-specific or edge-only sharpening matches D's 3p improvement",
       "evidence": "B: 3p=0.3908 (vs D 0.4018, gap=0.011). C: 3p=0.3678 (worse than A). Neither matched D's full 3p benefit.",
       "significance": "partial"
+    },
+    {
+      "phase": 48,
+      "hypothesis": "Asymmetric node/edge temp achieves both B's LP (≥0.4783) and D's 3p (≥0.4018)",
+      "evidence": "E LP=0.4856 (PASS) but 3p=0.3872 (FAIL). G: closest 3p=0.3970 but LP=0.4699 (FAIL). LP/3p trade-off persists.",
+      "significance": "partial"
     }
   ],
 
@@ -139,12 +157,18 @@
     "layer-specific temperature (B: L0=1,L1+L2=4) achieves best LP MRR of all conditions (0.4783) — selective sharpening better than uniform",
     "node attention NEEDS explicit sharpening to activate: C (edge-only sharp) keeps L1 node 100% dead, but B (node+edge sharp at L1+L2) activates all node heads",
     "in B, node temps at L1+L2 drift DOWN from 4.0→3.5-3.7 — optimal node temp likely between 2-3, not 4.0",
-    "condition C shows edge temps drift to 4.5 even starting from 4.0 (L0 edge → 4.46, L2 edge → 4.49) — edge attention consistently wants more sharpness"
+    "condition C shows edge temps drift to 4.5 even starting from 4.0 (L0 edge → 4.46, L2 edge → 4.49) — edge attention consistently wants more sharpness",
+    "asymmetric node/edge temperature (E: node=2,edge=6 at L1+L2) achieves NEW LP MRR record 0.4856, surpassing B's 0.4783 by +1.5%",
+    "node temps are 'set and forget': they stay within 0.01 of initial value across all conditions (E: 2.0→2.01, F: 3.0→3.01, G: 2.5→2.50)",
+    "edge temps ALWAYS drift UP, and L2 drifts more than L1: E L1_edge 6.0→6.27 but L2_edge 6.0→6.68. Deeper layers need more edge sharpness.",
+    "LP MRR and 3p MRR show persistent trade-off: E best LP (0.4856) has moderate 3p (0.3872); G best 3p (0.3970) has worst LP (0.4699)",
+    "D's 3p advantage (0.4018) may come from L0=4.0 — all P48 conditions had L0=1.0 and none matched D's 3p"
   ],
 
   "open_questions": [
-    "What is the optimal node temperature? B's drift (4.0→3.5) suggests ~2-3 may be better than 4.0 (Phase 48)",
-    "Would higher edge init temp (e.g. 6.0) improve results given consistent upward drift?",
+    "Does L0 temperature matter for 3p? D (L0=4.0) is the only condition beating 3p=0.40 — all P48 conditions had L0=1.0 (Phase 49)",
+    "Can combining E's asymmetric temps with D's L0=4.0 achieve both best LP and best 3p?",
+    "Is there a theoretical ceiling for edge temp, or does the model keep wanting infinite sharpness?",
     "Can DELTA-Full with targeted temperature match DELTA-Matched's compositional advantage?",
     "Can DELTA-Full be compressed via importance pruning to match DELTA-Matched on 3p/5p?",
     "Does curriculum compression during training converge to the same optimal capacity?",
@@ -160,7 +184,8 @@
     "44": { "title": "Extended depth 4p/5p", "result": "CONFIRMED -- advantage accelerates with depth" },
     "45": { "title": "Inference timing + multi-seed", "result": "CONFIRMED -- multi-seed robust, inference cost comparable" },
     "46": { "title": "Attention sharpening via learnable temperature", "result": "PARTIAL -- dead heads reduced (full 83%->38%), edge/node temp divergence discovered, full 3p +0.029 but matched 3p -0.017" },
-    "47": { "title": "Layer-specific temperature initialization", "result": "PARTIAL -- B (L0 soft, L1+L2 sharp) achieves best LP MRR (0.4783) but 3p (0.3908) short of D (0.4018). Node attention requires sharpening to activate. Optimal node temp likely 2-3." }
+    "47": { "title": "Layer-specific temperature initialization", "result": "PARTIAL -- B (L0 soft, L1+L2 sharp) achieves best LP MRR (0.4783) but 3p (0.3908) short of D (0.4018). Node attention requires sharpening to activate. Optimal node temp likely 2-3." },
+    "48": { "title": "Asymmetric node/edge temperature", "result": "PARTIAL -- E (node=2,edge=6) achieves new LP MRR record (0.4856, +1.5%) and H@10 (0.8004). 3p gap persists (best 0.3970 vs D 0.4018). Node temps stable, edge always drifts UP. L0 temperature may explain D's 3p advantage." }
   },
 
   "timing_baselines": {

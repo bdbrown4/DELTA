@@ -130,8 +130,8 @@ The capacity paradox — smaller DELTA beats larger on composition — is a sign
 |-------|------|--------|
 | 46 | Attention sharpening via learnable temperature | ✅ Dead heads 83%→38% (full), edge/node asymmetry discovered |
 | 47 | Layer-specific temperature initialization | ✅ B (L0 soft, L1+L2 sharp) = best LP MRR (0.4783); node attn needs sharpening to activate |
-| 48 | Optimal node temperature search | Planned |
-| 49 | Bidirectional adaptive architecture (compress + expand) | Planned |
+| 48 | Asymmetric node/edge temperature | ✅ E (node=2,edge=6) = new LP MRR record (0.4856, +1.5%); node temps stable, edge drifts UP; 3p gap persists (L0=1.0 vs D's L0=4.0) |
+| 49 | L0 temperature + asymmetric L1+L2 | Planned |
 | 50 | Multi-scale adaptive (depth-conditioned routing) | Planned |
 
 #### Horizon 3: Dynamic Reasoning (Phases 51–60)
@@ -189,6 +189,8 @@ The Brain isn't about replacing transformers everywhere. It's about building som
 7. **Attention is mathematically broken — temperature reveals edge/node asymmetry.** Phase 46 confirmed that DELTA's attention weights are near-uniform (100% dead heads) due to small d_head (12) + high degree (~40). Learnable per-head temperature (init_temp=4.0) reduces dead heads from 83%→38% for DELTA-Full, with a 3p MRR improvement of +0.029. The key mechanistic finding: edge temperatures drift UP (want sharper) while node temperatures drift DOWN (prefer averaging) — the model learns this distinction automatically. Layer 0 is always dead regardless of temperature. ✅ Phase 46 complete.
 
 8. **Selective sharpening outperforms uniform temperature.** Phase 47 tested layer-specific (B: L0 soft, L1+L2 sharp) and edge-only (C: node soft, edge sharp) initialization. B achieved the best LP MRR of all 4 conditions (0.4783, +0.004 over baseline), matching D's dead head reduction (38%) while improving link prediction. C confirmed node attention NEEDS explicit sharpening — edge-only temperature keeps node heads 100% dead at L1. Node temps drift from 4.0→3.5-3.7 in B, suggesting optimal node temp is ~2-3. Edge temps consistently drift UP (→4.5), wanting more sharpness. ✅ Phase 47 complete.
+
+9. **Asymmetric node/edge temperature yields new LP record.** Phase 48 tested separate node and edge temperatures at L1+L2 (L0 always 1.0), following Phase 47's drift directions. E (node=2.0, edge=6.0) achieved LP MRR=0.4856 (+1.5% over B), the best ever. F (node=3.0, edge=5.0) achieved the highest-ever val MRR (0.5113) and H@10 (0.8014). Key insight: node temps are "set and forget" (stable within ±0.01) while edge temps always drift UP, with L2 drifting more than L1. The LP/3p trade-off persists — D's 3p advantage (0.4018) remains unmatched, possibly because D has L0=4.0 while all P48 conditions used L0=1.0. ✅ Phase 48 complete.
 
 ---
 

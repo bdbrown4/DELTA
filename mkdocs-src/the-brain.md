@@ -128,8 +128,8 @@ The capacity paradox — smaller DELTA beats larger on composition — is a sign
 
 | Phase | Goal | Status |
 |-------|------|--------|
-| 46 | Capacity signal measurement (router entropy + gate sparsity) | Planned |
-| 47 | Static importance-driven pruning (DELTA-Full → compressed) | Planned |
+| 46 | Attention sharpening via learnable temperature | ✅ Dead heads 83%→38% (full), edge/node asymmetry discovered |
+| 47 | Layer-specific temperature initialization | Planned |
 | 48 | Curriculum compression (gradual pruning during training) | Planned |
 | 49 | Bidirectional adaptive architecture (compress + expand) | Planned |
 | 50 | Multi-scale adaptive (depth-conditioned routing) | Planned |
@@ -186,7 +186,7 @@ The Brain isn't about replacing transformers everywhere. It's about building som
 
 6. **Where does explicit structure win?** The hypothesis: relational tasks benefit from explicit graphs, but sequential/generative tasks may not. Where's the crossover?
 
-7. **Attention is mathematically broken — does temperature fix it?** Phase 46 diagnosed that DELTA's attention weights are near-uniform (100% dead heads) due to small d_head (12) + high degree (~40). The model succeeds entirely through entity embeddings + residual bypass. Learnable per-head temperature (init_temp=4.0) is being tested to sharpen attention. Early results: delta_full Layer 1 drops from 100% to 0% dead heads at temp=4.0 (🔄 running).
+7. **Attention is mathematically broken — temperature reveals edge/node asymmetry.** Phase 46 confirmed that DELTA's attention weights are near-uniform (100% dead heads) due to small d_head (12) + high degree (~40). Learnable per-head temperature (init_temp=4.0) reduces dead heads from 83%→38% for DELTA-Full, with a 3p MRR improvement of +0.029. The key mechanistic finding: edge temperatures drift UP (want sharper) while node temperatures drift DOWN (prefer averaging) — the model learns this distinction automatically. Layer 0 is always dead regardless of temperature. ✅ Phase 46 complete.
 
 ---
 

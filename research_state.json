@@ -1,19 +1,8 @@
 {
-  "last_updated": "2026-04-05",
-  "last_completed_phase": 45,
-  "next_phase": 46,
-  "current_phase": {
-    "phase": 46,
-    "title": "Attention Sharpening via Learnable Temperature",
-    "status": "running",
-    "hypothesis": "Starting with init_temp=4.0, dead-head fraction drops from ~100% to <50% for delta_matched. Learned per-head temps stay >2.0 for >=50% of heads. 3p MRR >= 0.35.",
-    "script": "experiments/phase46_capacity_signal.py",
-    "command": "python experiments/phase46_capacity_signal.py --epochs 500 --eval_every 25 --patience 10",
-    "root_cause": "d_head=12 + avg_degree~40 -> softmax over 40 scores at std~1.0 -> normalized entropy 0.87 (near-uniform). Residual connections let model bypass attention entirely.",
-    "fix": "Learnable per-head temperature (log-space param, always positive). temp=exp(_log_temp). Default init_temp=1.0 for backward compat.",
-    "conditions": ["delta_matched temp=1.0 (control)", "delta_matched temp=4.0", "delta_full temp=1.0 (control)", "delta_full temp=4.0"],
-    "measurements": ["per-head attention entropy", "learned temperature per head", "temperature evolution over training", "dead head fraction", "standard LP MRR", "multi-hop 1p-5p MRR"]
-  },
+  "last_updated": "2026-04-06",
+  "last_completed_phase": 46,
+  "next_phase": 47,
+  "current_phase": null,
 
   "best_results": {
     "best_overall_lp": {
@@ -72,6 +61,24 @@
       "hypothesis": "DELTA inference cost is comparable to GraphGPS despite 34x training cost",
       "evidence": "Encoding 51.8x slower but per-query scoring 0.8-0.9x GraphGPS",
       "significance": "high"
+    },
+    {
+      "phase": 46,
+      "hypothesis": "Learnable temperature keeps sharp attention (all heads retain temp > 2.0)",
+      "evidence": "16/16 heads (delta_matched) and 24/24 heads (delta_full) maintain temp > 2.0 at convergence",
+      "significance": "high"
+    },
+    {
+      "phase": 46,
+      "hypothesis": "Temperature sharpening activates DELTA-Full's excess capacity on 3p",
+      "evidence": "DELTA-Full temp=4.0: 3p MRR 0.4018 vs temp=1.0: 0.3725, +0.029. Dead heads 83%->38%.",
+      "significance": "high"
+    },
+    {
+      "phase": 46,
+      "hypothesis": "Edge temps drift UP, node temps drift DOWN — edge attention benefits from sharpness, node attention prefers averaging",
+      "evidence": "delta_full temp=4.0: L2_edge 4.029->4.524, L2_node 3.992->3.587. Consistent pattern across all layers.",
+      "significance": "landmark"
     }
   ],
 
@@ -87,6 +94,12 @@
       "hypothesis": "DropEdge regularization improves multi-hop performance",
       "evidence": "Marginal effect for both models. Reframed as robustness check.",
       "significance": "low"
+    },
+    {
+      "phase": 46,
+      "hypothesis": "Temperature reduces dead heads below 50% for delta_matched",
+      "evidence": "69%->50%, missed <50% threshold by 1 head. PARTIAL for matched, CONFIRMED for full (83%->38%)",
+      "significance": "partial"
     }
   ],
 
@@ -100,15 +113,19 @@
     "DELTA-Matched consistently peaks at ep 125 across all seeds and experiments",
     "GraphGPS benefits more from DropEdge in absolute terms but can't close architectural gap",
     "DELTA attention is mathematically degenerate: d_head=12 + degree~40 -> normalized entropy 0.87 (near-uniform). Model bypasses attention via residual connections.",
-    "cross-depth cosine similarity = 1.0 everywhere — encoding is query-independent. Compositional advantage lives in representation structure, not depth-dependent routing."
+    "cross-depth cosine similarity = 1.0 everywhere — encoding is query-independent. Compositional advantage lives in representation structure, not depth-dependent routing.",
+    "temperature sharpening helps DELTA-Full 3p (+0.029) but hurts DELTA-Matched 3p (-0.017) — smaller model's residual bypass was already optimal",
+    "Layer 0 always 100% dead regardless of temperature — first layer does neighborhood averaging, not selective attention",
+    "edge attention benefits from sharpness (temps drift UP), node attention prefers soft averaging (temps drift DOWN) — learned automatically via temperature gradient",
+    "DELTA-Full Layer 2 activates with temp=4.0 (0% dead from epoch 100 onward), explaining 3p improvement — 3rd layer unlocked by sharp attention"
   ],
 
   "open_questions": [
-    "Does the router already contain capacity signals that could drive self-modification? (Phase 46)",
-    "Can DELTA-Full be compressed via importance pruning to match DELTA-Matched on 3p/5p? (Phase 47)",
-    "Does curriculum compression during training converge to the same optimal capacity? (Phase 48)",
-    "Can DELTA discover its own optimal architecture from data via bidirectional adaptation? (Phase 49)",
-    "Do importance routing patterns differ between shallow (1p) and deep (5p) queries? (Phase 46)",
+    "Does layer-specific temperature (L0 soft, L1+ sharp) beat global temperature? (Phase 47)",
+    "Does edge-only sharpening (node temp=1, edge temp=4) beat uniform temp=4? (Phase 47)",
+    "Can DELTA-Full with targeted temperature match DELTA-Matched's compositional advantage?",
+    "Can DELTA-Full be compressed via importance pruning to match DELTA-Matched on 3p/5p?",
+    "Does curriculum compression during training converge to the same optimal capacity?",
     "Why does DELTA peak at ep 125 while GraphGPS peaks at 150-200?",
     "Would multi-seed 4p/5p confirm the accelerating advantage from Phase 44?"
   ],
@@ -119,7 +136,8 @@
     "42": { "title": "Multi-hop 1p/2p/3p", "result": "CONFIRMED -- DELTA only model improving 2p->3p" },
     "43": { "title": "DropEdge robustness", "result": "CONFIRMED -- advantage structural at all 5 rates" },
     "44": { "title": "Extended depth 4p/5p", "result": "CONFIRMED -- advantage accelerates with depth" },
-    "45": { "title": "Inference timing + multi-seed", "result": "CONFIRMED -- multi-seed robust, inference cost comparable" }
+    "45": { "title": "Inference timing + multi-seed", "result": "CONFIRMED -- multi-seed robust, inference cost comparable" },
+    "46": { "title": "Attention sharpening via learnable temperature", "result": "PARTIAL -- dead heads reduced (full 83%->38%), edge/node temp divergence discovered, full 3p +0.029 but matched 3p -0.017" }
   },
 
   "timing_baselines": {

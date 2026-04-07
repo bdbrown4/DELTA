@@ -1,6 +1,6 @@
 # Key Findings
 
-30 key findings from 49 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
+32 key findings from 51 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
 
 ---
 
@@ -114,6 +114,9 @@ Phase 49: L0=4.0 does NOT explain D's 3p advantage — H (L0=4,4 + E's asymmetri
 
 ### 31. Temperature annealing breaks the 3p ceiling
 Phase 50: K (anneal node 4.0→2.0 fast over 50% of training) achieves **3p MRR 0.4148** — the FIRST configuration in 5 phases (46-50) to beat D's 0.4018 (+0.013). The mechanism: high node temp during early training builds compositional representations, then annealing toward lower temps approaches LP-optimal asymmetry. K's best checkpoint (ep 175) has node temp=2.6, not the anneal target (2.0). M (anneal 4→3) ties H's LP record (**0.4887**) but misses 3p. The Pareto frontier has shifted but LP+3p combined target not yet achieved in a single configuration.
+
+### 32. Training trajectory matters — static init cannot replicate annealing's 3p advantage
+Phase 51: N (static node=2.6, matching K's optimal checkpoint value) achieves 3p=0.4001 vs K (annealed to 2.6) 3p=**0.4148** — a +0.015 gap. Early training at high node temp creates 3p-supportive representations that static init cannot replicate. However, N achieves best-ever **4p=0.3426** and **5p=0.3788** (exceeding K's values), suggesting static low node temp uniquely benefits deeper reasoning. P (anneal 4→2.5) achieves a **new LP MRR record (0.4890)** and H@10 record (0.8014) but 3p=0.3823 misses target. K remains closest to the combined target with LP gap of only −0.004.
 
 ---
 

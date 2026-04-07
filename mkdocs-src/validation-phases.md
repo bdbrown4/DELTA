@@ -489,6 +489,7 @@ Phase 40 rebuilds the entire evaluation pipeline to fix all 5 issues from the Ph
 | 48 | Asymmetric node/edge temperature | ✅ Complete — E (node=2, edge=6) LP MRR 0.4856 (+1.5%); LP/3p trade-off persists |
 | 49 | L0 temperature + asymmetric L1+L2 | ✅ Complete — H LP MRR 0.4887 (new record); L0 temp doesn't explain D's 3p; trade-off fundamental |
 | 50 | Temperature annealing (node temp schedule) | ✅ Complete — K (anneal 4→2 fast) 3p MRR **0.4148** (FIRST to beat D's 0.4018); LP=0.4819 misses target; Pareto frontier shifted |
+| 51 | Static vs trajectory temperature | ✅ Complete — P (anneal 4→2.5) new LP record **0.4890**; trajectory confirmed (+0.015 3p bonus); N best-ever 4p/5p |
 
 ---
 
@@ -879,6 +880,104 @@ Phase 40 rebuilds the entire evaluation pipeline to fix all 5 issues from the Ph
 | K achieves LP ≥ 0.4856 (E's record) | **FAILED** | K: 0.4819 (−0.004) |
 | Combined LP+3p target met | **PARTIAL** | K beats 3p, M ties LP, no single condition achieves both |
 | Slow annealing (L) outperforms fast (K) | **REJECTED** | L: LP=0.4803, 3p=0.3775 — worst of the three |
+
+---
+
+## Phase 51: Static vs Trajectory Temperature Optimization
+
+**Script:** `experiments/phase51_static_vs_trajectory.py`
+
+**Question:** K's best checkpoint has node temp=2.6. Does static node=2.6 (without annealing trajectory) replicate K's 3p=0.4148? Or does the training trajectory — early epochs at 4.0 then annealing down — create representations that static init cannot? Can moderate annealing (4→2.5) achieve both LP≥0.4856 AND 3p≥0.4018?
+
+**Protocol:** DELTA-Full (3 layers, 293K params) on FB15k-237 subset (494 entities). 500 epochs, eval every 25, patience 10. All conditions start with L0=(4.0,4.0). Static conditions use `train_with_temp_override()`, annealing uses `train_with_anneal()`. A, D, E, H, K hardcoded as references.
+
+- **N (static_2.6):** L0=(4,4), L1+L2 node=2.6, edge=6.0 — tests if K's optimal checkpoint VALUE alone explains 3p
+- **O (static_3.2):** L0=(4,4), L1+L2 node=3.2, edge=6.0 — tests L/M checkpoint value
+- **P (anneal_moderate):** node 4.0 → 2.5 over 250 epochs (50%), then learnable — tests Goldilocks anneal endpoint
+
+### Link Prediction Results (All 8 Conditions)
+
+| Condition | Config | LP MRR | LP H@10 | Best Val MRR |
+|-----------|--------|--------|---------|-------------|
+| A (Phase 46) | All temp=1.0 | 0.4744 | 0.7860 | 0.5030 |
+| D (Phase 46) | All temp=4.0 | 0.4729 | 0.7901 | 0.5106 |
+| E (Phase 48) | L0=(1,1), L1+L2=(2,6) | 0.4856 | 0.8004 | 0.4889 |
+| H (Phase 49) | L0=(4,4), L1+L2=(2,6) | 0.4887 | 0.7973 | 0.4925 |
+| K (Phase 50) | anneal 4→2 fast | 0.4819 | 0.7901 | 0.5046 |
+| N | static node=2.6 | 0.4746 | 0.7870 | 0.4926 |
+| O | static node=3.2 | 0.4785 | 0.8004 | 0.4945 |
+| **P** | **anneal 4→2.5** | **0.4890** | **0.8014** | 0.5039 |
+
+### Multi-hop Results (MRR)
+
+| Depth | A | D | E | H | K | N | O | P |
+|-------|---|---|---|---|---|---|---|---|
+| 1p | — | — | — | 0.2710 | 0.2661 | 0.2560 | 0.2551 | 0.2621 |
+| 2p | — | — | — | 0.2555 | 0.2560 | 0.2496 | 0.2468 | 0.2565 |
+| 3p | 0.3725 | **0.4018** | 0.3872 | 0.3930 | **0.4148** | 0.4001 | 0.3764 | 0.3823 |
+| 4p | — | — | — | 0.3333 | 0.3107 | **0.3426** | 0.2445 | 0.2349 |
+| 5p | — | — | — | 0.3517 | 0.2811 | **0.3788** | 0.2581 | 0.2693 |
+
+### Attention Health (Final Model)
+
+| Layer.Type | N Dead% | O Dead% | P Dead% |
+|------------|---------|---------|---------|
+| L0.node | 100% | 100% | 100% |
+| L0.edge | 100% | 100% | 100% |
+| L1.node | 0% | 0% | 0% |
+| L1.edge | 0% | 0% | 0% |
+| L2.node | 0% | 0% | 0% |
+| L2.edge | 0% | 0% | 0% |
+| **Total** | **8/24 (33%)** | **8/24 (33%)** | **8/24 (33%)** |
+
+### Learned Temperature — Final Values (Best Checkpoint)
+
+| Condition | L0_edge | L0_node | L1_edge | L1_node | L2_edge | L2_node |
+|-----------|---------|---------|---------|---------|---------|---------|
+| N (ep 200) | 4.436 | 4.059 | 6.271 | 2.602 | 6.692 | 2.592 |
+| O (ep 200) | 4.407 | 4.076 | 6.252 | 3.215 | 6.736 | 3.180 |
+| P (ep 200) | 4.401 | 4.102 | 6.218 | 2.800 | 6.578 | 2.800 |
+
+### Trajectory vs Static Analysis
+
+| Metric | K (annealed to ~2.6) | N (static 2.6) | Delta |
+|--------|---------------------|-----------------|-------|
+| LP MRR | 0.4819 | 0.4746 | −0.0073 |
+| 3p MRR | **0.4148** | 0.4001 | **−0.0147** |
+| 4p MRR | 0.3107 | **0.3426** | +0.0319 |
+| 5p MRR | 0.2811 | **0.3788** | +0.0977 |
+
+Trajectory adds +0.015 to 3p but static is BETTER for 4p/5p (+0.032/+0.098).
+
+### Key Findings
+
+1. **P achieves new LP MRR record (0.4890)** — +0.0003 over H/M's 0.4887. Also new H@10 record (0.8014). Moderate anneal (4→2.5) preserves and slightly improves LP, but 3p=0.3823 misses target.
+2. **Trajectory confirmed: +0.015 3p bonus from annealing** — K (annealed to node=2.6 at checkpoint) achieves 3p=0.4148 vs N (static 2.6) 3p=0.4001. Early training at high node temp creates 3p-supportive representations that static init cannot replicate.
+3. **N has best-ever deep-hop performance** — 4p=0.3426, 5p=0.3788 exceed ALL previous conditions including K (4p=0.3107, 5p=0.2811). Static low node temp is uniquely strong for 4p/5p even though it's weaker for 3p.
+4. **N nearly matches D's 3p** — 0.4001 vs D's 0.4018 (gap=0.002). Static node=2.6 approaches but cannot match D's uniform temp=4.0 on 3p. The remaining 0.002 gap may be noise or a genuine D advantage from uniform initialization.
+5. **O (static 3.2) disappoints** — 3p=0.3764 is WORSE than N (0.4001), confirming optimal static node temp for 3p is closer to 2.6 than 3.2.
+6. **P's best checkpoint has node temp=2.800** (the scheduled value at ep 200) — higher than K's 2.600, explaining why P prioritizes LP over 3p.
+7. **All conditions peak at ep 200 and early-stop at ep 450** — matching Phase 50 dynamics exactly.
+8. **K remains closest to combined target** — LP gap only −0.004 while exceeding 3p by +0.013. P's LP gap is closed but 3p gap is −0.020.
+
+### Cumulative Pareto Frontier
+
+| Config | LP MRR | 3p MRR | LP Target (0.4856) | 3p Target (0.4018) | Gap |
+|--------|--------|--------|---------------------|---------------------|-----|
+| K (P50) | 0.4819 | **0.4148** | −0.004 | ✅ +0.013 | **LP only** |
+| P (P51) | **0.4890** | 0.3823 | ✅ +0.003 | −0.020 | 3p only |
+| H (P49) | 0.4887 | 0.3930 | ✅ +0.003 | −0.009 | 3p only |
+| N (P51) | 0.4746 | 0.4001 | −0.011 | −0.002 | Both |
+
+### Hypothesis Evaluation
+
+| Hypothesis | Result | Evidence |
+|-----------|--------|----------|
+| N (static 2.6) matches K's 3p (≥0.4018) | **FAILED** | N: 0.4001 (−0.002) |
+| O (static 3.2) matches K's 3p (≥0.4018) | **REJECTED** | O: 0.3764 (−0.025) |
+| P (anneal 4→2.5) achieves LP ≥ 0.4856 | **CONFIRMED** | P: 0.4890 (new record!) |
+| P achieves 3p ≥ 0.4018 | **FAILED** | P: 0.3823 (−0.020) |
+| Trajectory matters (K > N at same final temp) | **CONFIRMED** | K 3p=0.4148 vs N 3p=0.4001 (+0.015) |
 
 ---
 

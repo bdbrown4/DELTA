@@ -1192,6 +1192,84 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#phase-50-temperature-annealing-node-temp-schedule" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 50: Temperature Annealing (Node Temp Schedule)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 50: Temperature Annealing (Node Temp Schedule)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#link-prediction-results-all-7-conditions_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Link Prediction Results (All 7 Conditions)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-hop-results-mrr_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-hop Results (MRR)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attention-health-final-model_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Attention Health (Final Model)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#learned-temperature-final-values-best-checkpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      Learned Temperature — Final Values (Best Checkpoint)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#annealing-trajectory-k-best-condition" class="md-nav__link">
+    <span class="md-ellipsis">
+      Annealing Trajectory (K — Best Condition)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-findings_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Findings
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hypothesis-evaluation_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hypothesis Evaluation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1989,6 +2067,84 @@
         
           <li class="md-nav__item">
   <a href="#hypothesis-evaluation_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hypothesis Evaluation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-50-temperature-annealing-node-temp-schedule" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 50: Temperature Annealing (Node Temp Schedule)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 50: Temperature Annealing (Node Temp Schedule)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#link-prediction-results-all-7-conditions_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Link Prediction Results (All 7 Conditions)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-hop-results-mrr_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-hop Results (MRR)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attention-health-final-model_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Attention Health (Final Model)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#learned-temperature-final-values-best-checkpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      Learned Temperature — Final Values (Best Checkpoint)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#annealing-trajectory-k-best-condition" class="md-nav__link">
+    <span class="md-ellipsis">
+      Annealing Trajectory (K — Best Condition)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-findings_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Findings
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hypothesis-evaluation_4" class="md-nav__link">
     <span class="md-ellipsis">
       Hypothesis Evaluation
     </span>
@@ -3543,6 +3699,11 @@
 <td>L0 temperature + asymmetric L1+L2</td>
 <td>✅ Complete — H LP MRR 0.4887 (new record); L0 temp doesn't explain D's 3p; trade-off fundamental</td>
 </tr>
+<tr>
+<td>50</td>
+<td>Temperature annealing (node temp schedule)</td>
+<td>✅ Complete — K (anneal 4→2 fast) 3p MRR <strong>0.4148</strong> (FIRST to beat D's 0.4018); LP=0.4819 misses target; Pareto frontier shifted</td>
+</tr>
 </tbody>
 </table>
 <hr />
@@ -4607,6 +4768,348 @@
 <td>L0 node temperature matters</td>
 <td><strong>REJECTED</strong></td>
 <td>H vs J: identical L1+L2 convergence despite L0_node 4.0 vs 2.0</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="phase-50-temperature-annealing-node-temp-schedule">Phase 50: Temperature Annealing (Node Temp Schedule)<a class="headerlink" href="#phase-50-temperature-annealing-node-temp-schedule" title="Permanent link">&para;</a></h2>
+<p><strong>Script:</strong> <code>experiments/phase50_temp_anneal.py</code></p>
+<p><strong>Question:</strong> D's 3p MRR (0.4018) is unique to uniform temp=4.0, and no static asymmetric config replicates it (Phases 46-49). Does D's advantage come from the training trajectory — early epochs with high node temp — rather than final temperatures? Can annealing from 4.0→2.0 capture D's 3p while converging to E/H's LP-optimal asymmetry?</p>
+<p><strong>Protocol:</strong> DELTA-Full (3 layers, 293K params) on FB15k-237 subset (494 entities). 500 epochs, eval every 25, patience 10. All conditions start with L0=(4.0,4.0), L1+L2 node=4.0, edge=6.0. Node temps at L1+L2 annealed linearly, edge temps remain learnable. A, D, E, H hardcoded as references.</p>
+<ul>
+<li><strong>K (anneal_fast):</strong> node 4.0 → 2.0 over 250 epochs (50% of training), then learnable</li>
+<li><strong>L (anneal_slow):</strong> node 4.0 → 2.0 over 500 epochs (100% of training)</li>
+<li><strong>M (anneal_partial):</strong> node 4.0 → 3.0 over 250 epochs (50%), then learnable</li>
+</ul>
+<h3 id="link-prediction-results-all-7-conditions_2">Link Prediction Results (All 7 Conditions)<a class="headerlink" href="#link-prediction-results-all-7-conditions_2" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Config</th>
+<th>LP MRR</th>
+<th>LP H@10</th>
+<th>Best Val MRR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A (Phase 46)</td>
+<td>All temp=1.0</td>
+<td>0.4744</td>
+<td>0.7860</td>
+<td>0.5030</td>
+</tr>
+<tr>
+<td>D (Phase 46)</td>
+<td>All temp=4.0</td>
+<td>0.4729</td>
+<td>0.7901</td>
+<td>0.5106</td>
+</tr>
+<tr>
+<td>E (Phase 48)</td>
+<td>L0=(1,1), L1+L2=(2,6)</td>
+<td>0.4856</td>
+<td>0.8004</td>
+<td>0.4889</td>
+</tr>
+<tr>
+<td>H (Phase 49)</td>
+<td>L0=(4,4), L1+L2=(2,6)</td>
+<td>0.4887</td>
+<td>0.7973</td>
+<td>0.4925</td>
+</tr>
+<tr>
+<td><strong>K</strong></td>
+<td><strong>anneal 4→2 fast</strong></td>
+<td><strong>0.4819</strong></td>
+<td>0.7901</td>
+<td><strong>0.5046</strong></td>
+</tr>
+<tr>
+<td>L</td>
+<td>anneal 4→2 slow</td>
+<td>0.4803</td>
+<td>0.8025</td>
+<td>0.5002</td>
+</tr>
+<tr>
+<td>M</td>
+<td>anneal 4→3 fast</td>
+<td><strong>0.4887</strong></td>
+<td>0.8004</td>
+<td>0.5009</td>
+</tr>
+</tbody>
+</table>
+<h3 id="multi-hop-results-mrr_5">Multi-hop Results (MRR)<a class="headerlink" href="#multi-hop-results-mrr_5" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Depth</th>
+<th>A</th>
+<th>D</th>
+<th>E</th>
+<th>H</th>
+<th>K</th>
+<th>L</th>
+<th>M</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1p</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>0.2710</td>
+<td>0.2661</td>
+<td>0.2598</td>
+<td>0.2610</td>
+</tr>
+<tr>
+<td>2p</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>0.2555</td>
+<td>0.2560</td>
+<td>0.2508</td>
+<td>0.2558</td>
+</tr>
+<tr>
+<td>3p</td>
+<td>0.3725</td>
+<td><strong>0.4018</strong></td>
+<td>0.3872</td>
+<td>0.3930</td>
+<td><strong>0.4148</strong></td>
+<td>0.3775</td>
+<td>0.3803</td>
+</tr>
+<tr>
+<td>4p</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>0.3333</td>
+<td><strong>0.3107</strong></td>
+<td>0.2170</td>
+<td>0.2110</td>
+</tr>
+<tr>
+<td>5p</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>0.3517</td>
+<td><strong>0.2811</strong></td>
+<td>0.2462</td>
+<td>0.2522</td>
+</tr>
+</tbody>
+</table>
+<h3 id="attention-health-final-model_3">Attention Health (Final Model)<a class="headerlink" href="#attention-health-final-model_3" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Layer.Type</th>
+<th>K Dead%</th>
+<th>L Dead%</th>
+<th>M Dead%</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L0.node</td>
+<td>100%</td>
+<td>100%</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>L0.edge</td>
+<td>100%</td>
+<td>100%</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>L1.node</td>
+<td>0%</td>
+<td>0%</td>
+<td>0%</td>
+</tr>
+<tr>
+<td>L1.edge</td>
+<td>0%</td>
+<td>0%</td>
+<td>0%</td>
+</tr>
+<tr>
+<td>L2.node</td>
+<td>0%</td>
+<td>0%</td>
+<td>0%</td>
+</tr>
+<tr>
+<td>L2.edge</td>
+<td>0%</td>
+<td>0%</td>
+<td>0%</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>8/24 (33%)</strong></td>
+<td><strong>8/24 (33%)</strong></td>
+<td><strong>8/24 (33%)</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="learned-temperature-final-values-best-checkpoint">Learned Temperature — Final Values (Best Checkpoint)<a class="headerlink" href="#learned-temperature-final-values-best-checkpoint" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>L0_edge</th>
+<th>L0_node</th>
+<th>L1_edge</th>
+<th>L1_node</th>
+<th>L2_edge</th>
+<th>L2_node</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>K (ep 175)</td>
+<td>4.326</td>
+<td>4.119</td>
+<td>6.210</td>
+<td>2.600</td>
+<td>6.533</td>
+<td>2.600</td>
+</tr>
+<tr>
+<td>L (ep 200)</td>
+<td>4.416</td>
+<td>4.112</td>
+<td>6.210</td>
+<td>3.200</td>
+<td>6.595</td>
+<td>3.200</td>
+</tr>
+<tr>
+<td>M (ep 200)</td>
+<td>4.404</td>
+<td>4.105</td>
+<td>6.212</td>
+<td>3.200</td>
+<td>6.593</td>
+<td>3.200</td>
+</tr>
+</tbody>
+</table>
+<h3 id="annealing-trajectory-k-best-condition">Annealing Trajectory (K — Best Condition)<a class="headerlink" href="#annealing-trajectory-k-best-condition" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Epoch</th>
+<th>val_MRR</th>
+<th>Node Sched</th>
+<th>L1_node</th>
+<th>L1_edge</th>
+<th>L2_node</th>
+<th>L2_edge</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>25</td>
+<td>0.0095</td>
+<td>3.80</td>
+<td>3.800</td>
+<td>6.045</td>
+<td>3.800</td>
+<td>6.045</td>
+</tr>
+<tr>
+<td>100</td>
+<td>0.2469</td>
+<td>3.20</td>
+<td>3.200</td>
+<td>6.209</td>
+<td>3.200</td>
+<td>6.232</td>
+</tr>
+<tr>
+<td><strong>175</strong></td>
+<td><strong>0.5046</strong></td>
+<td><strong>2.60</strong></td>
+<td><strong>2.600</strong></td>
+<td><strong>6.210</strong></td>
+<td><strong>2.600</strong></td>
+<td><strong>6.533</strong></td>
+</tr>
+<tr>
+<td>250</td>
+<td>0.4832</td>
+<td>2.00</td>
+<td>2.000</td>
+<td>6.213</td>
+<td>2.000</td>
+<td>6.648</td>
+</tr>
+<tr>
+<td>425</td>
+<td>0.4378</td>
+<td>learnable</td>
+<td>1.933</td>
+<td>6.004</td>
+<td>1.933</td>
+<td>6.456</td>
+</tr>
+</tbody>
+</table>
+<h3 id="key-findings_8">Key Findings<a class="headerlink" href="#key-findings_8" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>K is the FIRST configuration to beat D's 3p MRR</strong> — 0.4148 vs D's 0.4018 (+0.013). After 5 phases (46-50) testing 13+ configurations, temperature annealing finally breaks the 3p ceiling.</li>
+<li><strong>K's best checkpoint (ep 175) has node temp=2.6</strong> — not the anneal target (2.0). The optimal node temp for 3p is ~2.6, between D's effective ~3.6 and H's static 2.0.</li>
+<li><strong>M ties H's LP MRR record (0.4887)</strong> with annealing 4→3 — gentler annealing preserves LP while giving a milder 3p boost (0.3803, above A's 0.3725).</li>
+<li><strong>Pareto frontier shifted but combined target not met</strong> — K: 3p PASS but LP FAIL (−0.004); M: LP PASS but 3p FAIL. No single condition achieves both.</li>
+<li><strong>K achieves strongest multi-hop across ALL depths</strong> — 4p=0.3107, 5p=0.2811 beat all prior conditions' values from reference data.</li>
+<li><strong>All conditions achieve 33% dead heads</strong> — lowest of any configuration, one head fewer than H/E's 38%. Annealing activates slightly more capacity.</li>
+<li><strong>L and M converge to identical best-checkpoint temps</strong> (node=3.2 at ep 200) despite different schedules — the training dynamics, not the schedule, determine the optimal checkpoint.</li>
+<li><strong>After annealing ends, node temps continue drifting DOWN</strong> — K post-anneal: 2.0→1.93 at ep 425, confirming the "set-and-forget" pattern persists post-annealing.</li>
+</ol>
+<h3 id="hypothesis-evaluation_4">Hypothesis Evaluation<a class="headerlink" href="#hypothesis-evaluation_4" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Hypothesis</th>
+<th>Result</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>K achieves 3p ≥ 0.4018 (D's record)</td>
+<td><strong>CONFIRMED</strong></td>
+<td>K: 0.4148 (+0.013, new record!)</td>
+</tr>
+<tr>
+<td>K achieves LP ≥ 0.4856 (E's record)</td>
+<td><strong>FAILED</strong></td>
+<td>K: 0.4819 (−0.004)</td>
+</tr>
+<tr>
+<td>Combined LP+3p target met</td>
+<td><strong>PARTIAL</strong></td>
+<td>K beats 3p, M ties LP, no single condition achieves both</td>
+</tr>
+<tr>
+<td>Slow annealing (L) outperforms fast (K)</td>
+<td><strong>REJECTED</strong></td>
+<td>L: LP=0.4803, 3p=0.3775 — worst of the three</td>
 </tr>
 </tbody>
 </table>

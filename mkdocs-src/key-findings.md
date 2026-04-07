@@ -1,6 +1,6 @@
 # Key Findings
 
-29 key findings from 48 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
+30 key findings from 49 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
 
 ---
 
@@ -108,6 +108,9 @@ Phase 47: B (L0=1, L1+L2=4) achieves best LP MRR (0.4783). Edge temps consistent
 
 ### 29. Asymmetric node/edge temperature yields new LP record
 Phase 48: E (node=2, edge=6) achieves **LP MRR 0.4856** (+1.5% over previous best). Node temps are "set and forget" (+/-0.01 drift); edge temps always drift UP. A persistent LP/3p trade-off remains: E leads LP but D (all=4.0) still leads 3p (0.4018 vs 0.3872).
+
+### 30. LP/3p temperature trade-off is fundamental
+Phase 49: L0=4.0 does NOT explain D's 3p advantage — H (L0=4,4 + E's asymmetric L1+L2) achieves new LP record (**0.4887**) but 3p only reaches 0.3930 (still below D's 0.4018). After 4 phases (46-49) testing 10+ temperature configurations, D's uniform temp=4.0 remains the only path to 3p≥0.40. Asymmetric init improves LP at the cost of 3p. The trade-off may require dynamic temperature (annealing) rather than static init.
 
 ---
 

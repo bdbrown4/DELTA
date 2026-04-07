@@ -1,6 +1,6 @@
 # Validation Phases
 
-All experiment phases with results. Phases 1-30 validated core architecture and fixes. Phases 31-37 scaled to real-world data. Phases 38-40 address graph construction and honest evaluation. Phases 41-45 establish multi-hop dominance. Phases 46-48 optimize attention temperature.
+All experiment phases with results. Phases 1-30 validated core architecture and fixes. Phases 31-37 scaled to real-world data. Phases 38-40 address graph construction and honest evaluation. Phases 41-45 establish multi-hop dominance. Phases 46-49 optimize attention temperature.
 
 ---
 
@@ -484,7 +484,10 @@ Phase 40 rebuilds the entire evaluation pipeline to fix all 5 issues from the Ph
 | 43 | DropEdge robustness check | ✅ Complete — DELTA leads on 3p at all 5 drop rates; advantage is structural |
 | 44 | Extended multi-hop depth (4p/5p compositional queries) | ✅ Complete — DELTA improves with depth (MRR 0.753→0.767→0.790); advantage over GraphGPS grows to +0.100 at 5p |
 | 45 | Inference timing + multi-seed headline | ✅ Complete — 3-seed: DELTA 0.742±0.009 vs GraphGPS 0.713±0.007; per-query inference 0.8-0.9× GraphGPS |
-| 46 | Attention sharpening via learnable temperature (fix dead heads) | 🔄 Running |
+| 46 | Attention sharpening via learnable temperature (fix dead heads) | ✅ Complete — dead heads 83%→38%, edge/node temp divergence discovered |
+| 47 | Layer-specific temperature initialization | ✅ Complete — B (L0=1, L1+L2=4) best LP MRR 0.4783; node attention needs sharpening to activate |
+| 48 | Asymmetric node/edge temperature | ✅ Complete — E (node=2, edge=6) LP MRR 0.4856 (+1.5%); LP/3p trade-off persists |
+| 49 | L0 temperature + asymmetric L1+L2 | ✅ Complete — H LP MRR 0.4887 (new record); L0 temp doesn't explain D's 3p; trade-off fundamental |
 
 ---
 
@@ -715,6 +718,80 @@ Phase 40 rebuilds the entire evaluation pipeline to fix all 5 issues from the Ph
 | E or F achieves 3p ≥ 0.4018 (Phase 46 D) | **FAILED** | Best: G 0.3970 (−0.005) |
 | Combined LP+3p improvement over all prior | **PARTIAL** | LP improved significantly, 3p gap persists |
 | Regression safety (3p ≥ 0.35) | **CONFIRMED** | All above 0.35 |
+
+---
+
+## Phase 49: L0 Temperature + Asymmetric L1+L2
+
+**Script:** `experiments/phase49_l0_temp.py`
+
+**Question:** Phase 48 showed D (all temp=4.0) is the only condition beating 3p MRR 0.40, and all P48 conditions had L0=1.0 while D has L0=4.0. Does adding L0=4.0 to E's asymmetric L1+L2 temperatures break the LP/3p trade-off?
+
+**Protocol:** DELTA-Full (3 layers, 293K params) on FB15k-237 subset (494 entities). 500 epochs, eval every 25, patience 10. A, D, E hardcoded as reference from Phases 46/48. Three new conditions:
+
+- **H (L0=4,4 + E's asymmetric):** L0(node=4.0, edge=4.0), L1+L2(node=2.0, edge=6.0)
+- **I (L0=4,4 + F's asymmetric):** L0(node=4.0, edge=4.0), L1+L2(node=3.0, edge=5.0)
+- **J (L0=2,4 + E's asymmetric):** L0(node=2.0, edge=4.0), L1+L2(node=2.0, edge=6.0)
+
+### Link Prediction Results (All 7 Conditions)
+
+| Condition | Config | LP MRR | LP H@10 | Best Val MRR |
+|-----------|--------|--------|---------|-------------|
+| A (Phase 46) | All temp=1.0 | 0.4744 | 0.7860 | 0.5030 |
+| D (Phase 46) | All temp=4.0 | 0.4729 | 0.7901 | 0.5106 |
+| E (Phase 48) | L0=(1,1), L1+L2=(2,6) | 0.4856 | 0.8004 | 0.4889 |
+| **H** | **L0=(4,4), L1+L2=(2,6)** | **0.4887** | 0.7973 | 0.4925 |
+| I | L0=(4,4), L1+L2=(3,5) | 0.4836 | **0.8076** | 0.5071 |
+| J | L0=(2,4), L1+L2=(2,6) | 0.4872 | 0.8004 | 0.4903 |
+
+### Multi-hop Results (MRR)
+
+| Depth | A | D | E | H | I | J |
+|-------|---|---|---|---|---|---|
+| 1p | — | — | — | 0.2710 | 0.2665 | 0.2665 |
+| 2p | — | — | — | 0.2555 | 0.2487 | 0.2560 |
+| 3p | 0.3725 | **0.4018** | 0.3872 | 0.3930 | 0.3783 | 0.3911 |
+| 4p | — | — | — | 0.3333 | 0.2191 | 0.3323 |
+| 5p | — | — | — | 0.3517 | 0.2312 | 0.3536 |
+
+### Attention Health (Final Model)
+
+| Layer.Type | H Dead% | I Dead% | J Dead% |
+|------------|---------|---------|---------|
+| L0.node | 100% | 100% | 100% |
+| L0.edge | 100% | 100% | 100% |
+| L1.node | 0% | 0% | 0% |
+| L1.edge | 0% | 0% | 0% |
+| L2.node | 25% | 0% | 25% |
+| L2.edge | 0% | 0% | 0% |
+| **Total** | **9/24 (38%)** | **8/24 (33%)** | **9/24 (38%)** |
+
+### Learned Temperature — Final Values
+
+| Condition | L0_edge | L0_node | L1_edge | L1_node | L2_edge | L2_node |
+|-----------|---------|---------|---------|---------|---------|---------|
+| H | 4.447 | 4.039 | 6.266 | 2.004 | 6.660 | 2.014 |
+| I | 4.409 | 4.076 | 5.260 | 3.007 | 5.631 | 2.991 |
+| J | 4.447 | 2.048 | 6.262 | 2.005 | 6.666 | 2.013 |
+
+### Key Findings
+
+1. **H is the new LP MRR champion** (0.4887, +0.003 over E's 0.4856) — L0=4.0 adds a small LP boost on top of E's asymmetric L1+L2
+2. **L0 temperature does NOT explain D's 3p advantage** — H (L0=4,4 + E's asymmetry) achieves 3p=0.3930, still below D's 0.4018. The LP/3p trade-off is fundamental to asymmetric temperature initialization.
+3. **I achieves best-ever H@10** (0.8076, +0.006 over F's 0.8014) but worst 3p of the three (0.3783) — F's L1+L2 config is LP/H@10-biased
+4. **L0 node temperature is irrelevant** — H (init=4.0, final=4.039) and J (init=2.0, final=2.048) produce near-identical L1+L2 temperatures and performance (LP 0.4887 vs 0.4872, 3p 0.3930 vs 0.3911). L0 is 100% dead so gradient is zero.
+5. **H and J converge to nearly identical L1+L2 temps** despite different L0 node inits — confirming L0 node is a dead parameter
+6. **D's 3p=0.4018 is unique to uniform temp=4.0 initialization** — 4 phases of targeted temperature experiments (46-49) have tested 10+ configurations and none replicate D's 3p advantage
+7. **All conditions peaked at epoch 200** and early-stopped at epoch 450 — consistent with P48 dynamics
+
+### Hypothesis Evaluation
+
+| Hypothesis | Result | Evidence |
+|-----------|--------|----------|
+| H achieves LP ≥ 0.4856 (E's record) | **CONFIRMED** | H: 0.4887 (new best) |
+| H achieves 3p ≥ 0.4018 (D's record) | **FAILED** | H: 0.3930 (−0.009) |
+| Combined LP+3p trade-off broken | **PARTIAL** | LP record broken, 3p gap persists |
+| L0 node temperature matters | **REJECTED** | H vs J: identical L1+L2 convergence despite L0_node 4.0 vs 2.0 |
 
 ---
 

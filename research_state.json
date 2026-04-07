@@ -1,8 +1,8 @@
 {
   "last_updated": "2026-04-06",
-  "last_completed_phase": 49,
-  "next_phase": 50,
-  "current_phase": 50,
+  "last_completed_phase": 50,
+  "next_phase": 51,
+  "current_phase": 51,
 
   "best_results": {
     "best_overall_lp": {
@@ -115,6 +115,18 @@
       "hypothesis": "L0 node temperature is irrelevant — L0 is 100% dead and gradient-free",
       "evidence": "H (L0_node init=4.0, final=4.039) and J (L0_node init=2.0, final=2.048) produce near-identical L1+L2 temps and performance (LP 0.4887 vs 0.4872, 3p 0.3930 vs 0.3911). L0 node stays near init because gradient is zero through dead heads.",
       "significance": "high"
+    },
+    {
+      "phase": 50,
+      "hypothesis": "Temperature annealing (node 4.0→2.0 fast) breaks the 3p ceiling",
+      "evidence": "K_anneal_fast: 3p MRR=0.4148 — FIRST configuration to beat D's 0.4018 (+0.013) across 5 phases of temperature experiments. Best checkpoint at ep 175 with node temp=2.6.",
+      "significance": "landmark"
+    },
+    {
+      "phase": 50,
+      "hypothesis": "Early training with high node temp builds 3p-supportive representations that persist after annealing",
+      "evidence": "K (anneal 4→2 fast) achieves 3p=0.4148 while H (static node=2.0) only 3p=0.3930. Both end with similar node temps (~2.0-2.6), but K trained early epochs at node=4.0. The trajectory matters, not just final temp.",
+      "significance": "high"
     }
   ],
 
@@ -154,6 +166,18 @@
       "hypothesis": "L0 temperature at 4.0 explains D's 3p advantage (≥0.4018)",
       "evidence": "H (L0=4,4 + E's L1+L2): 3p=0.3930 (FAIL). I (L0=4,4 + F's L1+L2): 3p=0.3783 (FAIL). J (L0=2,4 + E's L1+L2): 3p=0.3911 (FAIL). None matched D's 3p=0.4018. LP/3p trade-off is fundamental to asymmetric temperature init.",
       "significance": "high"
+    },
+    {
+      "phase": 50,
+      "hypothesis": "Combined LP+3p target met via annealing (LP≥0.4856 AND 3p≥0.4018)",
+      "evidence": "K achieves 3p=0.4148 (PASS) but LP=0.4819 (FAIL, gap=-0.004). M achieves LP=0.4887 (PASS) but 3p=0.3803 (FAIL). Pareto frontier shifted but combined target not met.",
+      "significance": "partial"
+    },
+    {
+      "phase": 50,
+      "hypothesis": "Slow annealing (4→2 over full training) beats fast annealing",
+      "evidence": "L_anneal_slow: LP=0.4803, 3p=0.3775 — REJECTED on both metrics. Fast annealing (K) strictly dominates slow (L).",
+      "significance": "negative result"
     }
   ],
 
@@ -185,12 +209,20 @@
     "LP/3p trade-off is fundamental to asymmetric temperature: any init that separates node/edge temps improves LP but cannot match D's uniform 3p",
     "D's 3p advantage (0.4018) is unique to uniform temp=4.0 initialization — neither layer-specific, asymmetric, nor L0-augmented approaches replicate it",
     "L0 node temperature is irrelevant: H (init=4.0) and J (init=2.0) converge to identical L1+L2 temps and near-identical performance because L0 is 100% dead",
-    "I (L0=4,4 + F's node=3,edge=5) achieves best-ever H@10 (0.8076) but worst 3p (0.3783) of the three P49 conditions — F's L1+L2 config is LP-biased"
+    "I (L0=4,4 + F's node=3,edge=5) achieves best-ever H@10 (0.8076) but worst 3p (0.3783) of the three P49 conditions — F's L1+L2 config is LP-biased",
+    "Temperature annealing breaks the 3p ceiling: K (node 4→2 fast) achieves 3p=0.4148, the FIRST config to beat D's 0.4018 in 5 phases",
+    "K's best checkpoint (ep 175) has node temp=2.6 — not the final anneal target (2.0) — suggesting optimal 3p node temp is ~2.6, not 2.0",
+    "All 3 annealing conditions peak at similar epochs (175-200) — early training dynamics are identical regardless of schedule, divergence happens after ep 175",
+    "K achieves lowest dead head count: 8/24 (33%) vs 9/24 (38%) for all prior asymmetric configs — annealing activates one additional head",
+    "After annealing period ends, K's node temps continue drifting DOWN (2.0→1.93) — model wants lower node temps post-annealing, confirming 'set and forget' pattern",
+    "L and M best checkpoints both at ep 200 with node=3.2 despite different schedules — convergent checkpoint selection",
+    "K has strongest 4p (0.3107) and 5p (0.2811) of any condition tested — annealing benefits ALL multi-hop depths, not just 3p"
   ],
 
   "open_questions": [
     "L0 temperature does NOT explain D's 3p — RESOLVED in Phase 49. The LP/3p trade-off is fundamental to asymmetric init.",
-    "Can temperature ANNEALING (start uniform 4.0 like D, then decay node temps toward 2.0) capture D's 3p while converging to E's LP asymmetry? (Phase 50)",
+    "Temperature annealing BREAKS the 3p ceiling (K=0.4148 > D=0.4018) but LP still short (0.4819 vs 0.4887) — RESOLVED in Phase 50. Pareto frontier shifted.",
+    "K's best checkpoint has node temp=2.6 — does static node=2.6 (without annealing) match K's 3p, or is the training trajectory essential? (Phase 51)",
     "Is there a theoretical ceiling for edge temp, or does the model keep wanting infinite sharpness?",
     "Can DELTA-Full with targeted temperature match DELTA-Matched's compositional advantage?",
     "Can DELTA-Full be compressed via importance pruning to match DELTA-Matched on 3p/5p?",
@@ -209,7 +241,8 @@
     "46": { "title": "Attention sharpening via learnable temperature", "result": "PARTIAL -- dead heads reduced (full 83%->38%), edge/node temp divergence discovered, full 3p +0.029 but matched 3p -0.017" },
     "47": { "title": "Layer-specific temperature initialization", "result": "PARTIAL -- B (L0 soft, L1+L2 sharp) achieves best LP MRR (0.4783) but 3p (0.3908) short of D (0.4018). Node attention requires sharpening to activate. Optimal node temp likely 2-3." },
     "48": { "title": "Asymmetric node/edge temperature", "result": "PARTIAL -- E (node=2,edge=6) achieves new LP MRR record (0.4856, +1.5%) and H@10 (0.8004). 3p gap persists (best 0.3970 vs D 0.4018). Node temps stable, edge always drifts UP. L0 temperature may explain D's 3p advantage." },
-    "49": { "title": "L0 temperature + asymmetric L1+L2", "result": "PARTIAL -- H (L0=4,4 + E's L1+L2) achieves new LP MRR record (0.4887). 3p=0.3930 still below D (0.4018). L0 node temp irrelevant (L0 100% dead). LP/3p trade-off is fundamental to asymmetric temp init. I achieves best-ever H@10 (0.8076)." }
+    "49": { "title": "L0 temperature + asymmetric L1+L2", "result": "PARTIAL -- H (L0=4,4 + E's L1+L2) achieves new LP MRR record (0.4887). 3p=0.3930 still below D (0.4018). L0 node temp irrelevant (L0 100% dead). LP/3p trade-off is fundamental to asymmetric temp init. I achieves best-ever H@10 (0.8076)." },
+    "50": { "title": "Temperature annealing (node temp schedule)", "result": "PARTIAL -- K (anneal 4→2 fast) achieves 3p=0.4148, FIRST to beat D's 0.4018 (+0.013). LP=0.4819 misses target (0.4856). M ties LP record (0.4887) but 3p=0.3803. L REJECTED. Pareto frontier shifted. Best checkpoint at node temp=2.6." }
   },
 
   "timing_baselines": {

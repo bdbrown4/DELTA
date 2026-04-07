@@ -112,6 +112,9 @@ Phase 48: E (node=2, edge=6) achieves **LP MRR 0.4856** (+1.5% over previous bes
 ### 30. LP/3p temperature trade-off is fundamental
 Phase 49: L0=4.0 does NOT explain D's 3p advantage — H (L0=4,4 + E's asymmetric L1+L2) achieves new LP record (**0.4887**) but 3p only reaches 0.3930 (still below D's 0.4018). After 4 phases (46-49) testing 10+ temperature configurations, D's uniform temp=4.0 remains the only path to 3p≥0.40. Asymmetric init improves LP at the cost of 3p. The trade-off may require dynamic temperature (annealing) rather than static init.
 
+### 31. Temperature annealing breaks the 3p ceiling
+Phase 50: K (anneal node 4.0→2.0 fast over 50% of training) achieves **3p MRR 0.4148** — the FIRST configuration in 5 phases (46-50) to beat D's 0.4018 (+0.013). The mechanism: high node temp during early training builds compositional representations, then annealing toward lower temps approaches LP-optimal asymmetry. K's best checkpoint (ep 175) has node temp=2.6, not the anneal target (2.0). M (anneal 4→3) ties H's LP record (**0.4887**) but misses 3p. The Pareto frontier has shifted but LP+3p combined target not yet achieved in a single configuration.
+
 ---
 
 *See [Validation Phases](validation-phases.md) for complete result tables. See [Status & Roadmap](status-and-roadmap.md) for current priorities.*

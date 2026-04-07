@@ -1,6 +1,6 @@
 # Validation Phases
 
-All experiment phases with results. Phases 1–30 validated core architecture and fixes. Phases 31–37 scaled to real-world data and baselines. Phases 38–40 address graph construction and honest evaluation.
+All experiment phases with results. Phases 1-30 validated core architecture and fixes. Phases 31-37 scaled to real-world data. Phases 38-40 address graph construction and honest evaluation. Phases 41-45 establish multi-hop dominance. Phases 46-48 optimize attention temperature.
 
 ---
 
@@ -93,7 +93,7 @@ After Phase 15, a pitfall analysis identified 6 architectural weaknesses. Each w
 
 ## Phase 35–37: Colab Pro+ Experiments
 
-For detailed results, see [Colab Results](COLAB_RESULTS.md).
+Phase 35: frozen encoder achieves 0.961 on WN18RR with 100 samples -- encoder is already domain-invariant, GRL unnecessary. Phase 36: constructor adds <=1.3% at scale -- de-emphasized.
 
 | Phase | Validates | Status | Headline Result |
 |-------|-----------|--------|-----------------|
@@ -473,9 +473,9 @@ Phase 40 rebuilds the entire evaluation pipeline to fix all 5 issues from the Ph
 
 ---
 
-## Next Steps (Phases 46+)
+---
 
-See [The Brain](the-brain.md) for the long-term vision, [Adaptive Architecture](adaptive-architecture.md) for the capacity self-modification proposal, and [Publication Roadmap](PUBLICATION_ROADMAP.md) for details.
+*See [Key Findings](key-findings.md) for curated insights. See [Status & Roadmap](status-and-roadmap.md) for current priorities. See [The Brain](the-brain.md) for long-term vision.*
 
 | Phase | Experiment | Status |
 |-------|-----------|--------|

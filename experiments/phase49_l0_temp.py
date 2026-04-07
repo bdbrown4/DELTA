@@ -296,7 +296,7 @@ def main():
     print(f"\n  KEY QUESTION: Does L0 temperature drift when initialized at 4.0?")
     for cond_name, result in all_results.items():
         temps = result.get('final_temperatures', {})
-        l0_keys = [k for k in temps if k.startswith('layer_0')]
+        l0_keys = [k for k in temps if k.startswith('L0')]
         if l0_keys:
             print(f"    {cond_name}:")
             for key in sorted(l0_keys):
@@ -304,7 +304,7 @@ def main():
                 init_val = result['layer_temps']['0']
                 init_t = init_val[0] if 'node' in key else init_val[1]
                 drift = np.mean(vals) - init_t
-                print(f"      {key}: init={init_t:.1f} → final={np.mean(vals):.3f} (drift={drift:+.3f})")
+                print(f"      {key}: init={init_t:.1f} -> final={np.mean(vals):.3f} (drift={drift:+.3f})")
 
     # Save results
     output_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),

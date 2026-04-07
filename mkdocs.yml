@@ -52,25 +52,16 @@ plugins:
 
 nav:
   - Home: index.md
-  - Vision:
-    - The Brain: the-brain.md
   - Architecture:
     - Overview: architecture.md
     - Visual Explainer: ARCHITECTURE_VISUAL.md
-    - Bootstrap Strategy: bootstrap-strategy.md
-    - Adaptive Architecture: adaptive-architecture.md
-    - Evolution: architecture-evolution.md
-  - Experiments:
-    - Validation Phases: validation-phases.md
+  - Vision:
+    - The Brain: the-brain.md
+  - Results:
     - Key Findings: key-findings.md
-    - Colab Results: COLAB_RESULTS.md
-    - Backward Compatibility: backward-compatibility.md
-  - Research:
-    - Agenda: RESEARCH_AGENDA.md
-    - Publication Roadmap: PUBLICATION_ROADMAP.md
-    - Methodology: research-methodology.md
+    - Validation Phases: validation-phases.md
   - Status & Roadmap: status-and-roadmap.md
   - Setup:
     - Getting Started: setup-and-running.md
-    - Colab Setup Guide: COLAB_SETUP.md
     - Project Structure: project-structure.md
+  - Research Methodology: research-methodology.md

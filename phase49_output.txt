@@ -1,0 +1,30 @@
+======================================================================
+PHASE 49: L0 TEMPERATURE + ASYMMETRIC L1+L2
+======================================================================
+  Device: cuda
+  Epochs: 500, eval_every: 25
+  Seed: 42
+  Max entities: 500
+
+  Loading data...
+  Loaded fb15k-237 for link prediction:
+    494 entities, 160 relations
+    9703 train / 390 val / 486 test
+
+======================================================================
+  REFERENCE RESULTS (Phases 46-48, not re-run)
+======================================================================
+  A (all temp=1.0):        LP MRR=0.4744, 3p MRR=0.3725, dead=20/24 (83%)
+  B (L0=1, L1+L2=4):      LP MRR=0.4783, 3p MRR=0.3908, dead= 9/24 (38%)
+  D (all temp=4.0):        LP MRR=0.4729, 3p MRR=0.4018, dead= 9/24 (38%)
+  E (L0=1, L1+L2 n=2,e=6):LP MRR=0.4856, 3p MRR=0.3872, dead= 9/24 (38%)
+
+======================================================================
+  TRAINING: Condition H_l0_4_4_e_asym
+  Config: L0(node=4.0,edge=4.0) L1(node=2.0,edge=6.0) L2(node=2.0,edge=6.0)
+======================================================================
+
+  Temperature config: L0(node=4.0,edge=4.0) L1(node=2.0,edge=6.0) L2(node=2.0,edge=6.0)
+  After override: {'L0_node': [4.0, 4.0, 4.0, 4.0], 'L0_edge': [4.0, 4.0, 4.0, 4.0], 'L1_node': [2.0, 2.0, 2.0, 2.0], 'L1_edge': [6.0, 6.0, 6.0, 6.0], 'L2_node': [2.0, 2.0, 2.0, 2.0], 'L2_edge': [6.0, 6.0, 6.0, 6.0]}
+
+  [delta_full] seed=42, 293,504 params (246,528 encoder), device=cuda

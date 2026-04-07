@@ -4,7 +4,7 @@
 
 Reality is a graph. Language is a lossy compression of reality into sequences. Transformers reconstruct relational structure from flat sequences. DELTA operates on relational structure directly.
 
-**The three-paradigm gap — visual explainer:** The [Visual Explainer](ARCHITECTURE_VISUAL.md) walks through Transformer → GNN → DELTA with an interactive diagram embedded directly in the page. The key insight: GNN edges are passive scalar wires; DELTA edges are first-class computational citizens that attend to each other. That edge-to-edge attention is what produces the Phase 28 +24% noise robustness gap.
+See [Visual Explainer](ARCHITECTURE_VISUAL.md) for an interactive three-paradigm diagram. The key insight: GNN edges are passive scalar wires; DELTA edges are first-class computational citizens that attend to each other.
 
 ---
 
@@ -12,99 +12,108 @@ Reality is a graph. Language is a lossy compression of reality into sequences. T
 
 ```
 Raw Input (any modality)
-    → Graph Constructor (transformer-bootstrapped: per-layer edge projections + typed edges)
-    → BFS Graph Partitioner (O(N+E) seed-expansion clustering)
-    → PARALLEL DUAL ATTENTION
+    -> Graph Constructor (transformer-bootstrapped: per-layer edge projections + typed edges)
+    -> BFS Graph Partitioner (O(N+E) seed-expansion clustering)
+    -> PARALLEL DUAL ATTENTION
         [Node Attention + Edge Attention across all partitions simultaneously]
-    → Post-Attention Pruner (prune based on OBSERVED attention weights)
-    → Learned Attention Dropout (per-edge regularization)
-    → Reconciliation Layer (nodes and edges co-update)
-    → Hierarchical Global Attention (cluster representatives)
-    → Variational Memory Compression (warm nodes → bottleneck → KL regularization)
-    → Memory Tier Update (importance-based hot/warm/cold promotion)
-    → Output + Updated Graph State
+    -> Post-Attention Pruner (prune based on OBSERVED attention weights)
+    -> Learned Attention Dropout (per-edge regularization)
+    -> Reconciliation Layer (nodes and edges co-update)
+    -> Hierarchical Global Attention (cluster representatives)
+    -> Variational Memory Compression (warm nodes -> bottleneck -> KL regularization)
+    -> Memory Tier Update (importance-based hot/warm/cold promotion)
+    -> Output + Updated Graph State
 ```
 
 ---
 
-## Key Architectural Components
+## Key Components
 
 ### DualParallelAttention
 
-Node attention and edge attention run simultaneously in parallel streams. Both operate as standard multi-head self-attention but over different domains:
+Node attention and edge attention run simultaneously as parallel multi-head self-attention streams over different domains:
 
-- **Node attention:** Nodes attend to neighboring nodes via the edge index
-- **Edge attention:** Edges attend to structurally adjacent edges via the edge adjacency matrix
+- **Node attention:** Nodes attend to neighboring nodes via the edge index.
+- **Edge attention:** Edges attend to structurally adjacent edges via the edge adjacency matrix.
 
-The dual parallel design converges 2.7× faster than sequential alternatives (Phase 2).
+The dual parallel design converges 2.7x faster than sequential alternatives (Phase 2). The two streams remain independent until the ReconciliationBridge merges their outputs.
 
 ### Multi-Hop Edge Adjacency
 
-The mechanism that enables compositional reasoning. Two edges are "adjacent" if they share a node — this creates an edge-to-edge connectivity structure. At 2 hops, an edge can "see" edges two hops away, enabling transitive inference.
+The mechanism that enables compositional reasoning. Two edges are "adjacent" if they share a node, creating an edge-to-edge connectivity structure. At 2 hops, an edge can "see" edges two hops away, enabling transitive inference without explicit rule learning.
 
-**Phase 11 result:** 2-hop edge adjacency achieves **100% accuracy on derived/transitive relations** — a +38.9% jump from 1-hop (61.1%) and beating Node GNN (83.3%). This was the biggest architectural improvement in the project.
-
-Implemented as sparse COO tensors for O(E^0.97) scaling (Phase 17), handling 2500+ edges where the original dense approach timed out at ~500 edges.
+Phase 11: 2-hop achieves **100% on derived/transitive relations** -- a +38.9% jump from 1-hop (61.1%) and beating Node GNN (83.3%). This was the single biggest architectural improvement in the project. Implemented as sparse COO tensors for O(E^0.97) scaling (Phase 17), handling 2500+ edges where the original dense approach timed out at ~500.
 
 ### ReconciliationBridge
 
-The cross-stream interaction mechanism. After both attention streams complete, the ReconciliationBridge co-updates nodes and edges:
+The cross-stream interaction mechanism. After both attention streams complete, the ReconciliationBridge co-updates nodes and edges in a sequential cascade:
 
-1. **Edges absorb node context:** Each edge concatenates its features with its source and target node features, then projects back to edge dimension
-2. **Nodes absorb edge context:** Each node aggregates updated edge features from all incident edges, concatenates with its own features, then projects back to node dimension
+1. **Edges absorb node context:** Each edge concatenates its features with its source and target node features, then projects back to edge dimension.
+2. **Nodes absorb edge context:** Each node aggregates updated edge features from all incident edges, concatenates with its own features, then projects back to node dimension.
 
-Both updates use residual connections and LayerNorm. This sequential cascade (concat → linear → LayerNorm) provides direct high-bandwidth gradient flow.
+Both updates use residual connections and LayerNorm, providing direct high-bandwidth gradient flow.
 
 !!! note "Cross-Stream Interaction Comparison"
-    A [prototype comparison](https://github.com/bdbrown4/DELTA/blob/main/experiments/prototypes/shared_latent_bottleneck.py) tested ReconciliationBridge against two alternatives:
-
-    - **ReconciliationBridge:** 0.889 ± 0.050 val — solved the multi-hop task
-    - **Cross-Attention Gates:** 0.218 ± 0.009 — at majority baseline (0.214), learned nothing
-    - **Shared Latent Bottleneck:** 0.210 ± 0.010 — at majority baseline, learned nothing
-
-    ReconciliationBridge's direct linear mixing is fundamentally superior to gated/bottlenecked alternatives. The gates in cross-attention designs never open properly — the cross-stream path is a dead end from epoch 1.
+    A [prototype comparison](https://github.com/bdbrown4/DELTA/blob/main/experiments/prototypes/shared_latent_bottleneck.py) tested ReconciliationBridge (0.889 val) against Cross-Attention Gates (0.218, at majority baseline) and Shared Latent Bottleneck (0.210, at majority baseline). Direct linear mixing is fundamentally superior -- gated alternatives never open properly.
 
 ### PostAttentionPruner
 
-Prunes graph elements based on *observed* attention weights rather than predicting importance before attention (the original router's chicken-and-egg problem). Uses soft sigmoid gates with per-head attention features.
+Prunes graph elements based on *observed* attention weights rather than predicting importance before attention (the original router's chicken-and-egg problem). Uses soft sigmoid gates with per-head attention features, avoiding the non-differentiable hard top-k that caused the original 29% accuracy gap.
 
-**Phase 16 result:** Soft gating achieves **100% accuracy at 50% target sparsity** — matching full attention and beating pre-attention routing by +14.7%.
+Phase 16: **100% accuracy at 50% target sparsity**, matching full attention and beating pre-attention routing by +14.7%.
 
 ### Graph Constructor
 
-Transformer-bootstrapped graph construction with per-layer edge projections and typed edges. Solves the "chicken-and-egg" problem: use a lightweight transformer to bootstrap an initial graph, then DELTA refines it.
+Transformer-bootstrapped graph construction with per-layer edge projections and typed edges. Solves the bootstrap "chicken-and-egg" problem: a lightweight transformer builds an initial graph, then DELTA refines it.
 
-!!! warning "Limited Contribution"
-    Phase 36 showed the GraphConstructor adds ≤1.3% over fixed topology across all tested configurations. DELTA's core architecture (edge-centric dual attention + 2-hop adjacency) is powerful enough that the given topology is sufficient. The constructor is de-emphasized in favor of the core architectural contributions.
+!!! warning "Limited Contribution (KG domain)"
+    Phase 36: GraphConstructor adds <=1.3% over fixed topology. DELTA's core architecture is powerful enough that the given topology suffices for KG tasks. For sequence domain generalization (where the constructor must discover structure from scratch), the constructor becomes the critical component -- and has three identified deficiencies.
+
+!!! bug "Three Constructor Deficiencies (Active)"
+    **1. Gradient wall at edge selection** (`constructor.py:127`): Hard binary `attn > threshold` blocks gradient flow. Fix: replace with Gumbel-sigmoid (proven in Phase 38/39).
+
+    **2. Dead `edge_type_weights`** (`constructor.py:173-175`): Softmax output is computed then discarded -- never included in the returned `DeltaGraph`. Fix: fold into `edge_features` before returning.
+
+    **3. One token = one node (no conceptual compression)**: "New York City" produces three nodes. Acceptable for short sequences; caused the Phase 25 VRAM problem for LRA (4096 tokens).
+
+    Fixes 1 and 2 are backward-compatible and verifiable on FB15k-237 LP.
 
 ### Variational Memory Compression
 
-Tiered memory system (hot/warm/cold) with a variational bottleneck and KL regularization. Preserves accuracy while compressing node representations. KL converges during training (0.126 → 0.026), confirming the latent space is being regularized.
+Tiered memory system (hot/warm/cold) with a variational bottleneck and KL regularization. Preserves accuracy while compressing node representations. KL converges during training (0.126 to 0.026), confirming proper latent space regularization.
 
 ### BFS Graph Partitioner
 
-O(N+E) BFS seed-expansion clustering, replacing the original O(N³) spectral partitioning. Balance ratio of 0.79 with importance-aware seeding across partitions (Phase 20).
+O(N+E) BFS seed-expansion clustering, replacing the original O(N^3) spectral partitioning. Balance ratio of 0.79 with importance-aware seeding (Phase 20).
+
+### Learnable Temperature
+
+Per-head temperature scaling reveals an edge/node asymmetry in attention sharpness (Phases 46-48). Edge heads converge to sharper temperatures while node heads prefer softer distributions. Asymmetric initialization (node=2, edge=6) yields the best link prediction MRR of 0.4856. This confirms that edge attention and node attention have fundamentally different optimal operating regimes.
 
 ---
 
-## Where the Gap Shows Up
+## Self-Bootstrap: Removing the Transformer Scaffold
 
-The gap between GNN and DELTA is where the **Phase 28 result** lives. At extreme noise levels (80% corrupted features), DELTA's edge-aware attention maintains **+24% accuracy** over standard GNN approaches.
+Graph construction faces a bootstrapping dilemma: you need to understand the input to build the graph, but the graph is how you understand input.
 
-Why? Because nodes can reason about their neighbors' *relationships*, not just their neighbors' *values*. When node features are noisy, the relational structure (edge-to-edge patterns) is still intact — and DELTA can leverage it.
+**The journey:**
 
-| Noise Level | Standard GNN | DELTA | Gap |
-|------------|-------------|-------|-----|
-| 0% (clean) | ~95% | ~97% | +2% |
-| 20% | ~88% | ~94% | +6% |
-| 50% | ~72% | ~86% | +14% |
-| 80% | ~54% | ~78% | **+24%** |
+- **Phases 5-27b (Transformer scaffold):** A lightweight transformer bootstraps the initial graph. Phase 27b confirms graph structure helps (+4.4% over Transformer), but the hard-thresholded constructor is the bottleneck.
+- **Phase 36 (Constructor at scale):** GraphConstructor adds <=1.3% over fixed topology -- hard thresholding blocks gradient flow, not the concept of learned construction.
+- **Phase 38 (Differentiable construction):** Gumbel-sigmoid replaces the hard threshold. Hybrid variant (base topology + learned edges) reaches **98% of FixedChain** with minimal variance.
+- **Phase 39 (Self-bootstrap):** Replace the transformer with a FixedChain DELTA layer. DELTA bootstraps DELTA -- no transformer anywhere. SelfBootstrap reaches **157% of FixedChain** (0.757 vs 0.481 accuracy, 3-seed average).
 
-*Results from Phase 28 (noise robustness), synthetic benchmark.*
+**Real-data confirmation:** Phase 40 validates transfer to FB15k-237: SelfBootstrapHybrid MRR 0.5089, within 0.004 of GraphGPS -- the best-performing DELTA variant on real data.
+
+**Why it works:** DELTA-enriched embeddings contain relational information that raw positional embeddings lack. The constructor builds a graph informed by DELTA's own understanding of the input structure -- each pass makes the next pass smarter. This is the mechanism behind [The Brain](the-brain.md).
+
+See [Validation Phases](validation-phases.md) for full results.
 
 ---
 
 ## How DELTA Differs
+
+The gap between GNN and DELTA is most visible under stress: at 80% corrupted features (Phase 28), DELTA's edge-aware attention maintains +24% accuracy over standard GNN approaches. Nodes can reason about their neighbors' *relationships*, not just their neighbors' *values*. When node features are noisy, the relational structure (edge-to-edge patterns) remains intact. See [Key Findings](key-findings.md) for detailed analysis.
 
 | Feature | Transformer | GNN | DELTA |
 |---------|------------|-----|-------|
@@ -114,8 +123,54 @@ Why? Because nodes can reason about their neighbors' *relationships*, not just t
 | Compositional reasoning | Must learn from position | Limited by message passing | Native via multi-hop edge attention |
 | Noise robustness | Moderate | Degrades at high noise | **+24% at 80% noise** |
 | Relational inductive bias | None | Moderate (message passing) | Strong (edge-first dual attention) |
-| Scaling | O(N²) | O(N+E) | O(E^0.97) with sparse ops |
+| Scaling | O(N^2) | O(N+E) | O(E^0.97) with sparse ops |
 
 ---
 
-*See also: [Visual Explainer](ARCHITECTURE_VISUAL.md) for the interactive three-paradigm diagram, [Key Findings](key-findings.md) for detailed experimental evidence.*
+## Development Timeline
+
+DELTA has gone through six development stages, each building on validated results from the previous stage.
+
+| Stage | Phases | Milestone |
+|-------|--------|-----------|
+| 1. Core Validation | 1-15 | Edge-first dual attention proven: 2-hop edge adjacency hits 100% on derived relations, O(n^0.81) scaling |
+| 2. Pitfall Fixes | 16-21 | Six architectural fixes: post-attention pruning, sparse COO, BFS partitioning, variational memory, per-layer constructor, learned dropout |
+| 3. Soft Gating | 16 redesign | Soft sigmoid gating achieves 100% at 50% sparsity, resolving the non-differentiable hard top-k problem |
+| 4. Scale Validation | 22-24 | Full architecture validated at 10x scale; DELTA matches CompGCN, crushes TransE/RotatE on realistic KG benchmark |
+| 5. Real-World GPU | 25 | First real-data benchmark: DELTA+Gate 97.6% on FB15k-237 dense subgraph (14,505 entities, 310k triples) |
+| 6. Roadmap + Review | 26-37 | External review, noise robustness (+24%), self-bootstrap (157% of FixedChain), frozen encoder transfer (0.961), H100 scaling |
+
+See [Validation Phases](validation-phases.md) for complete results. See [Status & Roadmap](status-and-roadmap.md) for current priorities.
+
+---
+
+## Backward Compatibility
+
+All 6 architectural fixes are additive -- they extend existing classes or add new ones without modifying interfaces used by earlier phases. No regression was introduced during the fix implementation cycle.
+
+**Verification against critical phases:**
+
+| Phase | Metric | Original | After Fixes | Status |
+|-------|--------|----------|-------------|--------|
+| 1 | Edge Attention accuracy | 100% | 100% | Match |
+| 7 | Gumbel routing at 60% sparsity | 62.5% | 62.5% | Match |
+| 9 | DELTA Edge multi-hop | 84.4% | 84.4% | Match |
+| 13 | DELTA 2-hop on derived | 100% | 100% | Match |
+| 15 | Full / Router@50% | 100% / 65.3% | 100% / 74.7% | Improved |
+
+Phase 15's improvement (65.3% to 74.7%) results from the legacy `ImportanceRouter` wrapper now delegating to `PostAttentionPruner.prune()` with `min()` safety bounds.
+
+**Fix inventory:**
+
+| Fix | Files | Impact |
+|-----|-------|--------|
+| PostAttentionPruner | `router.py` | New class; `ImportanceRouter` delegates to it |
+| BFS Partitioner | `partition.py` | New function; old spectral method still accessible |
+| Variational Memory | `memory.py` | New bottleneck option; default behavior unchanged |
+| Per-Layer Constructor | `constructor.py` | New parameters; default single-layer preserved |
+| Sparse COO | `graph.py` | Drop-in replacement for dense adjacency |
+| Learned Dropout | `router.py` | New class; uniform dropout still available |
+
+---
+
+*See [The Brain](the-brain.md) for long-term vision. See [Validation Phases](validation-phases.md) for all experiment results.*

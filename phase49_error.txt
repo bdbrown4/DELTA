@@ -1,0 +1,28 @@
+Traceback (most recent call last):
+  File "C:\dev\DELTA\experiments\phase49_l0_temp.py", line 322, in <module>
+    main()
+  File "C:\dev\DELTA\experiments\phase49_l0_temp.py", line 160, in main
+    best_val_mrr, attn_collector, gate_collector) = train_with_temp_override(
+  File "C:\dev\DELTA\experiments\phase47_layer_specific_temp.py", line 177, in train_with_temp_override
+    loss = train_epoch(model, data['train'], edge_index, edge_types,
+  File "C:\dev\DELTA\experiments\phase46c_link_prediction.py", line 410, in train_epoch
+    node_feats = model.encode(ei, et)
+  File "C:\dev\DELTA\experiments\phase46c_link_prediction.py", line 238, in encode
+    encoded = self.encoder(graph)
+  File "C:\Users\18126\AppData\Local\Programs\Python\Python310\lib\site-packages\torch\nn\modules\module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "C:\Users\18126\AppData\Local\Programs\Python\Python310\lib\site-packages\torch\nn\modules\module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "C:\dev\DELTA\delta\model.py", line 221, in forward
+    graph = layer(graph, use_router=use_router,
+  File "C:\Users\18126\AppData\Local\Programs\Python\Python310\lib\site-packages\torch\nn\modules\module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "C:\Users\18126\AppData\Local\Programs\Python\Python310\lib\site-packages\torch\nn\modules\module.py", line 1845, in _call_impl
+    return inner()
+  File "C:\Users\18126\AppData\Local\Programs\Python\Python310\lib\site-packages\torch\nn\modules\module.py", line 1793, in inner
+    result = forward_call(*args, **kwargs)
+  File "C:\dev\DELTA\delta\model.py", line 81, in forward
+    edge_adj = active_graph.build_edge_adjacency()
+  File "C:\dev\DELTA\delta\graph.py", line 152, in build_edge_adjacency
+    edge_pairs_tgt.append(grid[1][mask])
+KeyboardInterrupt

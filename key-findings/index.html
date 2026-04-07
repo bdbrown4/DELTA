@@ -890,6 +890,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#32-training-trajectory-matters-static-init-cannot-replicate-annealings-3p-advantage" class="md-nav__link">
+    <span class="md-ellipsis">
+      32. Training trajectory matters — static init cannot replicate annealing's 3p advantage
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1444,6 +1453,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#32-training-trajectory-matters-static-init-cannot-replicate-annealings-3p-advantage" class="md-nav__link">
+    <span class="md-ellipsis">
+      32. Training trajectory matters — static init cannot replicate annealing's 3p advantage
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1468,7 +1486,7 @@
 
 
 <h1 id="key-findings">Key Findings<a class="headerlink" href="#key-findings" title="Permanent link">&para;</a></h1>
-<p>30 key findings from 49 experiment phases, organized by research stage. See <a href="../validation-phases/">Validation Phases</a> for complete result tables.</p>
+<p>32 key findings from 51 experiment phases, organized by research stage. See <a href="../validation-phases/">Validation Phases</a> for complete result tables.</p>
 <hr />
 <h2 id="core-architecture-phases-1-15">Core Architecture (Phases 1-15)<a class="headerlink" href="#core-architecture-phases-1-15" title="Permanent link">&para;</a></h2>
 <h3 id="1-edge-attention-is-deltas-strongest-signal">1. Edge attention is DELTA's strongest signal<a class="headerlink" href="#1-edge-attention-is-deltas-strongest-signal" title="Permanent link">&para;</a></h3>
@@ -1541,6 +1559,8 @@
 <p>Phase 49: L0=4.0 does NOT explain D's 3p advantage — H (L0=4,4 + E's asymmetric L1+L2) achieves new LP record (<strong>0.4887</strong>) but 3p only reaches 0.3930 (still below D's 0.4018). After 4 phases (46-49) testing 10+ temperature configurations, D's uniform temp=4.0 remains the only path to 3p≥0.40. Asymmetric init improves LP at the cost of 3p. The trade-off may require dynamic temperature (annealing) rather than static init.</p>
 <h3 id="31-temperature-annealing-breaks-the-3p-ceiling">31. Temperature annealing breaks the 3p ceiling<a class="headerlink" href="#31-temperature-annealing-breaks-the-3p-ceiling" title="Permanent link">&para;</a></h3>
 <p>Phase 50: K (anneal node 4.0→2.0 fast over 50% of training) achieves <strong>3p MRR 0.4148</strong> — the FIRST configuration in 5 phases (46-50) to beat D's 0.4018 (+0.013). The mechanism: high node temp during early training builds compositional representations, then annealing toward lower temps approaches LP-optimal asymmetry. K's best checkpoint (ep 175) has node temp=2.6, not the anneal target (2.0). M (anneal 4→3) ties H's LP record (<strong>0.4887</strong>) but misses 3p. The Pareto frontier has shifted but LP+3p combined target not yet achieved in a single configuration.</p>
+<h3 id="32-training-trajectory-matters-static-init-cannot-replicate-annealings-3p-advantage">32. Training trajectory matters — static init cannot replicate annealing's 3p advantage<a class="headerlink" href="#32-training-trajectory-matters-static-init-cannot-replicate-annealings-3p-advantage" title="Permanent link">&para;</a></h3>
+<p>Phase 51: N (static node=2.6, matching K's optimal checkpoint value) achieves 3p=0.4001 vs K (annealed to 2.6) 3p=<strong>0.4148</strong> — a +0.015 gap. Early training at high node temp creates 3p-supportive representations that static init cannot replicate. However, N achieves best-ever <strong>4p=0.3426</strong> and <strong>5p=0.3788</strong> (exceeding K's values), suggesting static low node temp uniquely benefits deeper reasoning. P (anneal 4→2.5) achieves a <strong>new LP MRR record (0.4890)</strong> and H@10 record (0.8014) but 3p=0.3823 misses target. K remains closest to the combined target with LP gap of only −0.004.</p>
 <hr />
 <p><em>See <a href="../validation-phases/">Validation Phases</a> for complete result tables. See <a href="../status-and-roadmap/">Status &amp; Roadmap</a> for current priorities.</em></p>
 

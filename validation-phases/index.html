@@ -1270,6 +1270,93 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#phase-51-static-vs-trajectory-temperature-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 51: Static vs Trajectory Temperature Optimization
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 51: Static vs Trajectory Temperature Optimization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#link-prediction-results-all-8-conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Link Prediction Results (All 8 Conditions)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-hop-results-mrr_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-hop Results (MRR)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attention-health-final-model_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Attention Health (Final Model)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#learned-temperature-final-values-best-checkpoint_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Learned Temperature — Final Values (Best Checkpoint)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trajectory-vs-static-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Trajectory vs Static Analysis
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-findings_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Findings
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cumulative-pareto-frontier" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cumulative Pareto Frontier
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hypothesis-evaluation_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hypothesis Evaluation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2145,6 +2232,93 @@
         
           <li class="md-nav__item">
   <a href="#hypothesis-evaluation_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hypothesis Evaluation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-51-static-vs-trajectory-temperature-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 51: Static vs Trajectory Temperature Optimization
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 51: Static vs Trajectory Temperature Optimization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#link-prediction-results-all-8-conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Link Prediction Results (All 8 Conditions)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-hop-results-mrr_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-hop Results (MRR)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attention-health-final-model_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Attention Health (Final Model)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#learned-temperature-final-values-best-checkpoint_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Learned Temperature — Final Values (Best Checkpoint)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trajectory-vs-static-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Trajectory vs Static Analysis
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-findings_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Findings
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cumulative-pareto-frontier" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cumulative Pareto Frontier
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hypothesis-evaluation_5" class="md-nav__link">
     <span class="md-ellipsis">
       Hypothesis Evaluation
     </span>
@@ -3704,6 +3878,11 @@
 <td>Temperature annealing (node temp schedule)</td>
 <td>✅ Complete — K (anneal 4→2 fast) 3p MRR <strong>0.4148</strong> (FIRST to beat D's 0.4018); LP=0.4819 misses target; Pareto frontier shifted</td>
 </tr>
+<tr>
+<td>51</td>
+<td>Static vs trajectory temperature</td>
+<td>✅ Complete — P (anneal 4→2.5) new LP record <strong>0.4890</strong>; trajectory confirmed (+0.015 3p bonus); N best-ever 4p/5p</td>
+</tr>
 </tbody>
 </table>
 <hr />
@@ -5110,6 +5289,390 @@
 <td>Slow annealing (L) outperforms fast (K)</td>
 <td><strong>REJECTED</strong></td>
 <td>L: LP=0.4803, 3p=0.3775 — worst of the three</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="phase-51-static-vs-trajectory-temperature-optimization">Phase 51: Static vs Trajectory Temperature Optimization<a class="headerlink" href="#phase-51-static-vs-trajectory-temperature-optimization" title="Permanent link">&para;</a></h2>
+<p><strong>Script:</strong> <code>experiments/phase51_static_vs_trajectory.py</code></p>
+<p><strong>Question:</strong> K's best checkpoint has node temp=2.6. Does static node=2.6 (without annealing trajectory) replicate K's 3p=0.4148? Or does the training trajectory — early epochs at 4.0 then annealing down — create representations that static init cannot? Can moderate annealing (4→2.5) achieve both LP≥0.4856 AND 3p≥0.4018?</p>
+<p><strong>Protocol:</strong> DELTA-Full (3 layers, 293K params) on FB15k-237 subset (494 entities). 500 epochs, eval every 25, patience 10. All conditions start with L0=(4.0,4.0). Static conditions use <code>train_with_temp_override()</code>, annealing uses <code>train_with_anneal()</code>. A, D, E, H, K hardcoded as references.</p>
+<ul>
+<li><strong>N (static_2.6):</strong> L0=(4,4), L1+L2 node=2.6, edge=6.0 — tests if K's optimal checkpoint VALUE alone explains 3p</li>
+<li><strong>O (static_3.2):</strong> L0=(4,4), L1+L2 node=3.2, edge=6.0 — tests L/M checkpoint value</li>
+<li><strong>P (anneal_moderate):</strong> node 4.0 → 2.5 over 250 epochs (50%), then learnable — tests Goldilocks anneal endpoint</li>
+</ul>
+<h3 id="link-prediction-results-all-8-conditions">Link Prediction Results (All 8 Conditions)<a class="headerlink" href="#link-prediction-results-all-8-conditions" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Config</th>
+<th>LP MRR</th>
+<th>LP H@10</th>
+<th>Best Val MRR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A (Phase 46)</td>
+<td>All temp=1.0</td>
+<td>0.4744</td>
+<td>0.7860</td>
+<td>0.5030</td>
+</tr>
+<tr>
+<td>D (Phase 46)</td>
+<td>All temp=4.0</td>
+<td>0.4729</td>
+<td>0.7901</td>
+<td>0.5106</td>
+</tr>
+<tr>
+<td>E (Phase 48)</td>
+<td>L0=(1,1), L1+L2=(2,6)</td>
+<td>0.4856</td>
+<td>0.8004</td>
+<td>0.4889</td>
+</tr>
+<tr>
+<td>H (Phase 49)</td>
+<td>L0=(4,4), L1+L2=(2,6)</td>
+<td>0.4887</td>
+<td>0.7973</td>
+<td>0.4925</td>
+</tr>
+<tr>
+<td>K (Phase 50)</td>
+<td>anneal 4→2 fast</td>
+<td>0.4819</td>
+<td>0.7901</td>
+<td>0.5046</td>
+</tr>
+<tr>
+<td>N</td>
+<td>static node=2.6</td>
+<td>0.4746</td>
+<td>0.7870</td>
+<td>0.4926</td>
+</tr>
+<tr>
+<td>O</td>
+<td>static node=3.2</td>
+<td>0.4785</td>
+<td>0.8004</td>
+<td>0.4945</td>
+</tr>
+<tr>
+<td><strong>P</strong></td>
+<td><strong>anneal 4→2.5</strong></td>
+<td><strong>0.4890</strong></td>
+<td><strong>0.8014</strong></td>
+<td>0.5039</td>
+</tr>
+</tbody>
+</table>
+<h3 id="multi-hop-results-mrr_6">Multi-hop Results (MRR)<a class="headerlink" href="#multi-hop-results-mrr_6" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Depth</th>
+<th>A</th>
+<th>D</th>
+<th>E</th>
+<th>H</th>
+<th>K</th>
+<th>N</th>
+<th>O</th>
+<th>P</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1p</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>0.2710</td>
+<td>0.2661</td>
+<td>0.2560</td>
+<td>0.2551</td>
+<td>0.2621</td>
+</tr>
+<tr>
+<td>2p</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>0.2555</td>
+<td>0.2560</td>
+<td>0.2496</td>
+<td>0.2468</td>
+<td>0.2565</td>
+</tr>
+<tr>
+<td>3p</td>
+<td>0.3725</td>
+<td><strong>0.4018</strong></td>
+<td>0.3872</td>
+<td>0.3930</td>
+<td><strong>0.4148</strong></td>
+<td>0.4001</td>
+<td>0.3764</td>
+<td>0.3823</td>
+</tr>
+<tr>
+<td>4p</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>0.3333</td>
+<td>0.3107</td>
+<td><strong>0.3426</strong></td>
+<td>0.2445</td>
+<td>0.2349</td>
+</tr>
+<tr>
+<td>5p</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>0.3517</td>
+<td>0.2811</td>
+<td><strong>0.3788</strong></td>
+<td>0.2581</td>
+<td>0.2693</td>
+</tr>
+</tbody>
+</table>
+<h3 id="attention-health-final-model_4">Attention Health (Final Model)<a class="headerlink" href="#attention-health-final-model_4" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Layer.Type</th>
+<th>N Dead%</th>
+<th>O Dead%</th>
+<th>P Dead%</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L0.node</td>
+<td>100%</td>
+<td>100%</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>L0.edge</td>
+<td>100%</td>
+<td>100%</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>L1.node</td>
+<td>0%</td>
+<td>0%</td>
+<td>0%</td>
+</tr>
+<tr>
+<td>L1.edge</td>
+<td>0%</td>
+<td>0%</td>
+<td>0%</td>
+</tr>
+<tr>
+<td>L2.node</td>
+<td>0%</td>
+<td>0%</td>
+<td>0%</td>
+</tr>
+<tr>
+<td>L2.edge</td>
+<td>0%</td>
+<td>0%</td>
+<td>0%</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>8/24 (33%)</strong></td>
+<td><strong>8/24 (33%)</strong></td>
+<td><strong>8/24 (33%)</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="learned-temperature-final-values-best-checkpoint_1">Learned Temperature — Final Values (Best Checkpoint)<a class="headerlink" href="#learned-temperature-final-values-best-checkpoint_1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>L0_edge</th>
+<th>L0_node</th>
+<th>L1_edge</th>
+<th>L1_node</th>
+<th>L2_edge</th>
+<th>L2_node</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>N (ep 200)</td>
+<td>4.436</td>
+<td>4.059</td>
+<td>6.271</td>
+<td>2.602</td>
+<td>6.692</td>
+<td>2.592</td>
+</tr>
+<tr>
+<td>O (ep 200)</td>
+<td>4.407</td>
+<td>4.076</td>
+<td>6.252</td>
+<td>3.215</td>
+<td>6.736</td>
+<td>3.180</td>
+</tr>
+<tr>
+<td>P (ep 200)</td>
+<td>4.401</td>
+<td>4.102</td>
+<td>6.218</td>
+<td>2.800</td>
+<td>6.578</td>
+<td>2.800</td>
+</tr>
+</tbody>
+</table>
+<h3 id="trajectory-vs-static-analysis">Trajectory vs Static Analysis<a class="headerlink" href="#trajectory-vs-static-analysis" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>K (annealed to ~2.6)</th>
+<th>N (static 2.6)</th>
+<th>Delta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LP MRR</td>
+<td>0.4819</td>
+<td>0.4746</td>
+<td>−0.0073</td>
+</tr>
+<tr>
+<td>3p MRR</td>
+<td><strong>0.4148</strong></td>
+<td>0.4001</td>
+<td><strong>−0.0147</strong></td>
+</tr>
+<tr>
+<td>4p MRR</td>
+<td>0.3107</td>
+<td><strong>0.3426</strong></td>
+<td>+0.0319</td>
+</tr>
+<tr>
+<td>5p MRR</td>
+<td>0.2811</td>
+<td><strong>0.3788</strong></td>
+<td>+0.0977</td>
+</tr>
+</tbody>
+</table>
+<p>Trajectory adds +0.015 to 3p but static is BETTER for 4p/5p (+0.032/+0.098).</p>
+<h3 id="key-findings_9">Key Findings<a class="headerlink" href="#key-findings_9" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>P achieves new LP MRR record (0.4890)</strong> — +0.0003 over H/M's 0.4887. Also new H@10 record (0.8014). Moderate anneal (4→2.5) preserves and slightly improves LP, but 3p=0.3823 misses target.</li>
+<li><strong>Trajectory confirmed: +0.015 3p bonus from annealing</strong> — K (annealed to node=2.6 at checkpoint) achieves 3p=0.4148 vs N (static 2.6) 3p=0.4001. Early training at high node temp creates 3p-supportive representations that static init cannot replicate.</li>
+<li><strong>N has best-ever deep-hop performance</strong> — 4p=0.3426, 5p=0.3788 exceed ALL previous conditions including K (4p=0.3107, 5p=0.2811). Static low node temp is uniquely strong for 4p/5p even though it's weaker for 3p.</li>
+<li><strong>N nearly matches D's 3p</strong> — 0.4001 vs D's 0.4018 (gap=0.002). Static node=2.6 approaches but cannot match D's uniform temp=4.0 on 3p. The remaining 0.002 gap may be noise or a genuine D advantage from uniform initialization.</li>
+<li><strong>O (static 3.2) disappoints</strong> — 3p=0.3764 is WORSE than N (0.4001), confirming optimal static node temp for 3p is closer to 2.6 than 3.2.</li>
+<li><strong>P's best checkpoint has node temp=2.800</strong> (the scheduled value at ep 200) — higher than K's 2.600, explaining why P prioritizes LP over 3p.</li>
+<li><strong>All conditions peak at ep 200 and early-stop at ep 450</strong> — matching Phase 50 dynamics exactly.</li>
+<li><strong>K remains closest to combined target</strong> — LP gap only −0.004 while exceeding 3p by +0.013. P's LP gap is closed but 3p gap is −0.020.</li>
+</ol>
+<h3 id="cumulative-pareto-frontier">Cumulative Pareto Frontier<a class="headerlink" href="#cumulative-pareto-frontier" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Config</th>
+<th>LP MRR</th>
+<th>3p MRR</th>
+<th>LP Target (0.4856)</th>
+<th>3p Target (0.4018)</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>K (P50)</td>
+<td>0.4819</td>
+<td><strong>0.4148</strong></td>
+<td>−0.004</td>
+<td>✅ +0.013</td>
+<td><strong>LP only</strong></td>
+</tr>
+<tr>
+<td>P (P51)</td>
+<td><strong>0.4890</strong></td>
+<td>0.3823</td>
+<td>✅ +0.003</td>
+<td>−0.020</td>
+<td>3p only</td>
+</tr>
+<tr>
+<td>H (P49)</td>
+<td>0.4887</td>
+<td>0.3930</td>
+<td>✅ +0.003</td>
+<td>−0.009</td>
+<td>3p only</td>
+</tr>
+<tr>
+<td>N (P51)</td>
+<td>0.4746</td>
+<td>0.4001</td>
+<td>−0.011</td>
+<td>−0.002</td>
+<td>Both</td>
+</tr>
+</tbody>
+</table>
+<h3 id="hypothesis-evaluation_5">Hypothesis Evaluation<a class="headerlink" href="#hypothesis-evaluation_5" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Hypothesis</th>
+<th>Result</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>N (static 2.6) matches K's 3p (≥0.4018)</td>
+<td><strong>FAILED</strong></td>
+<td>N: 0.4001 (−0.002)</td>
+</tr>
+<tr>
+<td>O (static 3.2) matches K's 3p (≥0.4018)</td>
+<td><strong>REJECTED</strong></td>
+<td>O: 0.3764 (−0.025)</td>
+</tr>
+<tr>
+<td>P (anneal 4→2.5) achieves LP ≥ 0.4856</td>
+<td><strong>CONFIRMED</strong></td>
+<td>P: 0.4890 (new record!)</td>
+</tr>
+<tr>
+<td>P achieves 3p ≥ 0.4018</td>
+<td><strong>FAILED</strong></td>
+<td>P: 0.3823 (−0.020)</td>
+</tr>
+<tr>
+<td>Trajectory matters (K &gt; N at same final temp)</td>
+<td><strong>CONFIRMED</strong></td>
+<td>K 3p=0.4148 vs N 3p=0.4001 (+0.015)</td>
 </tr>
 </tbody>
 </table>

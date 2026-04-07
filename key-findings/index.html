@@ -872,6 +872,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#30-lp3p-temperature-trade-off-is-fundamental" class="md-nav__link">
+    <span class="md-ellipsis">
+      30. LP/3p temperature trade-off is fundamental
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1408,6 +1417,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#30-lp3p-temperature-trade-off-is-fundamental" class="md-nav__link">
+    <span class="md-ellipsis">
+      30. LP/3p temperature trade-off is fundamental
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1432,7 +1450,7 @@
 
 
 <h1 id="key-findings">Key Findings<a class="headerlink" href="#key-findings" title="Permanent link">&para;</a></h1>
-<p>29 key findings from 48 experiment phases, organized by research stage. See <a href="../validation-phases/">Validation Phases</a> for complete result tables.</p>
+<p>30 key findings from 49 experiment phases, organized by research stage. See <a href="../validation-phases/">Validation Phases</a> for complete result tables.</p>
 <hr />
 <h2 id="core-architecture-phases-1-15">Core Architecture (Phases 1-15)<a class="headerlink" href="#core-architecture-phases-1-15" title="Permanent link">&para;</a></h2>
 <h3 id="1-edge-attention-is-deltas-strongest-signal">1. Edge attention is DELTA's strongest signal<a class="headerlink" href="#1-edge-attention-is-deltas-strongest-signal" title="Permanent link">&para;</a></h3>
@@ -1501,6 +1519,8 @@
 <p>Phase 47: B (L0=1, L1+L2=4) achieves best LP MRR (0.4783). Edge temps consistently drift UP (4.4-4.5), node temps drift DOWN (3.5-3.7).</p>
 <h3 id="29-asymmetric-nodeedge-temperature-yields-new-lp-record">29. Asymmetric node/edge temperature yields new LP record<a class="headerlink" href="#29-asymmetric-nodeedge-temperature-yields-new-lp-record" title="Permanent link">&para;</a></h3>
 <p>Phase 48: E (node=2, edge=6) achieves <strong>LP MRR 0.4856</strong> (+1.5% over previous best). Node temps are "set and forget" (+/-0.01 drift); edge temps always drift UP. A persistent LP/3p trade-off remains: E leads LP but D (all=4.0) still leads 3p (0.4018 vs 0.3872).</p>
+<h3 id="30-lp3p-temperature-trade-off-is-fundamental">30. LP/3p temperature trade-off is fundamental<a class="headerlink" href="#30-lp3p-temperature-trade-off-is-fundamental" title="Permanent link">&para;</a></h3>
+<p>Phase 49: L0=4.0 does NOT explain D's 3p advantage — H (L0=4,4 + E's asymmetric L1+L2) achieves new LP record (<strong>0.4887</strong>) but 3p only reaches 0.3930 (still below D's 0.4018). After 4 phases (46-49) testing 10+ temperature configurations, D's uniform temp=4.0 remains the only path to 3p≥0.40. Asymmetric init improves LP at the cost of 3p. The trade-off may require dynamic temperature (annealing) rather than static init.</p>
 <hr />
 <p><em>See <a href="../validation-phases/">Validation Phases</a> for complete result tables. See <a href="../status-and-roadmap/">Status &amp; Roadmap</a> for current priorities.</em></p>
 

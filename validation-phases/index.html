@@ -1444,6 +1444,75 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#phase-53-multi-seed-validation-of-k-and-n" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 53 — Multi-Seed Validation of K and N
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 53 — Multi-Seed Validation of K and N">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#multi-seed-results-k-anneal-42-50" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-Seed Results: K (anneal 4→2, 50%)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-seed-results-n-static-node26" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-Seed Results: N (static node=2.6)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cross-condition-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cross-Condition Comparison
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reproducibility-check-seed-42-vs-original" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reproducibility Check (Seed 42 vs Original)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-findings_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Findings
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hypothesis-evaluation_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hypothesis Evaluation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2493,6 +2562,75 @@
         
           <li class="md-nav__item">
   <a href="#hypothesis-evaluation_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hypothesis Evaluation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-53-multi-seed-validation-of-k-and-n" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 53 — Multi-Seed Validation of K and N
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 53 — Multi-Seed Validation of K and N">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#multi-seed-results-k-anneal-42-50" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-Seed Results: K (anneal 4→2, 50%)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-seed-results-n-static-node26" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-Seed Results: N (static node=2.6)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cross-condition-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cross-Condition Comparison
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reproducibility-check-seed-42-vs-original" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reproducibility Check (Seed 42 vs Original)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-findings_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Findings
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hypothesis-evaluation_7" class="md-nav__link">
     <span class="md-ellipsis">
       Hypothesis Evaluation
     </span>
@@ -6213,6 +6351,252 @@
 <td>Combined LP+3p target achievable via temperature alone</td>
 <td><strong>REJECTED</strong></td>
 <td>7 phases, 20+ configs, no solution. Trade-off is fundamental.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="phase-53-multi-seed-validation-of-k-and-n">Phase 53 — Multi-Seed Validation of K and N<a class="headerlink" href="#phase-53-multi-seed-validation-of-k-and-n" title="Permanent link">&para;</a></h2>
+<p><strong>Goal:</strong> Validate K's 3p advantage and N's deep-hop advantage across 3 seeds (42, 123, 456) to confirm statistical robustness before publication.</p>
+<p><strong>Status:</strong> ✅ COMPLETE — <strong>CRITICAL REALITY CHECK.</strong> Multi-hop claims from Phases 46-52 are NOT robust. LP improvements ARE robust.</p>
+<h3 id="multi-seed-results-k-anneal-42-50">Multi-Seed Results: K (anneal 4→2, 50%)<a class="headerlink" href="#multi-seed-results-k-anneal-42-50" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Seed</th>
+<th>LP MRR</th>
+<th>LP H@10</th>
+<th>3p MRR</th>
+<th>4p MRR</th>
+<th>5p MRR</th>
+<th>Dead</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>42</td>
+<td>0.4880</td>
+<td>0.8035</td>
+<td>0.3812</td>
+<td>0.2595</td>
+<td>0.3009</td>
+<td>8/24</td>
+</tr>
+<tr>
+<td>123</td>
+<td>0.4760</td>
+<td>0.7788</td>
+<td>0.3418</td>
+<td>0.2074</td>
+<td>0.2072</td>
+<td>9/24</td>
+</tr>
+<tr>
+<td>456</td>
+<td>0.4856</td>
+<td>0.8200</td>
+<td>0.3866</td>
+<td>0.2206</td>
+<td>0.2363</td>
+<td>8/24</td>
+</tr>
+<tr>
+<td><strong>Mean±Std</strong></td>
+<td><strong>0.4832±0.0052</strong></td>
+<td><strong>0.8008±0.0169</strong></td>
+<td><strong>0.3699±0.0200</strong></td>
+<td><strong>0.2292±0.0221</strong></td>
+<td><strong>0.2481±0.0391</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="multi-seed-results-n-static-node26">Multi-Seed Results: N (static node=2.6)<a class="headerlink" href="#multi-seed-results-n-static-node26" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Seed</th>
+<th>LP MRR</th>
+<th>LP H@10</th>
+<th>3p MRR</th>
+<th>4p MRR</th>
+<th>5p MRR</th>
+<th>Dead</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>42</td>
+<td>0.4744</td>
+<td>0.7891</td>
+<td>0.3996</td>
+<td>0.3228</td>
+<td>0.3697</td>
+<td>8/24</td>
+</tr>
+<tr>
+<td>123</td>
+<td>0.4822</td>
+<td>0.7860</td>
+<td>0.2859</td>
+<td>0.1912</td>
+<td>0.2012</td>
+<td>9/24</td>
+</tr>
+<tr>
+<td>456</td>
+<td>0.4960</td>
+<td>0.8241</td>
+<td>0.3609</td>
+<td>0.1923</td>
+<td>0.2287</td>
+<td>8/24</td>
+</tr>
+<tr>
+<td><strong>Mean±Std</strong></td>
+<td><strong>0.4842±0.0089</strong></td>
+<td><strong>0.7997±0.0173</strong></td>
+<td><strong>0.3488±0.0472</strong></td>
+<td><strong>0.2354±0.0618</strong></td>
+<td><strong>0.2665±0.0738</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="cross-condition-comparison">Cross-Condition Comparison<a class="headerlink" href="#cross-condition-comparison" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>LP MRR</th>
+<th>3p MRR</th>
+<th>4p MRR</th>
+<th>5p MRR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A baseline (ref)</td>
+<td>0.4744</td>
+<td>0.3725</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>K (3 seeds)</td>
+<td>0.4832±0.0052</td>
+<td>0.3699±0.0200</td>
+<td>0.2292±0.0221</td>
+<td>0.2481±0.0391</td>
+</tr>
+<tr>
+<td>N (3 seeds)</td>
+<td>0.4842±0.0089</td>
+<td>0.3488±0.0472</td>
+<td>0.2354±0.0618</td>
+<td>0.2665±0.0738</td>
+</tr>
+</tbody>
+</table>
+<h3 id="reproducibility-check-seed-42-vs-original">Reproducibility Check (Seed 42 vs Original)<a class="headerlink" href="#reproducibility-check-seed-42-vs-original" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Config</th>
+<th>Metric</th>
+<th>Original</th>
+<th>Re-run</th>
+<th>Delta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>K</td>
+<td>LP MRR</td>
+<td>0.4819</td>
+<td>0.4880</td>
+<td>+0.006</td>
+</tr>
+<tr>
+<td>K</td>
+<td>3p MRR</td>
+<td>0.4148</td>
+<td>0.3812</td>
+<td><strong>−0.034</strong></td>
+</tr>
+<tr>
+<td>N</td>
+<td>LP MRR</td>
+<td>0.4746</td>
+<td>0.4744</td>
+<td>−0.000</td>
+</tr>
+<tr>
+<td>N</td>
+<td>3p MRR</td>
+<td>0.4001</td>
+<td>0.3996</td>
+<td>−0.001</td>
+</tr>
+<tr>
+<td>N</td>
+<td>4p MRR</td>
+<td>0.3426</td>
+<td>0.3228</td>
+<td><strong>−0.020</strong></td>
+</tr>
+<tr>
+<td>N</td>
+<td>5p MRR</td>
+<td>0.3788</td>
+<td>0.3697</td>
+<td><strong>−0.009</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="key-findings_11">Key Findings<a class="headerlink" href="#key-findings_11" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>K's 3p advantage is NOT statistically robust.</strong> Mean 3p=0.3699±0.0200 — BELOW baseline A (0.3725). K's Phase 50 result (3p=0.4148) was a single-seed outlier.</li>
+<li><strong>N's deep-hop advantage is NOT statistically robust.</strong> Mean 4p=0.2354±0.0618, 5p=0.2665±0.0738 — HUGE variance. No seed consistently achieves 4p≥0.30 or 5p≥0.30.</li>
+<li><strong>LP MRR IS robust.</strong> K: 0.4832±0.0052, N: 0.4842±0.0089 — consistent across seeds, both above baseline A (0.4744).</li>
+<li><strong>CUDA non-determinism breaks seed reproducibility.</strong> K seed=42 re-run gives 3p=0.3812 vs original 0.4148 (delta=−0.034). LP is more stable (delta=+0.006).</li>
+<li><strong>500-query multi-hop evaluation is too noisy</strong> for single-seed temperature conclusions. N seed 123 has 3p=0.2859 while seed 42 has 3p=0.3996 — a 0.114 spread!</li>
+<li><strong>All Phases 46-52 multi-hop claims (3p, 4p, 5p) must be treated as unreliable.</strong> Only LP MRR improvements from temperature tuning are statistically supported.</li>
+<li><strong>The "three operating modes" narrative is revoked for multi-hop.</strong> Temperature improves LP reliably, but multi-hop effects are within noise.</li>
+</ol>
+<h3 id="hypothesis-evaluation_7">Hypothesis Evaluation<a class="headerlink" href="#hypothesis-evaluation_7" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Hypothesis</th>
+<th>Result</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>K's 3p≥0.4018 is robust (all seeds)</td>
+<td><strong>REJECTED</strong></td>
+<td>Mean 3p=0.3699, min=0.3418. Below baseline A.</td>
+</tr>
+<tr>
+<td>K's 3p is above baseline A</td>
+<td><strong>REJECTED</strong></td>
+<td>Mean 3p=0.3699 &lt; A's 0.3725. Overlapping std bars.</td>
+</tr>
+<tr>
+<td>N's 4p≥0.30 is robust (all seeds)</td>
+<td><strong>REJECTED</strong></td>
+<td>Mean 4p=0.2354, min=0.1912.</td>
+</tr>
+<tr>
+<td>N's 5p≥0.30 is robust (all seeds)</td>
+<td><strong>REJECTED</strong></td>
+<td>Mean 5p=0.2665, min=0.2012.</td>
+</tr>
+<tr>
+<td>LP improvements from temperature are robust</td>
+<td><strong>CONFIRMED</strong></td>
+<td>K: 0.4832±0.0052, N: 0.4842±0.0089. Both &gt; A (0.4744).</td>
 </tr>
 </tbody>
 </table>

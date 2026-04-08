@@ -908,6 +908,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#34-critical-multi-hop-temperature-claims-are-not-statistically-robust" class="md-nav__link">
+    <span class="md-ellipsis">
+      34. CRITICAL: Multi-hop temperature claims are NOT statistically robust
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1480,6 +1489,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#34-critical-multi-hop-temperature-claims-are-not-statistically-robust" class="md-nav__link">
+    <span class="md-ellipsis">
+      34. CRITICAL: Multi-hop temperature claims are NOT statistically robust
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1504,7 +1522,7 @@
 
 
 <h1 id="key-findings">Key Findings<a class="headerlink" href="#key-findings" title="Permanent link">&para;</a></h1>
-<p>33 key findings from 52 experiment phases, organized by research stage. See <a href="../validation-phases/">Validation Phases</a> for complete result tables.</p>
+<p>34 key findings from 53 experiment phases, organized by research stage. See <a href="../validation-phases/">Validation Phases</a> for complete result tables.</p>
 <hr />
 <h2 id="core-architecture-phases-1-15">Core Architecture (Phases 1-15)<a class="headerlink" href="#core-architecture-phases-1-15" title="Permanent link">&para;</a></h2>
 <h3 id="1-edge-attention-is-deltas-strongest-signal">1. Edge attention is DELTA's strongest signal<a class="headerlink" href="#1-edge-attention-is-deltas-strongest-signal" title="Permanent link">&para;</a></h3>
@@ -1581,6 +1599,8 @@
 <p>Phase 51: N (static node=2.6, matching K's optimal checkpoint value) achieves 3p=0.4001 vs K (annealed to 2.6) 3p=<strong>0.4148</strong> — a +0.015 gap. Early training at high node temp creates 3p-supportive representations that static init cannot replicate. However, N achieves best-ever <strong>4p=0.3426</strong> and <strong>5p=0.3788</strong> (exceeding K's values), suggesting static low node temp uniquely benefits deeper reasoning. P (anneal 4→2.5) achieves a <strong>new LP MRR record (0.4890)</strong> and H@10 record (0.8014) but 3p=0.3823 misses target. K remains closest to the combined target with LP gap of only −0.004.</p>
 <h3 id="33-edge-sharpness-boosts-lp-but-hurts-3p-temperature-investigation-closed">33. Edge sharpness boosts LP but hurts 3p — temperature investigation closed<a class="headerlink" href="#33-edge-sharpness-boosts-lp-but-hurts-3p-temperature-investigation-closed" title="Permanent link">&para;</a></h3>
 <p>Phase 52: Q (K's anneal + edge init 7.0) achieves <strong>new LP MRR record (0.4905)</strong> and S achieves <strong>new H@10 record (0.8045)</strong>, but both fail 3p (Q: 0.3927, S: 0.3789). Edge init 7.0 boosts LP by +0.009 but damages 3p by −0.022 — the trade-off extends to the edge temperature axis. After <strong>7 phases (46-52)</strong> testing 20+ configurations, the LP/3p trade-off is confirmed fundamental at the temperature level. Three distinct operating modes emerge: <strong>LP-optimized</strong> (P/Q, LP≥0.4890), <strong>Balanced-3p</strong> (K, 3p=0.4148), and <strong>Deep-reasoning</strong> (N, 4p=0.3426, 5p=0.3788). Temperature controls reasoning depth — a paper-ready contribution about how attention temperature tunes the LP/reasoning depth trade-off in graph neural networks.</p>
+<h3 id="34-critical-multi-hop-temperature-claims-are-not-statistically-robust">34. CRITICAL: Multi-hop temperature claims are NOT statistically robust<a class="headerlink" href="#34-critical-multi-hop-temperature-claims-are-not-statistically-robust" title="Permanent link">&para;</a></h3>
+<p>Phase 53: Multi-seed validation (3 seeds: 42, 123, 456) reveals that <strong>K's 3p advantage and N's deep-hop advantage are seed-dependent artifacts.</strong> K mean 3p=0.3699±0.0200 — <strong>BELOW baseline A (0.3725)</strong>. N mean 4p=0.2354±0.0618, 5p=0.2665±0.0738 — HUGE variance. Even seed=42 re-runs differ due to CUDA non-determinism (K 3p: 0.4148→0.3812). <strong>LP MRR IS robust</strong>: K=0.4832±0.0052, N=0.4842±0.0089. The 500-query multi-hop evaluation is too noisy for single-seed conclusions. All Phases 46-52 claims about 3p/4p/5p advantages from temperature tuning must be treated as unreliable. Only LP improvements are statistically supported.</p>
 <hr />
 <p><em>See <a href="../validation-phases/">Validation Phases</a> for complete result tables. See <a href="../status-and-roadmap/">Status &amp; Roadmap</a> for current priorities.</em></p>
 

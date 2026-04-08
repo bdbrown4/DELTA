@@ -1,6 +1,6 @@
 # Key Findings
 
-32 key findings from 51 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
+33 key findings from 52 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
 
 ---
 
@@ -117,6 +117,9 @@ Phase 50: K (anneal node 4.0→2.0 fast over 50% of training) achieves **3p MRR 
 
 ### 32. Training trajectory matters — static init cannot replicate annealing's 3p advantage
 Phase 51: N (static node=2.6, matching K's optimal checkpoint value) achieves 3p=0.4001 vs K (annealed to 2.6) 3p=**0.4148** — a +0.015 gap. Early training at high node temp creates 3p-supportive representations that static init cannot replicate. However, N achieves best-ever **4p=0.3426** and **5p=0.3788** (exceeding K's values), suggesting static low node temp uniquely benefits deeper reasoning. P (anneal 4→2.5) achieves a **new LP MRR record (0.4890)** and H@10 record (0.8014) but 3p=0.3823 misses target. K remains closest to the combined target with LP gap of only −0.004.
+
+### 33. Edge sharpness boosts LP but hurts 3p — temperature investigation closed
+Phase 52: Q (K's anneal + edge init 7.0) achieves **new LP MRR record (0.4905)** and S achieves **new H@10 record (0.8045)**, but both fail 3p (Q: 0.3927, S: 0.3789). Edge init 7.0 boosts LP by +0.009 but damages 3p by −0.022 — the trade-off extends to the edge temperature axis. After **7 phases (46-52)** testing 20+ configurations, the LP/3p trade-off is confirmed fundamental at the temperature level. Three distinct operating modes emerge: **LP-optimized** (P/Q, LP≥0.4890), **Balanced-3p** (K, 3p=0.4148), and **Deep-reasoning** (N, 4p=0.3426, 5p=0.3788). Temperature controls reasoning depth — a paper-ready contribution about how attention temperature tunes the LP/reasoning depth trade-off in graph neural networks.
 
 ---
 

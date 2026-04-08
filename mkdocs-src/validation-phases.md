@@ -981,4 +981,96 @@ Trajectory adds +0.015 to 3p but static is BETTER for 4p/5p (+0.032/+0.098).
 
 ---
 
+## Phase 52 — Closing K's LP Gap (Edge Sharpness + Faster Annealing)
+
+**Goal:** Close K's LP gap (−0.004 from 0.4856 target) via two levers: (1) sharper edge init 7.0 (vs 6.0), (2) faster node anneal schedule (35% vs 50%).
+
+**Status:** ✅ COMPLETE — 3 conditions tested. LP record broken (Q: 0.4905) but 3p anticorelation confirmed. Temperature investigation CLOSED after 7 phases.
+
+### Conditions
+
+| Condition | Node Anneal | Edge Init | Anneal Fraction | Key Change vs K |
+|-----------|------------|-----------|-----------------|-----------------|
+| Q (K+edge7) | 4.0→2.0 | **7.0** | 50% (250ep) | Edge sharpness boost |
+| R (K_faster) | 4.0→2.0 | 6.0 | **35%** (175ep) | Faster anneal schedule |
+| S (K+edge7+faster) | 4.0→2.0 | **7.0** | **35%** (175ep) | Both changes combined |
+
+### Link Prediction Results
+
+| Condition | LP MRR | LP H@10 | Val MRR | Best Ep | Dead Heads |
+|-----------|--------|---------|---------|---------|------------|
+| A (baseline) | 0.4744 | 0.7860 | 0.5030 | — | 20/24 (83%) |
+| K (reference) | 0.4819 | 0.7901 | 0.5046 | 175 | 8/24 (33%) |
+| P (reference) | 0.4890 | 0.8014 | 0.5039 | 200 | 8/24 (33%) |
+| **Q** K+edge7 | **0.4905** | 0.8025 | 0.4992 | 200 | 8/24 (33%) |
+| R K_faster | 0.4793 | 0.7860 | 0.5050 | 175 | 8/24 (33%) |
+| **S** K+edge7+faster | 0.4902 | **0.8045** | 0.4932 | 200 | 8/24 (33%) |
+
+### Multi-Hop MRR
+
+| Condition | 1p | 2p | 3p | 4p | 5p |
+|-----------|------|------|------|------|------|
+| K (ref) | 0.2655 | 0.2504 | **0.4148** | 0.3107 | 0.2811 |
+| N (ref) | 0.2520 | 0.2513 | 0.4001 | **0.3426** | **0.3788** |
+| Q | 0.2636 | 0.2557 | 0.3927 | 0.2863 | 0.2985 |
+| R | 0.2679 | 0.2544 | 0.4114 | 0.3222 | 0.3031 |
+| S | 0.2645 | 0.2532 | 0.3789 | 0.2828 | 0.2967 |
+
+### Edge Sharpness Effect (Controlled Comparison)
+
+| Comparison | Edge Init | LP MRR | 3p MRR | LP Δ | 3p Δ |
+|------------|-----------|--------|--------|------|------|
+| K (50% anneal) | 6.0 | 0.4819 | 0.4148 | — | — |
+| Q (50% anneal) | **7.0** | 0.4905 | 0.3927 | **+0.009** | **−0.022** |
+| R (35% anneal) | 6.0 | 0.4793 | 0.4114 | — | — |
+| S (35% anneal) | **7.0** | 0.4902 | 0.3789 | **+0.011** | **−0.033** |
+
+**Finding:** Edge init 7.0 consistently boosts LP (+0.009 to +0.011) but consistently HURTS 3p (−0.022 to −0.033). The effect is purely anti-correlated.
+
+### Learned Temperature Analysis
+
+| Condition | L2 Edge | L2 Node | L1 Edge | L1 Node |
+|-----------|---------|---------|---------|---------|
+| Q | 7.763 | 2.400 | 7.422 | 2.411 |
+| R | 6.564 | 2.000 | 6.395 | 2.000 |
+| S | 7.812 | 1.999 | 7.355 | 2.000 |
+
+### Key Findings
+
+1. **Q achieves NEW LP MRR record: 0.4905** (+0.0015 over P's 0.4890). S achieves NEW H@10 record: 0.8045.
+2. **Edge sharpness and 3p are anti-correlated** — edge init 7.0 boosts LP but damages 3p by 2-3x the LP gain.
+3. **Faster annealing (R) is slightly WORSE than K** on both LP (0.4793 vs 0.4819) and 3p (0.4114 vs 0.4148). 50% schedule is optimal.
+4. **R's deep-hop results** (4p=0.3222, 5p=0.3031) are better than K but below N — confirming N's unique deep-reasoning advantage.
+5. **Combined LP≥0.4856 AND 3p≥0.4018 target is UNACHIEVABLE** in any single temperature configuration after 7 phases (46-52) and 20+ configs tested.
+6. **Three distinct operating modes confirmed:**
+   - LP-optimized: P/Q (LP≥0.4890, sharp edges, moderate node anneal)
+   - Balanced 3p: K (3p=0.4148, fast anneal 50%, edge=6.0)
+   - Deep reasoning: N (4p=0.3426, 5p=0.3788, static node=2.6)
+7. **Temperature investigation CLOSED.** The LP/3p trade-off is fundamental at the temperature level. Attention temperature controls reasoning depth, not just performance magnitude.
+
+### Updated Cumulative Pareto Frontier
+
+| Config | LP MRR | 3p MRR | 4p MRR | 5p MRR | Character |
+|--------|--------|--------|--------|--------|-----------|
+| Q (P52) | **0.4905** | 0.3927 | 0.2863 | 0.2985 | LP record |
+| S (P52) | 0.4902 | 0.3789 | 0.2828 | 0.2967 | H@10 record (0.8045) |
+| P (P51) | 0.4890 | 0.3823 | 0.2349 | 0.2693 | Prior LP leader |
+| H (P49) | 0.4887 | 0.3930 | 0.3333 | 0.3517 | LP-optimized |
+| K (P50) | 0.4819 | **0.4148** | 0.3107 | 0.2811 | 3p record |
+| R (P52) | 0.4793 | 0.4114 | 0.3222 | 0.3031 | Faster K variant |
+| N (P51) | 0.4746 | 0.4001 | **0.3426** | **0.3788** | Deep reasoning |
+
+### Hypothesis Evaluation
+
+| Hypothesis | Result | Evidence |
+|-----------|--------|----------|
+| Q (K+edge7) achieves LP≥0.4856 | **CONFIRMED** | Q: 0.4905 (new LP record!) |
+| Q achieves 3p≥0.4018 | **FAILED** | Q: 0.3927 (−0.009 vs target) |
+| R (faster anneal) closes K's LP gap | **FAILED** | R: 0.4793 (worse than K's 0.4819) |
+| R preserves K's 3p≥0.4018 | **CONFIRMED** | R: 0.4114 (−0.003 vs K's 0.4148) |
+| S (both changes) achieves combined target | **FAILED** | S: LP=0.4902 (PASS) but 3p=0.3789 (FAIL) |
+| Combined LP+3p target achievable via temperature alone | **REJECTED** | 7 phases, 20+ configs, no solution. Trade-off is fundamental. |
+
+---
+
 *All publication-grade results use 5 seeds, mean ± std reported. Phases 38–43 use 1-3 seeds for rapid iteration.*

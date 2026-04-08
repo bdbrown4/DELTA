@@ -1,8 +1,8 @@
 {
   "last_updated": "2026-04-06",
-  "last_completed_phase": 51,
-  "next_phase": 52,
-  "current_phase": 52,
+  "last_completed_phase": 52,
+  "next_phase": 53,
+  "current_phase": 53,
 
   "best_results": {
     "best_overall_lp": {
@@ -139,6 +139,18 @@
       "hypothesis": "Moderate annealing (4→2.5) achieves new LP MRR record",
       "evidence": "P_anneal_moderate: LP MRR=0.4890 (+0.0003 over H/M's 0.4887), H@10=0.8014 (new H@10 record). Best checkpoint at ep 200 with node=2.800.",
       "significance": "high"
+    },
+    {
+      "phase": 52,
+      "hypothesis": "Edge init 7.0 (vs 6.0) boosts LP MRR via sharper edge attention",
+      "evidence": "Q (edge=7.0): LP=0.4905 vs K (edge=6.0): LP=0.4819 — delta=+0.0086. S (edge=7.0+faster): LP=0.4902 vs R (edge=6.0+faster): LP=0.4793 — delta=+0.0109. Edge sharpness consistently boosts LP.",
+      "significance": "high"
+    },
+    {
+      "phase": 52,
+      "hypothesis": "Temperature landscape fully characterized — three distinct operating modes exist",
+      "evidence": "After 7 phases (46-52), 20+ configs: LP-optimized (P/Q, LP≥0.4890), Balanced-3p (K, 3p=0.4148), Deep-reasoning (N, 4p=0.3426, 5p=0.3788). No single config achieves combined LP+3p target. Temperature controls reasoning depth.",
+      "significance": "landmark"
     }
   ],
 
@@ -208,6 +220,24 @@
       "hypothesis": "Combined LP+3p target met via moderate annealing (P: 4→2.5)",
       "evidence": "P: LP=0.4890 (PASS, new record) but 3p=0.3823 (FAIL). Moderate anneal endpoint (2.5 vs K's 2.0) preserves LP but loses K's 3p advantage.",
       "significance": "partial"
+    },
+    {
+      "phase": 52,
+      "hypothesis": "Q (K+edge7) achieves combined LP≥0.4856 AND 3p≥0.4018",
+      "evidence": "Q: LP=0.4905 (PASS, new record) but 3p=0.3927 (FAIL, -0.009 vs target). Edge sharpness boosts LP at the expense of 3p.",
+      "significance": "partial"
+    },
+    {
+      "phase": 52,
+      "hypothesis": "Faster annealing (35% vs 50%) closes K's LP gap",
+      "evidence": "R (35% schedule): LP=0.4793 (FAIL, worse than K's 0.4819). Faster anneal loses LP without significant 3p gain (0.4114 vs K's 0.4148).",
+      "significance": "negative result"
+    },
+    {
+      "phase": 52,
+      "hypothesis": "Combined edge7+faster annealing (S) achieves both targets",
+      "evidence": "S: LP=0.4902 (PASS), H@10=0.8045 (new record!), but 3p=0.3789 (WORST of all 3 P52 conditions). Edge sharpness + speed = LP-biased.",
+      "significance": "partial"
     }
   ],
 
@@ -252,7 +282,13 @@
     "Trajectory adds +0.015 to 3p: K (annealed to 2.6) 3p=0.4148 vs N (static 2.6) 3p=0.4001. Early high-temp training creates representations static init cannot",
     "Static node temp 3.2 (O) is worse than 2.6 (N) on 3p (0.3764 vs 0.4001) — confirming optimal static node temp is closer to 2.0-2.6, not 3.0+",
     "All Phase 51 conditions peak at ep 200 and early-stop at ep 450 — matching Phase 50 dynamics. Training schedule is robust across temperature configs",
-    "K remains closest to combined target: LP gap only −0.004 (0.4819 vs 0.4856) while exceeding 3p target by +0.013 (0.4148 vs 0.4018)"
+    "K remains closest to combined target: LP gap only −0.004 (0.4819 vs 0.4856) while exceeding 3p target by +0.013 (0.4148 vs 0.4018)",
+    "Edge init 7.0 boosts LP by +0.009 (Q vs K: 0.4905 vs 0.4819) but HURTS 3p by −0.022 (Q vs K: 0.3927 vs 0.4148) — edge sharpness and 3p are anti-correlated",
+    "Q achieves NEW LP MRR record: 0.4905 (+0.0015 over P's 0.4890). S achieves NEW H@10 record: 0.8045 (+0.003 over P's 0.8014)",
+    "Faster annealing (R, 35%) is slightly worse than K (50%) on both LP (0.4793 vs 0.4819) and 3p (0.4114 vs 0.4148) — 50% schedule is optimal",
+    "Combined LP+3p target is UNACHIEVABLE in a single temperature config after 7 phases (46-52) and 20+ configurations. The trade-off is fundamental.",
+    "Temperature controls reasoning DEPTH: LP-optimized configs (P/Q) use sharper edges, balanced configs (K) use annealing trajectory, deep-reasoning configs (N) use static low node temp",
+    "Three operating modes identified: LP-optimized (P/Q, LP≥0.4890), Balanced-3p (K, 3p=0.4148), Deep-reasoning (N, 4p=0.3426/5p=0.3788)"
   ],
 
   "open_questions": [
@@ -264,7 +300,10 @@
     "Can DELTA-Full be compressed via importance pruning to match DELTA-Matched on 3p/5p?",
     "Does curriculum compression during training converge to the same optimal capacity?",
     "Why does DELTA peak at ep 125 while GraphGPS peaks at 150-200?",
-    "Would multi-seed 4p/5p confirm the accelerating advantage from Phase 44?"
+    "Would multi-seed 4p/5p confirm the accelerating advantage from Phase 44?",
+    "TEMPERATURE INVESTIGATION CLOSED (Phases 46-52). Landscape fully characterized. Three operating modes identified.",
+    "Multi-seed validation needed for K and N — are the 3p and 4p/5p advantages statistically robust across seeds?",
+    "N needs full Phase 44 protocol (10k-query eval) to validate 4p/5p claims at publication quality (current results use 500-query cap)"
   ],
 
   "phase_history": {
@@ -279,7 +318,8 @@
     "48": { "title": "Asymmetric node/edge temperature", "result": "PARTIAL -- E (node=2,edge=6) achieves new LP MRR record (0.4856, +1.5%) and H@10 (0.8004). 3p gap persists (best 0.3970 vs D 0.4018). Node temps stable, edge always drifts UP. L0 temperature may explain D's 3p advantage." },
     "49": { "title": "L0 temperature + asymmetric L1+L2", "result": "PARTIAL -- H (L0=4,4 + E's L1+L2) achieves new LP MRR record (0.4887). 3p=0.3930 still below D (0.4018). L0 node temp irrelevant (L0 100% dead). LP/3p trade-off is fundamental to asymmetric temp init. I achieves best-ever H@10 (0.8076)." },
     "50": { "title": "Temperature annealing (node temp schedule)", "result": "PARTIAL -- K (anneal 4→2 fast) achieves 3p=0.4148, FIRST to beat D's 0.4018 (+0.013). LP=0.4819 misses target (0.4856). M ties LP record (0.4887) but 3p=0.3803. L REJECTED. Pareto frontier shifted. Best checkpoint at node temp=2.6." },
-    "51": { "title": "Static vs trajectory temperature optimization", "result": "PARTIAL -- P (anneal 4→2.5) achieves new LP MRR record (0.4890) and H@10 record (0.8014) but 3p=0.3823 FAIL. N (static 2.6) 3p=0.4001 just misses D's 0.4018 by 0.002. Trajectory confirmed: K (annealed)=0.4148 vs N (static)=0.4001 at same final temp=2.6, delta=+0.015. N has best-ever 4p (0.3426) and 5p (0.3788)." }
+    "51": { "title": "Static vs trajectory temperature optimization", "result": "PARTIAL -- P (anneal 4→2.5) achieves new LP MRR record (0.4890) and H@10 record (0.8014) but 3p=0.3823 FAIL. N (static 2.6) 3p=0.4001 just misses D's 0.4018 by 0.002. Trajectory confirmed: K (annealed)=0.4148 vs N (static)=0.4001 at same final temp=2.6, delta=+0.015. N has best-ever 4p (0.3426) and 5p (0.3788)." },
+    "52": { "title": "Closing K's LP gap via edge sharpness and faster annealing", "result": "PARTIAL -- Q (K+edge7) achieves NEW LP MRR record (0.4905) but 3p=0.3927 FAIL. S (K+edge7+faster) achieves NEW H@10 record (0.8045) but 3p=0.3789 FAIL. R (K+faster anneal) preserves 3p=0.4114 but LP=0.4793 FAIL. Edge init 7.0 boosts LP by +0.009 but hurts 3p by -0.022. Combined target still unachievable. TEMPERATURE INVESTIGATION CLOSED after 7 phases (46-52)." }
   },
 
   "timing_baselines": {

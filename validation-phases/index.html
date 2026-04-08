@@ -1357,6 +1357,93 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#phase-52-closing-ks-lp-gap-edge-sharpness-faster-annealing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 52 — Closing K's LP Gap (Edge Sharpness + Faster Annealing)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 52 — Closing K's LP Gap (Edge Sharpness + Faster Annealing)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conditions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#link-prediction-results_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Link Prediction Results
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-hop-mrr" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-Hop MRR
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-sharpness-effect-controlled-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      Edge Sharpness Effect (Controlled Comparison)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#learned-temperature-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Learned Temperature Analysis
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-findings_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Findings
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#updated-cumulative-pareto-frontier" class="md-nav__link">
+    <span class="md-ellipsis">
+      Updated Cumulative Pareto Frontier
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hypothesis-evaluation_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hypothesis Evaluation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2319,6 +2406,93 @@
         
           <li class="md-nav__item">
   <a href="#hypothesis-evaluation_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hypothesis Evaluation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-52-closing-ks-lp-gap-edge-sharpness-faster-annealing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 52 — Closing K's LP Gap (Edge Sharpness + Faster Annealing)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 52 — Closing K's LP Gap (Edge Sharpness + Faster Annealing)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conditions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#link-prediction-results_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Link Prediction Results
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-hop-mrr" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-Hop MRR
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#edge-sharpness-effect-controlled-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      Edge Sharpness Effect (Controlled Comparison)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#learned-temperature-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Learned Temperature Analysis
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-findings_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Findings
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#updated-cumulative-pareto-frontier" class="md-nav__link">
+    <span class="md-ellipsis">
+      Updated Cumulative Pareto Frontier
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hypothesis-evaluation_6" class="md-nav__link">
     <span class="md-ellipsis">
       Hypothesis Evaluation
     </span>
@@ -5673,6 +5847,372 @@
 <td>Trajectory matters (K &gt; N at same final temp)</td>
 <td><strong>CONFIRMED</strong></td>
 <td>K 3p=0.4148 vs N 3p=0.4001 (+0.015)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="phase-52-closing-ks-lp-gap-edge-sharpness-faster-annealing">Phase 52 — Closing K's LP Gap (Edge Sharpness + Faster Annealing)<a class="headerlink" href="#phase-52-closing-ks-lp-gap-edge-sharpness-faster-annealing" title="Permanent link">&para;</a></h2>
+<p><strong>Goal:</strong> Close K's LP gap (−0.004 from 0.4856 target) via two levers: (1) sharper edge init 7.0 (vs 6.0), (2) faster node anneal schedule (35% vs 50%).</p>
+<p><strong>Status:</strong> ✅ COMPLETE — 3 conditions tested. LP record broken (Q: 0.4905) but 3p anticorelation confirmed. Temperature investigation CLOSED after 7 phases.</p>
+<h3 id="conditions">Conditions<a class="headerlink" href="#conditions" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Node Anneal</th>
+<th>Edge Init</th>
+<th>Anneal Fraction</th>
+<th>Key Change vs K</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Q (K+edge7)</td>
+<td>4.0→2.0</td>
+<td><strong>7.0</strong></td>
+<td>50% (250ep)</td>
+<td>Edge sharpness boost</td>
+</tr>
+<tr>
+<td>R (K_faster)</td>
+<td>4.0→2.0</td>
+<td>6.0</td>
+<td><strong>35%</strong> (175ep)</td>
+<td>Faster anneal schedule</td>
+</tr>
+<tr>
+<td>S (K+edge7+faster)</td>
+<td>4.0→2.0</td>
+<td><strong>7.0</strong></td>
+<td><strong>35%</strong> (175ep)</td>
+<td>Both changes combined</td>
+</tr>
+</tbody>
+</table>
+<h3 id="link-prediction-results_1">Link Prediction Results<a class="headerlink" href="#link-prediction-results_1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>LP MRR</th>
+<th>LP H@10</th>
+<th>Val MRR</th>
+<th>Best Ep</th>
+<th>Dead Heads</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A (baseline)</td>
+<td>0.4744</td>
+<td>0.7860</td>
+<td>0.5030</td>
+<td>—</td>
+<td>20/24 (83%)</td>
+</tr>
+<tr>
+<td>K (reference)</td>
+<td>0.4819</td>
+<td>0.7901</td>
+<td>0.5046</td>
+<td>175</td>
+<td>8/24 (33%)</td>
+</tr>
+<tr>
+<td>P (reference)</td>
+<td>0.4890</td>
+<td>0.8014</td>
+<td>0.5039</td>
+<td>200</td>
+<td>8/24 (33%)</td>
+</tr>
+<tr>
+<td><strong>Q</strong> K+edge7</td>
+<td><strong>0.4905</strong></td>
+<td>0.8025</td>
+<td>0.4992</td>
+<td>200</td>
+<td>8/24 (33%)</td>
+</tr>
+<tr>
+<td>R K_faster</td>
+<td>0.4793</td>
+<td>0.7860</td>
+<td>0.5050</td>
+<td>175</td>
+<td>8/24 (33%)</td>
+</tr>
+<tr>
+<td><strong>S</strong> K+edge7+faster</td>
+<td>0.4902</td>
+<td><strong>0.8045</strong></td>
+<td>0.4932</td>
+<td>200</td>
+<td>8/24 (33%)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="multi-hop-mrr">Multi-Hop MRR<a class="headerlink" href="#multi-hop-mrr" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>1p</th>
+<th>2p</th>
+<th>3p</th>
+<th>4p</th>
+<th>5p</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>K (ref)</td>
+<td>0.2655</td>
+<td>0.2504</td>
+<td><strong>0.4148</strong></td>
+<td>0.3107</td>
+<td>0.2811</td>
+</tr>
+<tr>
+<td>N (ref)</td>
+<td>0.2520</td>
+<td>0.2513</td>
+<td>0.4001</td>
+<td><strong>0.3426</strong></td>
+<td><strong>0.3788</strong></td>
+</tr>
+<tr>
+<td>Q</td>
+<td>0.2636</td>
+<td>0.2557</td>
+<td>0.3927</td>
+<td>0.2863</td>
+<td>0.2985</td>
+</tr>
+<tr>
+<td>R</td>
+<td>0.2679</td>
+<td>0.2544</td>
+<td>0.4114</td>
+<td>0.3222</td>
+<td>0.3031</td>
+</tr>
+<tr>
+<td>S</td>
+<td>0.2645</td>
+<td>0.2532</td>
+<td>0.3789</td>
+<td>0.2828</td>
+<td>0.2967</td>
+</tr>
+</tbody>
+</table>
+<h3 id="edge-sharpness-effect-controlled-comparison">Edge Sharpness Effect (Controlled Comparison)<a class="headerlink" href="#edge-sharpness-effect-controlled-comparison" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Comparison</th>
+<th>Edge Init</th>
+<th>LP MRR</th>
+<th>3p MRR</th>
+<th>LP Δ</th>
+<th>3p Δ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>K (50% anneal)</td>
+<td>6.0</td>
+<td>0.4819</td>
+<td>0.4148</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Q (50% anneal)</td>
+<td><strong>7.0</strong></td>
+<td>0.4905</td>
+<td>0.3927</td>
+<td><strong>+0.009</strong></td>
+<td><strong>−0.022</strong></td>
+</tr>
+<tr>
+<td>R (35% anneal)</td>
+<td>6.0</td>
+<td>0.4793</td>
+<td>0.4114</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>S (35% anneal)</td>
+<td><strong>7.0</strong></td>
+<td>0.4902</td>
+<td>0.3789</td>
+<td><strong>+0.011</strong></td>
+<td><strong>−0.033</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Finding:</strong> Edge init 7.0 consistently boosts LP (+0.009 to +0.011) but consistently HURTS 3p (−0.022 to −0.033). The effect is purely anti-correlated.</p>
+<h3 id="learned-temperature-analysis">Learned Temperature Analysis<a class="headerlink" href="#learned-temperature-analysis" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>L2 Edge</th>
+<th>L2 Node</th>
+<th>L1 Edge</th>
+<th>L1 Node</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Q</td>
+<td>7.763</td>
+<td>2.400</td>
+<td>7.422</td>
+<td>2.411</td>
+</tr>
+<tr>
+<td>R</td>
+<td>6.564</td>
+<td>2.000</td>
+<td>6.395</td>
+<td>2.000</td>
+</tr>
+<tr>
+<td>S</td>
+<td>7.812</td>
+<td>1.999</td>
+<td>7.355</td>
+<td>2.000</td>
+</tr>
+</tbody>
+</table>
+<h3 id="key-findings_10">Key Findings<a class="headerlink" href="#key-findings_10" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Q achieves NEW LP MRR record: 0.4905</strong> (+0.0015 over P's 0.4890). S achieves NEW H@10 record: 0.8045.</li>
+<li><strong>Edge sharpness and 3p are anti-correlated</strong> — edge init 7.0 boosts LP but damages 3p by 2-3x the LP gain.</li>
+<li><strong>Faster annealing (R) is slightly WORSE than K</strong> on both LP (0.4793 vs 0.4819) and 3p (0.4114 vs 0.4148). 50% schedule is optimal.</li>
+<li><strong>R's deep-hop results</strong> (4p=0.3222, 5p=0.3031) are better than K but below N — confirming N's unique deep-reasoning advantage.</li>
+<li><strong>Combined LP≥0.4856 AND 3p≥0.4018 target is UNACHIEVABLE</strong> in any single temperature configuration after 7 phases (46-52) and 20+ configs tested.</li>
+<li><strong>Three distinct operating modes confirmed:</strong></li>
+<li>LP-optimized: P/Q (LP≥0.4890, sharp edges, moderate node anneal)</li>
+<li>Balanced 3p: K (3p=0.4148, fast anneal 50%, edge=6.0)</li>
+<li>Deep reasoning: N (4p=0.3426, 5p=0.3788, static node=2.6)</li>
+<li><strong>Temperature investigation CLOSED.</strong> The LP/3p trade-off is fundamental at the temperature level. Attention temperature controls reasoning depth, not just performance magnitude.</li>
+</ol>
+<h3 id="updated-cumulative-pareto-frontier">Updated Cumulative Pareto Frontier<a class="headerlink" href="#updated-cumulative-pareto-frontier" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Config</th>
+<th>LP MRR</th>
+<th>3p MRR</th>
+<th>4p MRR</th>
+<th>5p MRR</th>
+<th>Character</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Q (P52)</td>
+<td><strong>0.4905</strong></td>
+<td>0.3927</td>
+<td>0.2863</td>
+<td>0.2985</td>
+<td>LP record</td>
+</tr>
+<tr>
+<td>S (P52)</td>
+<td>0.4902</td>
+<td>0.3789</td>
+<td>0.2828</td>
+<td>0.2967</td>
+<td>H@10 record (0.8045)</td>
+</tr>
+<tr>
+<td>P (P51)</td>
+<td>0.4890</td>
+<td>0.3823</td>
+<td>0.2349</td>
+<td>0.2693</td>
+<td>Prior LP leader</td>
+</tr>
+<tr>
+<td>H (P49)</td>
+<td>0.4887</td>
+<td>0.3930</td>
+<td>0.3333</td>
+<td>0.3517</td>
+<td>LP-optimized</td>
+</tr>
+<tr>
+<td>K (P50)</td>
+<td>0.4819</td>
+<td><strong>0.4148</strong></td>
+<td>0.3107</td>
+<td>0.2811</td>
+<td>3p record</td>
+</tr>
+<tr>
+<td>R (P52)</td>
+<td>0.4793</td>
+<td>0.4114</td>
+<td>0.3222</td>
+<td>0.3031</td>
+<td>Faster K variant</td>
+</tr>
+<tr>
+<td>N (P51)</td>
+<td>0.4746</td>
+<td>0.4001</td>
+<td><strong>0.3426</strong></td>
+<td><strong>0.3788</strong></td>
+<td>Deep reasoning</td>
+</tr>
+</tbody>
+</table>
+<h3 id="hypothesis-evaluation_6">Hypothesis Evaluation<a class="headerlink" href="#hypothesis-evaluation_6" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Hypothesis</th>
+<th>Result</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Q (K+edge7) achieves LP≥0.4856</td>
+<td><strong>CONFIRMED</strong></td>
+<td>Q: 0.4905 (new LP record!)</td>
+</tr>
+<tr>
+<td>Q achieves 3p≥0.4018</td>
+<td><strong>FAILED</strong></td>
+<td>Q: 0.3927 (−0.009 vs target)</td>
+</tr>
+<tr>
+<td>R (faster anneal) closes K's LP gap</td>
+<td><strong>FAILED</strong></td>
+<td>R: 0.4793 (worse than K's 0.4819)</td>
+</tr>
+<tr>
+<td>R preserves K's 3p≥0.4018</td>
+<td><strong>CONFIRMED</strong></td>
+<td>R: 0.4114 (−0.003 vs K's 0.4148)</td>
+</tr>
+<tr>
+<td>S (both changes) achieves combined target</td>
+<td><strong>FAILED</strong></td>
+<td>S: LP=0.4902 (PASS) but 3p=0.3789 (FAIL)</td>
+</tr>
+<tr>
+<td>Combined LP+3p target achievable via temperature alone</td>
+<td><strong>REJECTED</strong></td>
+<td>7 phases, 20+ configs, no solution. Trade-off is fundamental.</td>
 </tr>
 </tbody>
 </table>

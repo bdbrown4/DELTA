@@ -41,7 +41,8 @@ wandb/
 
 # Experiment output
 results/
-phase24_output.txt
+phase*_output.txt
+phase*_output.json
 *.log
 
 # OS

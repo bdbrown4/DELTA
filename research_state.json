@@ -1,8 +1,8 @@
 {
   "last_updated": "2026-04-06",
-  "last_completed_phase": 52,
-  "next_phase": 53,
-  "current_phase": 53,
+  "last_completed_phase": 53,
+  "next_phase": 54,
+  "current_phase": 54,
 
   "best_results": {
     "best_overall_lp": {
@@ -151,6 +151,12 @@
       "hypothesis": "Temperature landscape fully characterized — three distinct operating modes exist",
       "evidence": "After 7 phases (46-52), 20+ configs: LP-optimized (P/Q, LP≥0.4890), Balanced-3p (K, 3p=0.4148), Deep-reasoning (N, 4p=0.3426, 5p=0.3788). No single config achieves combined LP+3p target. Temperature controls reasoning depth.",
       "significance": "landmark"
+    },
+    {
+      "phase": 53,
+      "hypothesis": "LP MRR improvements from temperature tuning are statistically robust across seeds",
+      "evidence": "K: 0.4832±0.0052 (all 3 seeds > 0.476). N: 0.4842±0.0089 (all 3 seeds > 0.474). LP improvements from asymmetric temperature are real and reproducible.",
+      "significance": "high"
     }
   ],
 
@@ -238,6 +244,24 @@
       "hypothesis": "Combined edge7+faster annealing (S) achieves both targets",
       "evidence": "S: LP=0.4902 (PASS), H@10=0.8045 (new record!), but 3p=0.3789 (WORST of all 3 P52 conditions). Edge sharpness + speed = LP-biased.",
       "significance": "partial"
+    },
+    {
+      "phase": 53,
+      "hypothesis": "K's 3p advantage (≥0.4018) is statistically robust across 3 seeds",
+      "evidence": "K mean 3p=0.3699±0.0200, min=0.3418 — BELOW baseline A (0.3725). K's 3p=0.4148 from Phase 50 was a single-seed outlier. Not reproducible.",
+      "significance": "high"
+    },
+    {
+      "phase": 53,
+      "hypothesis": "N's deep-hop advantage (4p≥0.30, 5p≥0.30) is statistically robust",
+      "evidence": "N mean 4p=0.2354±0.0618, mean 5p=0.2665±0.0738. min 4p=0.1912, min 5p=0.2012. HUGE variance, no seed passes both targets. N's single-seed records (4p=0.3426, 5p=0.3788) were outliers.",
+      "significance": "high"
+    },
+    {
+      "phase": 53,
+      "hypothesis": "Seed=42 results are reproducible (CUDA determinism)",
+      "evidence": "K seed=42 re-run: LP=0.4880 (was 0.4819), 3p=0.3812 (was 0.4148). N seed=42 re-run: LP=0.4744 (was 0.4746), 3p=0.3996 (was 0.4001). CUDA non-determinism causes significant variation even with same seed.",
+      "significance": "high"
     }
   ],
 
@@ -288,7 +312,12 @@
     "Faster annealing (R, 35%) is slightly worse than K (50%) on both LP (0.4793 vs 0.4819) and 3p (0.4114 vs 0.4148) — 50% schedule is optimal",
     "Combined LP+3p target is UNACHIEVABLE in a single temperature config after 7 phases (46-52) and 20+ configurations. The trade-off is fundamental.",
     "Temperature controls reasoning DEPTH: LP-optimized configs (P/Q) use sharper edges, balanced configs (K) use annealing trajectory, deep-reasoning configs (N) use static low node temp",
-    "Three operating modes identified: LP-optimized (P/Q, LP≥0.4890), Balanced-3p (K, 3p=0.4148), Deep-reasoning (N, 4p=0.3426/5p=0.3788)"
+    "Three operating modes identified: LP-optimized (P/Q, LP≥0.4890), Balanced-3p (K, 3p=0.4148), Deep-reasoning (N, 4p=0.3426/5p=0.3788)",
+    "CRITICAL: Multi-hop metrics (3p/4p/5p) at 500-query cap are TOO NOISY for single-seed conclusions. K mean 3p=0.3699±0.0200 (below A baseline!), N 4p std=0.062, 5p std=0.074.",
+    "LP MRR IS robust across seeds: K=0.4832±0.0052, N=0.4842±0.0089. Temperature tuning improves LP reliably.",
+    "CUDA non-determinism: same seed=42 gives different results across runs. K 3p went from 0.4148 to 0.3812. LP varies by ~0.006.",
+    "Multi-hop eval needs MUCH more queries (10k+) or more seeds (5+) to draw reliable conclusions about 3p/4p/5p improvements",
+    "Three operating modes narrative is REVOKED for multi-hop — only LP differences are statistically supported"
   ],
 
   "open_questions": [
@@ -303,7 +332,10 @@
     "Would multi-seed 4p/5p confirm the accelerating advantage from Phase 44?",
     "TEMPERATURE INVESTIGATION CLOSED (Phases 46-52). Landscape fully characterized. Three operating modes identified.",
     "Multi-seed validation needed for K and N — are the 3p and 4p/5p advantages statistically robust across seeds?",
-    "N needs full Phase 44 protocol (10k-query eval) to validate 4p/5p claims at publication quality (current results use 500-query cap)"
+    "ANSWERED Phase 53: NO — K's 3p and N's 4p/5p advantages are NOT robust. Multi-hop metrics are too noisy at 500 queries.",
+    "N needs full Phase 44 protocol (10k-query eval) to validate 4p/5p claims at publication quality (current results use 500-query cap)",
+    "Is the 500-query multi-hop eval fundamentally too noisy, or is the noise from model variance? Need to separate evaluation noise from training noise.",
+    "Can DELTA-Matched (157K, robust in Phase 45) be tested with temperature tuning? The smaller model showed robustness in multi-seed Phase 45."
   ],
 
   "phase_history": {
@@ -319,7 +351,8 @@
     "49": { "title": "L0 temperature + asymmetric L1+L2", "result": "PARTIAL -- H (L0=4,4 + E's L1+L2) achieves new LP MRR record (0.4887). 3p=0.3930 still below D (0.4018). L0 node temp irrelevant (L0 100% dead). LP/3p trade-off is fundamental to asymmetric temp init. I achieves best-ever H@10 (0.8076)." },
     "50": { "title": "Temperature annealing (node temp schedule)", "result": "PARTIAL -- K (anneal 4→2 fast) achieves 3p=0.4148, FIRST to beat D's 0.4018 (+0.013). LP=0.4819 misses target (0.4856). M ties LP record (0.4887) but 3p=0.3803. L REJECTED. Pareto frontier shifted. Best checkpoint at node temp=2.6." },
     "51": { "title": "Static vs trajectory temperature optimization", "result": "PARTIAL -- P (anneal 4→2.5) achieves new LP MRR record (0.4890) and H@10 record (0.8014) but 3p=0.3823 FAIL. N (static 2.6) 3p=0.4001 just misses D's 0.4018 by 0.002. Trajectory confirmed: K (annealed)=0.4148 vs N (static)=0.4001 at same final temp=2.6, delta=+0.015. N has best-ever 4p (0.3426) and 5p (0.3788)." },
-    "52": { "title": "Closing K's LP gap via edge sharpness and faster annealing", "result": "PARTIAL -- Q (K+edge7) achieves NEW LP MRR record (0.4905) but 3p=0.3927 FAIL. S (K+edge7+faster) achieves NEW H@10 record (0.8045) but 3p=0.3789 FAIL. R (K+faster anneal) preserves 3p=0.4114 but LP=0.4793 FAIL. Edge init 7.0 boosts LP by +0.009 but hurts 3p by -0.022. Combined target still unachievable. TEMPERATURE INVESTIGATION CLOSED after 7 phases (46-52)." }
+    "52": { "title": "Closing K's LP gap via edge sharpness and faster annealing", "result": "PARTIAL -- Q (K+edge7) achieves NEW LP MRR record (0.4905) but 3p=0.3927 FAIL. S (K+edge7+faster) achieves NEW H@10 record (0.8045) but 3p=0.3789 FAIL. R (K+faster anneal) preserves 3p=0.4114 but LP=0.4793 FAIL. Edge init 7.0 boosts LP by +0.009 but hurts 3p by -0.022. Combined target still unachievable. TEMPERATURE INVESTIGATION CLOSED after 7 phases (46-52)." },
+    "53": { "title": "Multi-seed validation of K and N", "result": "CRITICAL REALITY CHECK -- K mean 3p=0.3699±0.0200 (BELOW baseline A=0.3725!). N mean 4p=0.2354±0.0618, 5p=0.2665±0.0738 (HUGE variance). LP MRR IS robust: K=0.4832±0.0052, N=0.4842±0.0089. Multi-hop eval at 500 queries is too noisy for single-seed conclusions. All temperature phase 3p/4p/5p claims are unreliable. Even seed=42 re-runs are non-reproducible (CUDA non-determinism)." }
   },
 
   "timing_baselines": {

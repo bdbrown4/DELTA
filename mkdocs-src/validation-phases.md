@@ -1073,4 +1073,69 @@ Trajectory adds +0.015 to 3p but static is BETTER for 4p/5p (+0.032/+0.098).
 
 ---
 
+## Phase 53 — Multi-Seed Validation of K and N
+
+**Goal:** Validate K's 3p advantage and N's deep-hop advantage across 3 seeds (42, 123, 456) to confirm statistical robustness before publication.
+
+**Status:** ✅ COMPLETE — **CRITICAL REALITY CHECK.** Multi-hop claims from Phases 46-52 are NOT robust. LP improvements ARE robust.
+
+### Multi-Seed Results: K (anneal 4→2, 50%)
+
+| Seed | LP MRR | LP H@10 | 3p MRR | 4p MRR | 5p MRR | Dead |
+|------|--------|---------|--------|--------|--------|------|
+| 42 | 0.4880 | 0.8035 | 0.3812 | 0.2595 | 0.3009 | 8/24 |
+| 123 | 0.4760 | 0.7788 | 0.3418 | 0.2074 | 0.2072 | 9/24 |
+| 456 | 0.4856 | 0.8200 | 0.3866 | 0.2206 | 0.2363 | 8/24 |
+| **Mean±Std** | **0.4832±0.0052** | **0.8008±0.0169** | **0.3699±0.0200** | **0.2292±0.0221** | **0.2481±0.0391** | |
+
+### Multi-Seed Results: N (static node=2.6)
+
+| Seed | LP MRR | LP H@10 | 3p MRR | 4p MRR | 5p MRR | Dead |
+|------|--------|---------|--------|--------|--------|------|
+| 42 | 0.4744 | 0.7891 | 0.3996 | 0.3228 | 0.3697 | 8/24 |
+| 123 | 0.4822 | 0.7860 | 0.2859 | 0.1912 | 0.2012 | 9/24 |
+| 456 | 0.4960 | 0.8241 | 0.3609 | 0.1923 | 0.2287 | 8/24 |
+| **Mean±Std** | **0.4842±0.0089** | **0.7997±0.0173** | **0.3488±0.0472** | **0.2354±0.0618** | **0.2665±0.0738** | |
+
+### Cross-Condition Comparison
+
+| Condition | LP MRR | 3p MRR | 4p MRR | 5p MRR |
+|-----------|--------|--------|--------|--------|
+| A baseline (ref) | 0.4744 | 0.3725 | — | — |
+| K (3 seeds) | 0.4832±0.0052 | 0.3699±0.0200 | 0.2292±0.0221 | 0.2481±0.0391 |
+| N (3 seeds) | 0.4842±0.0089 | 0.3488±0.0472 | 0.2354±0.0618 | 0.2665±0.0738 |
+
+### Reproducibility Check (Seed 42 vs Original)
+
+| Config | Metric | Original | Re-run | Delta |
+|--------|--------|----------|--------|-------|
+| K | LP MRR | 0.4819 | 0.4880 | +0.006 |
+| K | 3p MRR | 0.4148 | 0.3812 | **−0.034** |
+| N | LP MRR | 0.4746 | 0.4744 | −0.000 |
+| N | 3p MRR | 0.4001 | 0.3996 | −0.001 |
+| N | 4p MRR | 0.3426 | 0.3228 | **−0.020** |
+| N | 5p MRR | 0.3788 | 0.3697 | **−0.009** |
+
+### Key Findings
+
+1. **K's 3p advantage is NOT statistically robust.** Mean 3p=0.3699±0.0200 — BELOW baseline A (0.3725). K's Phase 50 result (3p=0.4148) was a single-seed outlier.
+2. **N's deep-hop advantage is NOT statistically robust.** Mean 4p=0.2354±0.0618, 5p=0.2665±0.0738 — HUGE variance. No seed consistently achieves 4p≥0.30 or 5p≥0.30.
+3. **LP MRR IS robust.** K: 0.4832±0.0052, N: 0.4842±0.0089 — consistent across seeds, both above baseline A (0.4744).
+4. **CUDA non-determinism breaks seed reproducibility.** K seed=42 re-run gives 3p=0.3812 vs original 0.4148 (delta=−0.034). LP is more stable (delta=+0.006).
+5. **500-query multi-hop evaluation is too noisy** for single-seed temperature conclusions. N seed 123 has 3p=0.2859 while seed 42 has 3p=0.3996 — a 0.114 spread!
+6. **All Phases 46-52 multi-hop claims (3p, 4p, 5p) must be treated as unreliable.** Only LP MRR improvements from temperature tuning are statistically supported.
+7. **The "three operating modes" narrative is revoked for multi-hop.** Temperature improves LP reliably, but multi-hop effects are within noise.
+
+### Hypothesis Evaluation
+
+| Hypothesis | Result | Evidence |
+|-----------|--------|----------|
+| K's 3p≥0.4018 is robust (all seeds) | **REJECTED** | Mean 3p=0.3699, min=0.3418. Below baseline A. |
+| K's 3p is above baseline A | **REJECTED** | Mean 3p=0.3699 < A's 0.3725. Overlapping std bars. |
+| N's 4p≥0.30 is robust (all seeds) | **REJECTED** | Mean 4p=0.2354, min=0.1912. |
+| N's 5p≥0.30 is robust (all seeds) | **REJECTED** | Mean 5p=0.2665, min=0.2012. |
+| LP improvements from temperature are robust | **CONFIRMED** | K: 0.4832±0.0052, N: 0.4842±0.0089. Both > A (0.4744). |
+
+---
+
 *All publication-grade results use 5 seeds, mean ± std reported. Phases 38–43 use 1-3 seeds for rapid iteration.*

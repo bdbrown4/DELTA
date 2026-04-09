@@ -1,6 +1,6 @@
 # Key Findings
 
-34 key findings from 53 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
+35 key findings from 54 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
 
 ---
 
@@ -123,6 +123,9 @@ Phase 52: Q (K's anneal + edge init 7.0) achieves **new LP MRR record (0.4905)**
 
 ### 34. CRITICAL: Multi-hop temperature claims are NOT statistically robust
 Phase 53: Multi-seed validation (3 seeds: 42, 123, 456) reveals that **K's 3p advantage and N's deep-hop advantage are seed-dependent artifacts.** K mean 3p=0.3699±0.0200 — **BELOW baseline A (0.3725)**. N mean 4p=0.2354±0.0618, 5p=0.2665±0.0738 — HUGE variance. Even seed=42 re-runs differ due to CUDA non-determinism (K 3p: 0.4148→0.3812). **LP MRR IS robust**: K=0.4832±0.0052, N=0.4842±0.0089. The 500-query multi-hop evaluation is too noisy for single-seed conclusions. All Phases 46-52 claims about 3p/4p/5p advantages from temperature tuning must be treated as unreliable. Only LP improvements are statistically supported.
+
+### 35. Evaluation noise dominates multi-hop variance — investigation CLOSED
+Phase 54: 10k-query evaluation reduces cross-seed multi-hop std by **66-84%** (avg K=75%, N=79%), confirming evaluation noise was the dominant variance source. With tight CIs, K and N are **statistically indistinguishable** on multi-hop (3p: 0.2614±0.0032 vs 0.2560±0.0091). 500q and 10kq give dramatically different absolute MRR (K 3p: 0.37→0.26) because larger query samples include harder paths. LP MRR remains robust and protocol-independent (K=0.4845±0.0051, N=0.4865±0.0086). After **9 phases (46-54)**, the conclusion: temperature reliably improves LP but has **no statistically supported effect on multi-hop reasoning depth** in DELTA-Full. Multi-hop investigation CLOSED.
 
 ---
 

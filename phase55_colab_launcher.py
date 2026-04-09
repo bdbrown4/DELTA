@@ -1,28 +1,24 @@
-"""
-DELTA Phase 55 - Colab Launcher
+"""DELTA Phase 55 Launcher — Local or Colab Execution
 
-Runs phase55_brain_port.py on Google Colab with optimized parameters.
-Mount your Google Drive at /content/drive to save results.
+Runs phase55_brain_port.py with optimized parameters.
+Autodetects environment (local vs Colab) and adjusts paths accordingly.
 
-Installation & Setup:
-```
-!git clone https://github.com/bdbrown4/DELTA.git /content/DELTA
-%cd /content/DELTA
-!pip install -q torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-!pip install -q tqdm numpy scipy scikit-learn
-```
+Local usage:
+  cd c:\\dev\\DELTA
+  python phase55_colab_launcher.py --seeds 42 --epochs 150 --eval_every 30
 
-Then run this script:
-```
-!python phase55_colab_launcher.py --seeds 42 --epochs 150 --eval_every 30
-```
+Colab usage:
+  !git clone https://github.com/bdbrown4/DELTA.git /content/DELTA
+  %cd /content/DELTA
+  !pip install -q torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+  !python phase55_colab_launcher.py --seeds 42 --epochs 150 --eval_every 30
 
 This will:
 - Run brain_hybrid and delta_full baseline
 - Use 1 seed (42) for speed validation
 - Reduce epochs to 150 (still sufficient for convergence validation)
 - Save results to phase55_output.json
-- If Drive mounted, also copy to /content/drive/MyDrive/DELTA/
+- Stream all output to the terminal in real time
 """
 
 import subprocess
@@ -81,56 +77,91 @@ def run_phase55_colab(
         '--models', models,
     ]
     
+    # Determine working directory: use script's parent (works locally and on Colab)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    work_dir = script_dir  # DELTA root, regardless of where we're invoked from
+
+    print(f"Working directory: {work_dir}")
     print(f"Running: {' '.join(cmd)}")
     print()
-    
+
     try:
-        result = subprocess.run(cmd, cwd='/content/DELTA', check=True)
+        # Stream output in real time (no buffering)
+        process = subprocess.Popen(
+            cmd,
+            cwd=work_dir,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            bufsize=1,
+            universal_newlines=True,
+            env={**os.environ, 'PYTHONUNBUFFERED': '1'},
+        )
+        for line in process.stdout:
+            print(line, end='', flush=True)
+        process.wait()
+        if process.returncode != 0:
+            print(f"\n❌ Phase 55 failed with exit code {process.returncode}")
+            return False
         print("\n✅ Phase 55 completed successfully!")
-    except subprocess.CalledProcessError as e:
-        print(f"\n❌ Phase 55 failed with exit code {e.returncode}")
-        return False
     except FileNotFoundError:
         print(f"\n❌ Error: experiments/phase55_brain_port.py not found")
         print("Make sure you're running this from the DELTA directory")
         return False
     
-    # Check for output
-    output_path = Path('/content/DELTA/phase55_output.json')
-    if output_path.exists():
+    # Check for output (search in work_dir first, then common locations)
+    output_path = None
+    for candidate in [
+        Path(work_dir) / 'phase55_output.json',
+        Path(work_dir) / 'DELTA' / 'phase55_output.json',
+        Path('/content/DELTA/phase55_output.json'),
+    ]:
+        if candidate.exists():
+            output_path = candidate
+            break
+
+    if output_path and output_path.exists():
         print(f"\n💾 Results saved to {output_path}")
-        
+
         # Display summary
         try:
             with open(output_path) as f:
                 results = json.load(f)
-            
+
             print("\n" + "="*80)
             print("PHASE 55 SUMMARY")
             print("="*80)
-            
-            if 'summary' in results:
-                summary = results['summary']
-                for model_name, data in summary.items():
+
+            # Handle both 'summary' and 'results' formats
+            summary_data = results.get('summary', {})
+            if not summary_data and 'results' in results:
+                for r in results['results']:
+                    if isinstance(r, dict) and 'model' in r:
+                        name = r['model']
+                        print(f"\n{name}:")
+                        for k, v in r.items():
+                            if 'MRR' in k or 'Hits' in k:
+                                print(f"  {k}: {v:.4f}" if isinstance(v, float) else f"  {k}: {v}")
+            else:
+                for model_name, data in summary_data.items():
                     if isinstance(data, dict) and 'best_val_mrr' in data:
                         print(f"\n{model_name}:")
                         print(f"  Best Val MRR:  {data['best_val_mrr']:.4f}")
                         if 'test_mrr' in data:
                             print(f"  Test MRR:      {data['test_mrr']:.4f}")
-            
+
             print("\n" + "="*80)
-            
-            # Copy to Drive if mounted
+
+            # Copy to Drive if mounted (Colab only)
             drive_path = Path('/content/drive/MyDrive/DELTA')
             if drive_path.exists():
                 drive_output = drive_path / 'phase55_output.json'
                 shutil.copy(output_path, drive_output)
                 print(f"\n📤 Results also saved to {drive_output}")
-            
+
         except Exception as e:
             print(f"⚠️ Could not parse results: {e}")
     else:
-        print(f"\n⚠️ Output file not found at {output_path}")
+        print(f"\n⚠️ Output file not found")
         print("Check the logs above for errors.")
     
     print(f"\nEnd time: {datetime.now().isoformat()}")
@@ -140,7 +171,7 @@ if __name__ == '__main__':
     import argparse
     
     parser = argparse.ArgumentParser(
-        description='Run Phase 55 on Colab',
+        description='Run Phase 55 (local or Colab)',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:

@@ -531,12 +531,8 @@ def main():
         'results': [r for r in all_results if r is not None],
     }
 
-    out_json = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                            'DELTA', 'phase55_output.json')
-    # Handle path for running from DELTA/ directory
-    if not os.path.isdir(os.path.dirname(out_json)):
-        out_json = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                'phase55_output.json')
+    out_json = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                            'phase55_output.json')
 
     try:
         with open(out_json, 'w') as f:

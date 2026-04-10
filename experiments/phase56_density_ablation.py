@@ -81,6 +81,8 @@ def main():
     parser.add_argument('--seeds', type=str, default='42')
     parser.add_argument('--max_entities', type=int, default=500)
     parser.add_argument('--sparsity_weight', type=float, default=0.01)
+    parser.add_argument('--target_density', type=float, default=0.01,
+                        help='Default density (overridden per condition)')
     parser.add_argument('--densities', type=str, default=None,
                         help='Comma-separated densities (default: 0.005,0.01,0.02)')
     args = parser.parse_args()

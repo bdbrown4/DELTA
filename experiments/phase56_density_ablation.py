@@ -47,6 +47,12 @@ Usage:
 
   # Quick test
   python experiments/phase56_density_ablation.py --seeds 42 --epochs 5 --eval_every 5
+
+  # Run only conditions C and D (Colab partial run)
+  python experiments/phase56_density_ablation.py --seeds 42 --epochs 300 --conditions C,D
+
+  # Resume with prior results from conditions A,B
+  python experiments/phase56_density_ablation.py --seeds 42 --epochs 300 --conditions C,D --resume phase56_output.json
 """
 
 import sys
@@ -85,11 +91,18 @@ def main():
                         help='Default density (overridden per condition)')
     parser.add_argument('--densities', type=str, default=None,
                         help='Comma-separated densities (default: 0.005,0.01,0.02)')
+    parser.add_argument('--conditions', type=str, default=None,
+                        help='Comma-separated condition letters to run (e.g. C,D). '
+                             'Default: run all (A,B,C,D)')
+    parser.add_argument('--resume', type=str, default=None,
+                        help='Path to prior phase56_output.json to merge results with')
     args = parser.parse_args()
 
     seeds = [int(s) for s in args.seeds.split(',')]
     densities = ([float(d) for d in args.densities.split(',')]
                  if args.densities else DENSITIES)
+    run_conditions = (set(c.strip().upper() for c in args.conditions.split(','))
+                      if args.conditions else None)  # None = run all
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -103,25 +116,44 @@ def main():
           f"patience: {args.patience}")
     print(f"  Sparsity weight: {args.sparsity_weight}")
 
+    if run_conditions:
+        print(f"  Running conditions: {sorted(run_conditions)}")
+    else:
+        print(f"  Running conditions: ALL (A, B, C, D)")
+
     # Load data
     max_ent = args.max_entities
     data = load_lp_data('fb15k-237', max_entities=max_ent)
 
+    # Load prior results if --resume is specified
     all_results = []
+    if args.resume and os.path.exists(args.resume):
+        with open(args.resume) as f:
+            prior = json.load(f)
+        all_results = prior.get('results', [])
+        print(f"  Resumed {len(all_results)} prior results from {args.resume}")
 
     # --- Condition A: delta_full baseline ---
-    print(f"\n{'='*60}")
-    print(f"  CONDITION A: delta_full (baseline, no construction)")
-    print(f"{'='*60}")
-    for seed in seeds:
-        r = run_single('delta_full', data, args, device, seed)
-        r['condition'] = 'A_delta_full'
-        r['target_density'] = 0.0
-        all_results.append(r)
+    if run_conditions is None or 'A' in run_conditions:
+        print(f"\n{'='*60}")
+        print(f"  CONDITION A: delta_full (baseline, no construction)")
+        print(f"{'='*60}")
+        for seed in seeds:
+            r = run_single('delta_full', data, args, device, seed)
+            r['condition'] = 'A_delta_full'
+            r['target_density'] = 0.0
+            all_results.append(r)
+    else:
+        print(f"\n  SKIPPING Condition A (not in {sorted(run_conditions)})")
 
     # --- Conditions B, C, D: brain_hybrid at different densities ---
     for i, density in enumerate(densities):
         label = chr(ord('B') + i)
+
+        if run_conditions is not None and label not in run_conditions:
+            print(f"\n  SKIPPING Condition {label} (not in {sorted(run_conditions)})")
+            continue
+
         print(f"\n{'='*60}")
         print(f"  CONDITION {label}: brain_hybrid @ density={density}")
         print(f"{'='*60}")

@@ -394,6 +394,8 @@ def main():
     parser.add_argument('--target_density', type=float, default=0.01,
                         help='Constructor density (default: 0.01, optimal from P56)')
     parser.add_argument('--sparsity_weight', type=float, default=0.01)
+    parser.add_argument('--max_entities', type=int, default=500,
+                        help='Max entities for dense subset (default: 500)')
     parser.add_argument('--conditions', type=str, default=None,
                         help='Comma-separated condition letters to run (e.g. B,C). Default: all')
     parser.add_argument('--resume', type=str, default=None,
@@ -414,8 +416,8 @@ def main():
     print(f"  Epochs: {args.epochs}, eval_every: {args.eval_every}, patience: {args.patience}")
     print(f"  Running conditions: {sorted(run_conditions)}")
 
-    # Load data
-    data = load_lp_data()
+    # Load data (500-entity dense subset, same as Phases 46-56)
+    data = load_lp_data('fb15k-237', max_entities=args.max_entities)
     print(f"  Loaded fb15k-237 for link prediction:")
     print(f"    {data['num_entities']} entities, {data['num_relations']} relations")
     print(f"    {data['train'].shape[1]} train / {data['val'].shape[1]} val / "

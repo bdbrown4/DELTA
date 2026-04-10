@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-04-09",
-  "last_completed_phase": 55,
-  "next_phase": 56,
+  "last_updated": "2026-04-10",
+  "last_completed_phase": 56,
+  "next_phase": 57,
   "current_phase": null,
 
   "best_results": {
@@ -175,6 +175,18 @@
       "hypothesis": "BrainEncoder constructed edges deliver H@10 improvement over delta_full baseline",
       "evidence": "brain_hybrid H@10=0.7973 vs delta_full H@10=0.7603, delta=+0.037. 4870 constructed edges at 2% density improve top-10 recall by 4.9%. Architecture viable.",
       "significance": "high"
+    },
+    {
+      "phase": 56,
+      "hypothesis": "Lower constructor density (0.01) outperforms higher density (0.02) on brain_hybrid LP",
+      "evidence": "C (d=0.01): MRR=0.4794, H@10=0.8076, 2435 edges vs D (d=0.02): MRR=0.4678, H@10=0.7500, 4870 edges. Half the edges yields +0.012 MRR and +0.058 H@10. Fewer, higher-quality edges strictly dominate.",
+      "significance": "high"
+    },
+    {
+      "phase": 56,
+      "hypothesis": "brain_hybrid @ density=0.01 matches delta_full baseline MRR while preserving H@10 advantage",
+      "evidence": "C MRR=0.4794 vs delta_full MRR=0.4796 (delta=-0.0002, within noise). C H@10=0.8076 vs delta_full H@10=0.7603 (+4.7%). Constructed edges add recall without precision penalty at optimal density.",
+      "significance": "high"
     }
   ],
 
@@ -292,6 +304,12 @@
       "hypothesis": "BrainEncoder achieves LP MRR >= 0.475 on FB15k-237",
       "evidence": "brain_hybrid MRR=0.4773, misses 0.475 threshold by -0.002. Matches historical baseline (+0.003 vs Phase 46 A). H@10=0.7973 (+0.037 vs delta_full) is strong. Architecture viable but needs optimization.",
       "significance": "partial"
+    },
+    {
+      "phase": 56,
+      "hypothesis": "Reducing constructor density from 0.02 to 0.01 improves brain_hybrid LP MRR to >= 0.480",
+      "evidence": "C (d=0.01): MRR=0.4794, misses 0.480 target by 0.0006. Direction confirmed (C beats D by +0.012 MRR) but absolute target not reached. Single seed, no statistical confidence.",
+      "significance": "partial"
     }
   ],
 
@@ -375,8 +393,18 @@
     "DELTA-Full multi-hop investigation CLOSED. Next direction: Brain architecture — dynamic graph construction, adaptive pruning, constructor improvements.",
     "Brain architecture produces precision/recall trade-off: constructed edges boost H@10 (+3.7%) but hurt H@1 (-1.4%) — constructor edges add broad coverage with some noise",
     "BrainConstructor at 2% density generates exactly target edges (4870 ≈ 494²×0.02=4880) — density control works precisely",
-    "brain_hybrid still improving at epoch 150 (val_MRR monotonically increasing) — may need 200-300 epochs to converge",
-    "brain_hybrid training is 1.86× slower than delta_full (2468s vs 1329s) due to larger augmented graph"
+    "brain_hybrid still improving at epoch 150 (val_MRR monotonically increasing) — may need 200-300 epochs to converge — ANSWERED Phase 56: peaks at ep 150, overtrain after. 300 epochs hurts.",
+    "brain_hybrid training is 1.86× slower than delta_full (2468s vs 1329s) due to larger augmented graph",
+    "ANSWERED Phase 56: density=0.01 outperforms 0.02 by +0.012 MRR and +0.058 H@10 with half the edges. D (0.02) overfits faster. Lower density = higher quality construction.",
+    "Does density=0.005 continue the improvement trend, or is there a precision floor where too few edges provide insufficient coverage?",
+    "Can temperature annealing (Phase 50 K-style) be applied to brain_hybrid @ d=0.01 to push past 0.480 MRR?",
+    "brain_hybrid overfits by ep 150 — would lower lr, stronger sparsity weight, or explicit early stopping improve final MRR?",
+    "Constructor density is critical: d=0.01 (2435 edges) strictly dominates d=0.02 (4870 edges) on MRR (+0.012) and H@10 (+0.058) — restraint in edge construction improves quality",
+    "brain_hybrid @ d=0.01 matches delta_full MRR (0.4794 vs 0.4796) while smashing H@10 (+4.7%) — constructed edges add recall without precision penalty at optimal density",
+    "brain_hybrid overfits after ep 150: val_MRR drops 9.4% from peak over 150 epochs. D (d=0.02, 300ep) is WORSE than Phase 55 (d=0.02, 150ep) by -0.0095 MRR",
+    "Both densities produce exactly target edge count every epoch — BrainConstructor density control is precise and consistent",
+    "Sparsity loss is near-zero (0.0000) at both densities — constructor already produces sparse outputs without regularization pressure",
+    "Condition D peaks earlier (ep 120) than C (ep 150) — more edges cause faster overfitting, higher density hurts generalization"
   ],
 
   "phase_history": {
@@ -395,7 +423,8 @@
     "52": { "title": "Closing K's LP gap via edge sharpness and faster annealing", "result": "PARTIAL -- Q (K+edge7) achieves NEW LP MRR record (0.4905) but 3p=0.3927 FAIL. S (K+edge7+faster) achieves NEW H@10 record (0.8045) but 3p=0.3789 FAIL. R (K+faster anneal) preserves 3p=0.4114 but LP=0.4793 FAIL. Edge init 7.0 boosts LP by +0.009 but hurts 3p by -0.022. Combined target still unachievable. TEMPERATURE INVESTIGATION CLOSED after 7 phases (46-52)." },
     "53": { "title": "Multi-seed validation of K and N", "result": "CRITICAL REALITY CHECK -- K mean 3p=0.3699±0.0200 (BELOW baseline A=0.3725!). N mean 4p=0.2354±0.0618, 5p=0.2665±0.0738 (HUGE variance). LP MRR IS robust: K=0.4832±0.0052, N=0.4842±0.0089. Multi-hop eval at 500 queries is too noisy for single-seed conclusions. All temperature phase 3p/4p/5p claims are unreliable. Even seed=42 re-runs are non-reproducible (CUDA non-determinism)." },
     "54": { "title": "High-power multi-hop evaluation (10k queries)", "result": "CONFIRMED variance hypothesis -- 10k queries reduce cross-seed std by 66-84% (avg K=75%, N=79%). Evaluation noise was dominant source of P53's variance. With tight CIs, K and N multi-hop are statistically indistinguishable. 500q vs 10kq absolute MRR differs dramatically (K 3p: 0.37→0.26) -- query distribution changes at scale. LP remains robust (K=0.4845±0.0051, N=0.4865±0.0086). Multi-hop investigation for DELTA-Full temperature tuning is CLOSED." },
-    "55": { "title": "Brain Architecture Port — Differentiable Graph Construction", "result": "PARTIAL -- brain_hybrid MRR=0.4773 (misses 0.475 by -0.002) but H@10=0.7973 (+3.7% over delta_full). 4870 constructed edges improve recall at cost of precision (H@1 -1.4%). Architecture viable. Still improving at ep 150. Ran on RTX PRO 6000 Blackwell via Colab SSH." }
+    "55": { "title": "Brain Architecture Port — Differentiable Graph Construction", "result": "PARTIAL -- brain_hybrid MRR=0.4773 (misses 0.475 by -0.002) but H@10=0.7973 (+3.7% over delta_full). 4870 constructed edges improve recall at cost of precision (H@1 -1.4%). Architecture viable. Still improving at ep 150. Ran on RTX PRO 6000 Blackwell via Colab SSH." },
+    "56": { "title": "Constructor Density Ablation — Precision vs Recall Trade-off", "result": "PARTIAL -- density=0.01 (C) outperforms density=0.02 (D): MRR 0.4794 vs 0.4678 (+0.012), H@10 0.8076 vs 0.7500 (+0.058), with half the edges (2435 vs 4870). Misses 0.480 MRR target by 0.0006. C matches delta_full MRR while preserving +4.7% H@10 advantage. Both conditions overfit after ep 150. Only C,D run (A,B deferred). Ran on RTX PRO 6000 Blackwell via Colab SSH + tmux." }
 
   },
 

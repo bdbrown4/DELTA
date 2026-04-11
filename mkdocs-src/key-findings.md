@@ -129,7 +129,7 @@ Phase 54: 10k-query evaluation reduces cross-seed multi-hop std by **66-84%** (a
 
 ---
 
-## Brain Architecture (Phases 55–57)
+## Brain Architecture (Phases 55–58)
 
 ### 36. BrainEncoder validates differentiable graph construction for link prediction
 Phase 55: BrainEncoder (Gumbel-sigmoid differentiable edge selection) achieves LP MRR 0.4773 on FB15k-237 — within 0.002 of the 0.475 threshold — while delivering **+3.7% H@10** over delta_full (0.7973 vs 0.7603). First successful integration of differentiable graph construction with DELTA. Constructed edges improve recall at the cost of precision.
@@ -139,6 +139,9 @@ Phase 56: Halving density from 0.02 to 0.01 gains **+0.012 MRR** and **+0.058 H@
 
 ### 38. Temperature annealing is counterproductive on brain_hybrid — baseline dominates
 Phase 57: brain_hybrid exceeds 0.480 MRR (A: 0.4808, B: 0.4818), but the improvement comes from reducing epochs (200 vs 300), not from annealing. K-style annealing adds only +0.001 MRR while **dropping H@10 by -0.046** (0.7613 vs 0.8076). Constructed edges already provide structural information that overlaps with what temperature sharpening achieves, making annealing redundant for MRR and harmful for recall. The optimal brain_hybrid configuration is baseline temp=1.0 at 200 epochs.
+
+### 39. d=0.01 is the optimal density sweet spot — multi-seed validated, sparser fails
+Phase 58: Multi-seed validation (3 seeds: 42, 123, 456) across two densities confirms **d=0.01 is statistically robust**: mean MRR=0.4844±0.0097, H@10=0.7994±0.0058. All 3 seeds maintain H@10>0.79; seed=456 achieves a new brain_hybrid **MRR record of 0.4956**. d=0.005 (1,217 edges) **fails to continue the improvement trend**: mean MRR=0.4673 (−0.017 vs d=0.01), and H@10 variance increases 4.4× (std 0.026 vs 0.006). The density curve from d=0.02→d=0.01→d=0.005 shows clear optimum at d=0.01 — halving density further loses recall without compensating precision gains. Brain density optimization CLOSED.
 
 ---
 

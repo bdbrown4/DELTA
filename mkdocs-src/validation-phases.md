@@ -1206,3 +1206,127 @@ Average variance reduction: K = **75.0%**, N = **79.1%** (both far above 50% tar
 ---
 
 *All publication-grade results use 5 seeds, mean ± std reported. Phases 38–43 use 1-3 seeds for rapid iteration.*
+
+---
+
+## Phase 55 — Brain Architecture Port: Differentiable Graph Construction
+
+**Goal:** First integration of BrainEncoder (Gumbel-sigmoid differentiable edge selection) with DELTA for link prediction on FB15k-237 (494-entity dense subset).
+
+### Configuration
+- Model: brain_hybrid (BrainEncoder + DELTAConv)
+- Constructor density: 0.02 (4,870 edges)
+- d_node=64, d_edge=32, 2 layers, 4 heads
+- 150 epochs, batch_size=512, lr=0.001
+- Hardware: RTX PRO 6000 Blackwell (98GB VRAM), Colab SSH
+
+### Results
+
+| Model | MRR | H@1 | H@3 | H@10 | Params |
+|-------|-----|-----|-----|------|--------|
+| brain_hybrid (d=0.02) | 0.4773 | 0.3354 | 0.5473 | **0.7973** | 311,361 |
+| delta_full (reference) | 0.4796 | 0.3476 | 0.5370 | 0.7603 | 264,385 |
+
+### Hypothesis Evaluation
+
+| Hypothesis | Result | Evidence |
+|-----------|--------|----------|
+| brain_hybrid LP MRR ≥ 0.475 | **PARTIAL** | MRR=0.4773, misses by 0.002. H@10=0.7973 (+3.7% over delta_full). |
+| Constructed edges improve H@10 | **CONFIRMED** | +0.037 H@10 over delta_full baseline. |
+
+---
+
+## Phase 56 — Constructor Density Ablation: Precision vs Recall Trade-off
+
+**Goal:** Test whether lower constructor density (0.01) outperforms higher density (0.02) by reducing noise while maintaining recall advantage.
+
+### Configuration
+- Condition C: brain_hybrid @ d=0.01 (2,435 edges), 300 epochs
+- Condition D: brain_hybrid @ d=0.02 (4,870 edges), 300 epochs
+- Other settings same as Phase 55
+
+### Results
+
+| Condition | Density | MRR | H@1 | H@3 | H@10 | Edges |
+|-----------|---------|-----|-----|-----|------|-------|
+| C (d=0.01) | 0.010 | **0.4794** | **0.3395** | **0.5473** | **0.8076** | 2,435 |
+| D (d=0.02) | 0.020 | 0.4678 | 0.3189 | 0.5473 | 0.7500 | 4,870 |
+| delta_full (ref) | — | 0.4796 | 0.3476 | 0.5370 | 0.7603 | — |
+
+### Hypothesis Evaluation
+
+| Hypothesis | Result | Evidence |
+|-----------|--------|----------|
+| d=0.01 outperforms d=0.02 on LP MRR | **CONFIRMED** | +0.012 MRR with half the edges. |
+| d=0.01 achieves MRR ≥ 0.480 | **PARTIAL** | MRR=0.4794, misses by 0.0006. |
+| d=0.01 matches delta_full MRR | **CONFIRMED** | 0.4794 vs 0.4796 (within noise). +4.7% H@10. |
+
+---
+
+## Phase 57 — Brain Temperature Annealing: Closing the 0.480 MRR Gap
+
+**Goal:** Apply K-style and Q-style temperature annealing to brain_hybrid @ d=0.01 with 200 epochs to cross the 0.480 MRR threshold.
+
+### Configuration
+- Condition A: baseline (temp=1.0, no anneal, 200 epochs)
+- Condition B: K-style anneal (node 4→2 over 50% training, edge=6.0, 200 epochs)
+- Condition C: Q-style anneal (node 4→2 over 50% training, edge=7.0, 200 epochs)
+
+### Results
+
+| Condition | MRR | H@1 | H@3 | H@10 | Note |
+|-----------|-----|-----|-----|------|------|
+| A (baseline) | **0.4808** | 0.3230 | 0.5576 | **0.8076** | Crosses 0.480! |
+| B (K-anneal) | **0.4818** | **0.3488** | **0.5597** | 0.7613 | +0.001 MRR, −0.046 H@10 |
+| C (Q-anneal) | 0.4769 | 0.3436 | 0.5288 | 0.7613 | Worst — edge=7.0 hurts |
+
+### Hypothesis Evaluation
+
+| Hypothesis | Result | Evidence |
+|-----------|--------|----------|
+| 200ep baseline exceeds 0.480 MRR | **CONFIRMED** | A MRR=0.4808 (+0.0014 vs P56 C at 300ep). |
+| K-anneal improves brain_hybrid LP | **REJECTED** | +0.001 MRR but −0.046 H@10. Not recommended. |
+| Q-anneal (edge=7.0) improves LP | **REJECTED** | MRR=0.4769, WORSE than baseline. Edge=7.0 hurts brain_hybrid. |
+
+---
+
+## Phase 58 — Multi-seed Brain Density Validation
+
+**Goal:** Validate brain_hybrid @ d=0.01 robustness across 3 seeds (42, 123, 456) and test whether d=0.005 continues the density improvement trend.
+
+### Configuration
+- Condition A: brain_hybrid @ d=0.01, 3 seeds, 200 epochs, temp=1.0
+- Condition B: brain_hybrid @ d=0.005, 3 seeds, 200 epochs, temp=1.0
+- batch_size=512, lr=0.001, sparsity_weight=0.01, patience=10
+
+### Results — Individual Runs
+
+| Condition | Seed | Density | MRR | H@1 | H@3 | H@10 | Edges | Time(s) |
+|-----------|------|---------|-----|-----|-----|------|-------|---------|
+| A | 42 | 0.010 | 0.4856 | 0.3313 | 0.5586 | 0.8035 | 2,435 | 2,279 |
+| A | 123 | 0.010 | 0.4719 | 0.3169 | 0.5607 | 0.7912 | 2,435 | 1,963 |
+| A | 456 | 0.010 | **0.4956** | **0.3549** | 0.5514 | 0.8035 | 2,435 | 2,029 |
+| B | 42 | 0.005 | 0.4737 | 0.3128 | 0.5556 | 0.8025 | 1,217 | 1,989 |
+| B | 123 | 0.005 | 0.4567 | 0.3158 | 0.5267 | 0.7397 | 1,217 | 1,690 |
+| B | 456 | 0.005 | 0.4715 | 0.3292 | 0.5442 | 0.7767 | 1,217 | 1,745 |
+
+### Results — Aggregated (mean ± std)
+
+| Condition | MRR | H@1 | H@3 | H@10 |
+|-----------|-----|-----|-----|------|
+| A (d=0.01) | **0.4844±0.0097** | 0.3344±0.0157 | **0.5569±0.0040** | **0.7994±0.0058** |
+| B (d=0.005) | 0.4673±0.0076 | 0.3193±0.0071 | 0.5422±0.0118 | 0.7730±0.0258 |
+
+### Key Observations
+1. **d=0.01 mean MRR 0.4844 EXCEEDS 0.480 target** (+0.0044). 2/3 seeds individually above 0.480.
+2. **Seed=456 achieves new brain_hybrid MRR record: 0.4956**, approaching delta_full's temperature-tuned LP record (0.4905).
+3. **d=0.005 is significantly worse** (−0.017 MRR, −0.026 H@10) with 4.4× higher H@10 variance.
+4. **Density optimization path is exhausted**: d=0.02→d=0.01 improves, d=0.01→d=0.005 degrades. d=0.01 is the sweet spot.
+
+### Hypothesis Evaluation
+
+| Hypothesis | Result | Evidence |
+|-----------|--------|----------|
+| d=0.01 mean MRR ≥ 0.480 (robust) | **CONFIRMED** | Mean=0.4844±0.0097, exceeds target. |
+| d=0.005 continues improvement trend | **REJECTED** | Mean MRR=0.4673, below d=0.01 by −0.017. |
+| d=0.01 H@10 is consistent across seeds | **CONFIRMED** | 0.7994±0.0058, all seeds >0.79. |

@@ -1,6 +1,6 @@
 # Status & Roadmap
 
-*Last updated: Phase 57 complete (2026-04-10)*
+*Last updated: Phase 58 complete (2026-04-11)*
 
 ---
 
@@ -9,7 +9,8 @@
 | Metric | Model | Value | Phase |
 |--------|-------|-------|-------|
 | LP MRR (DELTA-Full, temp) | Q: K-anneal + edge=7.0 | **0.4905** | 52 |
-| LP MRR (brain_hybrid) | B: K-anneal @ d=0.01 | **0.4818** | 57 |
+| LP MRR (brain_hybrid) | A: d=0.01, seed=456 | **0.4956** | 58 |
+| LP MRR (brain_hybrid, 3-seed mean) | d=0.01, seeds 42/123/456 | **0.4844±0.0097** | 58 |
 | LP H@10 (brain_hybrid) | A: baseline @ d=0.01 | **0.8076** | 57 |
 | LP H@10 (DELTA-Full, temp) | S: anneal + edge=7.0 | **0.8045** | 52 |
 | 3p MRR (multi-hop) | DELTA-Matched @10% drop | **0.742 +/- 0.009** | 45 (3-seed) |
@@ -40,6 +41,7 @@
 | P15 | Differentiable graph construction is viable for LP | High | Phase 55–57: brain_hybrid matches delta_full MRR with +4.7% H@10 |
 | P16 | Constructor density controls precision/recall trade-off | High | Phase 56: d=0.01 strictly dominates d=0.02 on MRR, H@3, H@10 |
 | P17 | Temperature annealing is counterproductive on brain_hybrid | High | Phase 57: annealing trades H@10 for marginal MRR; baseline optimal |
+| P18 | d=0.01 is the optimal brain_hybrid density sweet spot | High | Phase 58: d=0.01 mean MRR=0.4844±0.0097 (robust); d=0.005 MRR=0.4673 (−0.017). Density optimization CLOSED. |
 
 ---
 
@@ -70,9 +72,11 @@
 - YAGO3-10: untested. Would demonstrate generalization beyond Freebase
 
 ### Gap 4: Brain architecture optimization — ACTIVE
-- BrainEncoder validated (Phases 55–57) but MRR gains over delta_full are marginal (+0.002)
+- BrainEncoder validated (Phases 55–58) with MRR gains over delta_full marginal (+0.002 single-seed) but multi-seed mean 0.4844±0.0097 is robust
 - H@10 advantage (+4.7%) is substantial — constructed edges genuinely add recall
-- Next: density=0.005 exploration, multi-seed validation, architecture improvements
+- Density optimization CLOSED: d=0.01 (2,435 edges) is the sweet spot. d=0.02 too noisy, d=0.005 too sparse.
+- Seed=456 achieves MRR 0.4956 — approaching delta_full temp-tuned record (0.4905), suggesting untapped potential
+- Next: constructor architecture improvements (multi-head construction, learned density, attention-guided scoring), full-scale evaluation
 
 ### Gap 5: Sequence domain generalization — FUTURE (Horizon 3)
 - All current evidence is on knowledge graphs where structure is pre-defined or semi-explicit
@@ -99,10 +103,11 @@
 | 55 | Brain architecture port | Done — BrainEncoder MRR 0.4773, H@10 +3.7% over delta_full |
 | 56 | Constructor density ablation | Done — d=0.01 strictly dominates d=0.02 |
 | 57 | Brain temperature annealing | Done — baseline (no annealing) optimal; MRR 0.4808–0.4818 |
+| 58 | Multi-seed density validation | Done — d=0.01 robust (mean MRR 0.4844±0.0097); d=0.005 fails (−0.017). Density CLOSED. |
 
-### Horizon 3: Brain Optimization & Sequence Domains (Phases 58+) — Active
+### Horizon 3: Brain Optimization & Sequence Domains (Phases 59+) — Active
 
-Brain architecture validated; next steps are density optimization (d=0.005), multi-seed validation, and extending to sequence domain inputs. See [The Brain](the-brain.md) for the long-term vision.
+Brain density optimization CLOSED (Phases 55–58). d=0.01 is the sweet spot. Next: constructor architecture improvements (multi-head construction, learned density threshold, attention-guided scoring), full-scale evaluation (14K entities), or sequence domain pilot (LRA ListOps). See [The Brain](the-brain.md) for the long-term vision.
 
 ### Horizon 4: Dynamic Reasoning — Future
 

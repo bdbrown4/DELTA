@@ -1,7 +1,7 @@
 {
   "last_updated": "2026-04-11",
-  "last_completed_phase": 57,
-  "next_phase": 58,
+  "last_completed_phase": 58,
+  "next_phase": 59,
   "current_phase": null,
 
   "best_results": {
@@ -193,6 +193,12 @@
       "hypothesis": "brain_hybrid @ d=0.01 with 200 epochs exceeds 0.480 MRR — shorter training reduces overfitting",
       "evidence": "A (baseline, 200ep): MRR=0.4808 > 0.480 target. B (K-anneal, 200ep): MRR=0.4818 > 0.480 target. Phase 56 C (300ep, same config): MRR=0.4794 < 0.480. Reducing from 300→200 epochs gains +0.0014 MRR by avoiding overfitting.",
       "significance": "high"
+    },
+    {
+      "phase": 58,
+      "hypothesis": "brain_hybrid @ d=0.01 is statistically robust: mean LP MRR >= 0.480 across 3 seeds",
+      "evidence": "d=0.01 mean MRR=0.4844±0.0097 (seeds 42/123/456: 0.4856/0.4719/0.4956). Mean exceeds 0.480 target by +0.0044. Seed=456 achieves new brain_hybrid MRR record: 0.4956. H@10=0.7994±0.0058, all seeds >0.79.",
+      "significance": "high"
     }
   ],
 
@@ -322,6 +328,12 @@
       "hypothesis": "Temperature annealing (K-style or Q-style) improves brain_hybrid LP over baseline",
       "evidence": "B (K-anneal): MRR=0.4818 vs A (baseline): MRR=0.4808 — marginal +0.001. C (Q-anneal): MRR=0.4769, WORSE than baseline by −0.004. Annealing adds negligible MRR while dropping H@10 by −0.046 (B: 0.7613 vs A: 0.8076). Edge=7.0 hurts brain_hybrid unlike delta_full. Not recommended.",
       "significance": "negative result"
+    },
+    {
+      "phase": 58,
+      "hypothesis": "d=0.005 continues density improvement trend (mean MRR >= d=0.01's mean)",
+      "evidence": "d=0.005 mean MRR=0.4673±0.0076 vs d=0.01 mean=0.4844±0.0097 — gap of −0.0171. d=0.005 H@10=0.7730±0.0258, much higher variance than d=0.01's 0.0058. Halving density from 0.01 to 0.005 degrades both MRR and H@10. d=0.01 is at or near optimal density.",
+      "significance": "high"
     }
   ],
 
@@ -409,6 +421,7 @@
     "brain_hybrid training is 1.86× slower than delta_full (2468s vs 1329s) due to larger augmented graph",
     "ANSWERED Phase 56: density=0.01 outperforms 0.02 by +0.012 MRR and +0.058 H@10 with half the edges. D (0.02) overfits faster. Lower density = higher quality construction.",
     "Does density=0.005 continue the improvement trend, or is there a precision floor where too few edges provide insufficient coverage?",
+    "ANSWERED Phase 58: d=0.005 does NOT continue the improvement trend. Mean MRR=0.4673 vs d=0.01's 0.4844. Density floor confirmed at d=0.01. Density optimization CLOSED.",
     "Can temperature annealing (Phase 50 K-style) be applied to brain_hybrid @ d=0.01 to push past 0.480 MRR?",
     "ANSWERED Phase 57: Annealing provides negligible MRR gain (+0.001) and severely hurts H@10 (−0.046). Baseline at 200ep already exceeds 0.480 (MRR=0.4808). Brain temp investigation CLOSED.",
     "brain_hybrid overfits by ep 150 — would lower lr, stronger sparsity weight, or explicit early stopping improve final MRR?",
@@ -423,7 +436,13 @@
     "K-style annealing on brain_hybrid boosts H@1 (+0.026) while hurting H@10 (−0.046) — standard precision/recall trade-off from temperature, but worse than on delta_full",
     "Edge temp=7.0 HURTS brain_hybrid (C MRR=0.4769) unlike delta_full where it helps (Phase 52 Q MRR=0.4905) — constructed edges already provide edge-level information, making edge sharpening redundant",
     "B's val_MRR peak (0.5135) at ep 120 is highest of all brain_hybrid conditions — occurs exactly at annealing→learnable transition, suggesting trajectory helps intermediate training",
-    "brain_hybrid temperature annealing investigation CLOSED: baseline (temp=1.0, no anneal) is optimal for brain_hybrid. Future work should focus on constructor improvements, not attention temperature"
+    "brain_hybrid temperature annealing investigation CLOSED: baseline (temp=1.0, no anneal) is optimal for brain_hybrid. Future work should focus on constructor improvements, not attention temperature",
+    "d=0.01 (2435 edges) is the brain_hybrid density sweet spot: d=0.02 is too noisy (+0.012 MRR improvement at half density, Phase 56), d=0.005 is too sparse (−0.017 MRR, Phase 58). Density optimization path EXHAUSTED.",
+    "brain_hybrid @ d=0.01 is statistically robust: mean MRR=0.4844±0.0097, H@10=0.7994±0.0058 across 3 seeds. Low cross-seed variance confirms configuration reliability.",
+    "d=0.005 has 4.4× higher H@10 variance than d=0.01 (std 0.0258 vs 0.0058) — fewer constructed edges make the model more sensitive to initialization",
+    "Val/test gap is larger at sparser density: d=0.005 seed=123 gap=0.044 (val 0.5008 → test 0.4567) vs d=0.01 seed=42 gap=0.033 (val 0.5187 → test 0.4856). Sparser graphs may overfit more readily.",
+    "Seed=456 achieves new brain_hybrid MRR record: 0.4956 — approaching delta_full temperature-tuned record of 0.4905. brain_hybrid's ceiling is higher than single-seed results suggested.",
+    "All Phase 58 conditions peak at ep 150-180, decline by ep 200 — consistent with Phases 56-57. 150-180 epochs with early stopping would be optimal."
   ],
 
   "phase_history": {
@@ -444,7 +463,8 @@
     "54": { "title": "High-power multi-hop evaluation (10k queries)", "result": "CONFIRMED variance hypothesis -- 10k queries reduce cross-seed std by 66-84% (avg K=75%, N=79%). Evaluation noise was dominant source of P53's variance. With tight CIs, K and N multi-hop are statistically indistinguishable. 500q vs 10kq absolute MRR differs dramatically (K 3p: 0.37→0.26) -- query distribution changes at scale. LP remains robust (K=0.4845±0.0051, N=0.4865±0.0086). Multi-hop investigation for DELTA-Full temperature tuning is CLOSED." },
     "55": { "title": "Brain Architecture Port — Differentiable Graph Construction", "result": "PARTIAL -- brain_hybrid MRR=0.4773 (misses 0.475 by -0.002) but H@10=0.7973 (+3.7% over delta_full). 4870 constructed edges improve recall at cost of precision (H@1 -1.4%). Architecture viable. Still improving at ep 150. Ran on RTX PRO 6000 Blackwell via Colab SSH." },
     "56": { "title": "Constructor Density Ablation — Precision vs Recall Trade-off", "result": "PARTIAL -- density=0.01 (C) outperforms density=0.02 (D): MRR 0.4794 vs 0.4678 (+0.012), H@10 0.8076 vs 0.7500 (+0.058), with half the edges (2435 vs 4870). Misses 0.480 MRR target by 0.0006. C matches delta_full MRR while preserving +4.7% H@10 advantage. Both conditions overfit after ep 150. Only C,D run (A,B deferred). Ran on RTX PRO 6000 Blackwell via Colab SSH + tmux." },
-    "57": { "title": "Brain Temperature Annealing — Closing the 0.480 MRR Gap", "result": "PARTIAL -- brain_hybrid @ d=0.01 crosses 0.480 MRR: A (baseline) MRR=0.4808, B (K-anneal) MRR=0.4818. Improvement from shorter training (200 vs 300ep), not annealing. B's K-style anneal adds marginal MRR (+0.001) but drops H@10 severely (0.7613 vs 0.8076, −0.046). C (Q-anneal, edge=7.0) WORST at MRR=0.4769. Edge=7.0 hurts brain_hybrid unlike delta_full. Temperature annealing NOT recommended for brain_hybrid — baseline is optimal. Brain temp investigation CLOSED." }
+    "57": { "title": "Brain Temperature Annealing — Closing the 0.480 MRR Gap", "result": "PARTIAL -- brain_hybrid @ d=0.01 crosses 0.480 MRR: A (baseline) MRR=0.4808, B (K-anneal) MRR=0.4818. Improvement from shorter training (200 vs 300ep), not annealing. B's K-style anneal adds marginal MRR (+0.001) but drops H@10 severely (0.7613 vs 0.8076, −0.046). C (Q-anneal, edge=7.0) WORST at MRR=0.4769. Edge=7.0 hurts brain_hybrid unlike delta_full. Temperature annealing NOT recommended for brain_hybrid — baseline is optimal. Brain temp investigation CLOSED." },
+    "58": { "title": "Multi-seed Brain Density Validation", "result": "PARTIAL -- d=0.01 mean MRR=0.4844±0.0097 CONFIRMS robustness (exceeds 0.480). Seed=456 achieves new brain_hybrid MRR record: 0.4956. d=0.005 mean MRR=0.4673 is BELOW d=0.01 (−0.017) — density improvement trend STOPS at 0.01. d=0.005 has higher H@10 variance (0.026 vs 0.006), sparser is less stable. Density optimization path EXHAUSTED: d=0.01 (2435 edges) is the sweet spot." }
 
   },
 

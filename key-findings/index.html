@@ -932,13 +932,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#brain-architecture-phases-5557" class="md-nav__link">
+  <a href="#brain-architecture-phases-5558" class="md-nav__link">
     <span class="md-ellipsis">
-      Brain Architecture (Phases 55–57)
+      Brain Architecture (Phases 55–58)
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Brain Architecture (Phases 55–57)">
+    <nav class="md-nav" aria-label="Brain Architecture (Phases 55–58)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -963,6 +963,15 @@
   <a href="#38-temperature-annealing-is-counterproductive-on-brain_hybrid-baseline-dominates" class="md-nav__link">
     <span class="md-ellipsis">
       38. Temperature annealing is counterproductive on brain_hybrid — baseline dominates
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#39-d001-is-the-optimal-density-sweet-spot-multi-seed-validated-sparser-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      39. d=0.01 is the optimal density sweet spot — multi-seed validated, sparser fails
     </span>
   </a>
   
@@ -1564,13 +1573,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#brain-architecture-phases-5557" class="md-nav__link">
+  <a href="#brain-architecture-phases-5558" class="md-nav__link">
     <span class="md-ellipsis">
-      Brain Architecture (Phases 55–57)
+      Brain Architecture (Phases 55–58)
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Brain Architecture (Phases 55–57)">
+    <nav class="md-nav" aria-label="Brain Architecture (Phases 55–58)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1595,6 +1604,15 @@
   <a href="#38-temperature-annealing-is-counterproductive-on-brain_hybrid-baseline-dominates" class="md-nav__link">
     <span class="md-ellipsis">
       38. Temperature annealing is counterproductive on brain_hybrid — baseline dominates
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#39-d001-is-the-optimal-density-sweet-spot-multi-seed-validated-sparser-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      39. d=0.01 is the optimal density sweet spot — multi-seed validated, sparser fails
     </span>
   </a>
   
@@ -1706,13 +1724,15 @@
 <h3 id="35-evaluation-noise-dominates-multi-hop-variance-investigation-closed">35. Evaluation noise dominates multi-hop variance — investigation CLOSED<a class="headerlink" href="#35-evaluation-noise-dominates-multi-hop-variance-investigation-closed" title="Permanent link">&para;</a></h3>
 <p>Phase 54: 10k-query evaluation reduces cross-seed multi-hop std by <strong>66-84%</strong> (avg K=75%, N=79%), confirming evaluation noise was the dominant variance source. With tight CIs, K and N are <strong>statistically indistinguishable</strong> on multi-hop (3p: 0.2614±0.0032 vs 0.2560±0.0091). 500q and 10kq give dramatically different absolute MRR (K 3p: 0.37→0.26) because larger query samples include harder paths. LP MRR remains robust and protocol-independent (K=0.4845±0.0051, N=0.4865±0.0086). After <strong>9 phases (46-54)</strong>, the conclusion: temperature reliably improves LP but has <strong>no statistically supported effect on multi-hop reasoning depth</strong> in DELTA-Full. Multi-hop investigation CLOSED.</p>
 <hr />
-<h2 id="brain-architecture-phases-5557">Brain Architecture (Phases 55–57)<a class="headerlink" href="#brain-architecture-phases-5557" title="Permanent link">&para;</a></h2>
+<h2 id="brain-architecture-phases-5558">Brain Architecture (Phases 55–58)<a class="headerlink" href="#brain-architecture-phases-5558" title="Permanent link">&para;</a></h2>
 <h3 id="36-brainencoder-validates-differentiable-graph-construction-for-link-prediction">36. BrainEncoder validates differentiable graph construction for link prediction<a class="headerlink" href="#36-brainencoder-validates-differentiable-graph-construction-for-link-prediction" title="Permanent link">&para;</a></h3>
 <p>Phase 55: BrainEncoder (Gumbel-sigmoid differentiable edge selection) achieves LP MRR 0.4773 on FB15k-237 — within 0.002 of the 0.475 threshold — while delivering <strong>+3.7% H@10</strong> over delta_full (0.7973 vs 0.7603). First successful integration of differentiable graph construction with DELTA. Constructed edges improve recall at the cost of precision.</p>
 <h3 id="37-constructor-density-is-a-critical-hyperparameter-fewer-edges-strictly-dominate">37. Constructor density is a critical hyperparameter — fewer edges strictly dominate<a class="headerlink" href="#37-constructor-density-is-a-critical-hyperparameter-fewer-edges-strictly-dominate" title="Permanent link">&para;</a></h3>
 <p>Phase 56: Halving density from 0.02 to 0.01 gains <strong>+0.012 MRR</strong> and <strong>+0.058 H@10</strong> with half the edges (2,435 vs 4,870). Density=0.01 matches delta_full MRR (0.4794 vs 0.4796) while adding +4.7% H@10. The constructor's Gumbel-sigmoid selection is more discriminating at lower density, producing fewer but higher-quality edges.</p>
 <h3 id="38-temperature-annealing-is-counterproductive-on-brain_hybrid-baseline-dominates">38. Temperature annealing is counterproductive on brain_hybrid — baseline dominates<a class="headerlink" href="#38-temperature-annealing-is-counterproductive-on-brain_hybrid-baseline-dominates" title="Permanent link">&para;</a></h3>
 <p>Phase 57: brain_hybrid exceeds 0.480 MRR (A: 0.4808, B: 0.4818), but the improvement comes from reducing epochs (200 vs 300), not from annealing. K-style annealing adds only +0.001 MRR while <strong>dropping H@10 by -0.046</strong> (0.7613 vs 0.8076). Constructed edges already provide structural information that overlaps with what temperature sharpening achieves, making annealing redundant for MRR and harmful for recall. The optimal brain_hybrid configuration is baseline temp=1.0 at 200 epochs.</p>
+<h3 id="39-d001-is-the-optimal-density-sweet-spot-multi-seed-validated-sparser-fails">39. d=0.01 is the optimal density sweet spot — multi-seed validated, sparser fails<a class="headerlink" href="#39-d001-is-the-optimal-density-sweet-spot-multi-seed-validated-sparser-fails" title="Permanent link">&para;</a></h3>
+<p>Phase 58: Multi-seed validation (3 seeds: 42, 123, 456) across two densities confirms <strong>d=0.01 is statistically robust</strong>: mean MRR=0.4844±0.0097, H@10=0.7994±0.0058. All 3 seeds maintain H@10&gt;0.79; seed=456 achieves a new brain_hybrid <strong>MRR record of 0.4956</strong>. d=0.005 (1,217 edges) <strong>fails to continue the improvement trend</strong>: mean MRR=0.4673 (−0.017 vs d=0.01), and H@10 variance increases 4.4× (std 0.026 vs 0.006). The density curve from d=0.02→d=0.01→d=0.005 shows clear optimum at d=0.01 — halving density further loses recall without compensating precision gains. Brain density optimization CLOSED.</p>
 <hr />
 <p><em>See <a href="../validation-phases/">Validation Phases</a> for complete result tables. See <a href="../status-and-roadmap/">Status &amp; Roadmap</a> for current priorities.</em></p>
 

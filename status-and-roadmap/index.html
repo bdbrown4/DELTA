@@ -697,9 +697,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#horizon-3-brain-optimization-sequence-domains-phases-58-active" class="md-nav__link">
+  <a href="#horizon-3-brain-optimization-sequence-domains-phases-59-active" class="md-nav__link">
     <span class="md-ellipsis">
-      Horizon 3: Brain Optimization &amp; Sequence Domains (Phases 58+) — Active
+      Horizon 3: Brain Optimization &amp; Sequence Domains (Phases 59+) — Active
     </span>
   </a>
   
@@ -1028,9 +1028,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#horizon-3-brain-optimization-sequence-domains-phases-58-active" class="md-nav__link">
+  <a href="#horizon-3-brain-optimization-sequence-domains-phases-59-active" class="md-nav__link">
     <span class="md-ellipsis">
-      Horizon 3: Brain Optimization &amp; Sequence Domains (Phases 58+) — Active
+      Horizon 3: Brain Optimization &amp; Sequence Domains (Phases 59+) — Active
     </span>
   </a>
   
@@ -1120,7 +1120,7 @@
 
 
 <h1 id="status-roadmap">Status &amp; Roadmap<a class="headerlink" href="#status-roadmap" title="Permanent link">&para;</a></h1>
-<p><em>Last updated: Phase 57 complete (2026-04-10)</em></p>
+<p><em>Last updated: Phase 58 complete (2026-04-11)</em></p>
 <hr />
 <h2 id="current-best-results">Current Best Results<a class="headerlink" href="#current-best-results" title="Permanent link">&para;</a></h2>
 <table>
@@ -1141,9 +1141,15 @@
 </tr>
 <tr>
 <td>LP MRR (brain_hybrid)</td>
-<td>B: K-anneal @ d=0.01</td>
-<td><strong>0.4818</strong></td>
-<td>57</td>
+<td>A: d=0.01, seed=456</td>
+<td><strong>0.4956</strong></td>
+<td>58</td>
+</tr>
+<tr>
+<td>LP MRR (brain_hybrid, 3-seed mean)</td>
+<td>d=0.01, seeds 42/123/456</td>
+<td><strong>0.4844±0.0097</strong></td>
+<td>58</td>
 </tr>
 <tr>
 <td>LP H@10 (brain_hybrid)</td>
@@ -1297,6 +1303,12 @@
 <td>High</td>
 <td>Phase 57: annealing trades H@10 for marginal MRR; baseline optimal</td>
 </tr>
+<tr>
+<td>P18</td>
+<td>d=0.01 is the optimal brain_hybrid density sweet spot</td>
+<td>High</td>
+<td>Phase 58: d=0.01 mean MRR=0.4844±0.0097 (robust); d=0.005 MRR=0.4673 (−0.017). Density optimization CLOSED.</td>
+</tr>
 </tbody>
 </table>
 <hr />
@@ -1329,9 +1341,11 @@
 </ul>
 <h3 id="gap-4-brain-architecture-optimization-active">Gap 4: Brain architecture optimization — ACTIVE<a class="headerlink" href="#gap-4-brain-architecture-optimization-active" title="Permanent link">&para;</a></h3>
 <ul>
-<li>BrainEncoder validated (Phases 55–57) but MRR gains over delta_full are marginal (+0.002)</li>
+<li>BrainEncoder validated (Phases 55–58) with MRR gains over delta_full marginal (+0.002 single-seed) but multi-seed mean 0.4844±0.0097 is robust</li>
 <li>H@10 advantage (+4.7%) is substantial — constructed edges genuinely add recall</li>
-<li>Next: density=0.005 exploration, multi-seed validation, architecture improvements</li>
+<li>Density optimization CLOSED: d=0.01 (2,435 edges) is the sweet spot. d=0.02 too noisy, d=0.005 too sparse.</li>
+<li>Seed=456 achieves MRR 0.4956 — approaching delta_full temp-tuned record (0.4905), suggesting untapped potential</li>
+<li>Next: constructor architecture improvements (multi-head construction, learned density, attention-guided scoring), full-scale evaluation</li>
 </ul>
 <h3 id="gap-5-sequence-domain-generalization-future-horizon-3">Gap 5: Sequence domain generalization — FUTURE (Horizon 3)<a class="headerlink" href="#gap-5-sequence-domain-generalization-future-horizon-3" title="Permanent link">&para;</a></h3>
 <ul>
@@ -1411,10 +1425,15 @@
 <td>Brain temperature annealing</td>
 <td>Done — baseline (no annealing) optimal; MRR 0.4808–0.4818</td>
 </tr>
+<tr>
+<td>58</td>
+<td>Multi-seed density validation</td>
+<td>Done — d=0.01 robust (mean MRR 0.4844±0.0097); d=0.005 fails (−0.017). Density CLOSED.</td>
+</tr>
 </tbody>
 </table>
-<h3 id="horizon-3-brain-optimization-sequence-domains-phases-58-active">Horizon 3: Brain Optimization &amp; Sequence Domains (Phases 58+) — Active<a class="headerlink" href="#horizon-3-brain-optimization-sequence-domains-phases-58-active" title="Permanent link">&para;</a></h3>
-<p>Brain architecture validated; next steps are density optimization (d=0.005), multi-seed validation, and extending to sequence domain inputs. See <a href="../the-brain/">The Brain</a> for the long-term vision.</p>
+<h3 id="horizon-3-brain-optimization-sequence-domains-phases-59-active">Horizon 3: Brain Optimization &amp; Sequence Domains (Phases 59+) — Active<a class="headerlink" href="#horizon-3-brain-optimization-sequence-domains-phases-59-active" title="Permanent link">&para;</a></h3>
+<p>Brain density optimization CLOSED (Phases 55–58). d=0.01 is the sweet spot. Next: constructor architecture improvements (multi-head construction, learned density threshold, attention-guided scoring), full-scale evaluation (14K entities), or sequence domain pilot (LRA ListOps). See <a href="../the-brain/">The Brain</a> for the long-term vision.</p>
 <h3 id="horizon-4-dynamic-reasoning-future">Horizon 4: Dynamic Reasoning — Future<a class="headerlink" href="#horizon-4-dynamic-reasoning-future" title="Permanent link">&para;</a></h3>
 <p>Iterative graph refinement, temporal reasoning, multi-scale construction. See <a href="../the-brain/">The Brain</a>.</p>
 <h3 id="horizon-5-the-brain">Horizon 5: The Brain<a class="headerlink" href="#horizon-5-the-brain" title="Permanent link">&para;</a></h3>

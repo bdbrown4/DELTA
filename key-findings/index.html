@@ -746,7 +746,7 @@
           <li class="md-nav__item">
   <a href="#19-graph-structure-genuinely-helps-the-constructor-is-the-bottleneck" class="md-nav__link">
     <span class="md-ellipsis">
-      19. Graph structure genuinely helps -- the constructor is the bottleneck
+      19. Graph structure genuinely helps — the constructor is the bottleneck
     </span>
   </a>
   
@@ -921,6 +921,48 @@
   <a href="#35-evaluation-noise-dominates-multi-hop-variance-investigation-closed" class="md-nav__link">
     <span class="md-ellipsis">
       35. Evaluation noise dominates multi-hop variance — investigation CLOSED
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#brain-architecture-phases-5557" class="md-nav__link">
+    <span class="md-ellipsis">
+      Brain Architecture (Phases 55–57)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Brain Architecture (Phases 55–57)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#36-brainencoder-validates-differentiable-graph-construction-for-link-prediction" class="md-nav__link">
+    <span class="md-ellipsis">
+      36. BrainEncoder validates differentiable graph construction for link prediction
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#37-constructor-density-is-a-critical-hyperparameter-fewer-edges-strictly-dominate" class="md-nav__link">
+    <span class="md-ellipsis">
+      37. Constructor density is a critical hyperparameter — fewer edges strictly dominate
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#38-temperature-annealing-is-counterproductive-on-brain_hybrid-baseline-dominates" class="md-nav__link">
+    <span class="md-ellipsis">
+      38. Temperature annealing is counterproductive on brain_hybrid — baseline dominates
     </span>
   </a>
   
@@ -1336,7 +1378,7 @@
           <li class="md-nav__item">
   <a href="#19-graph-structure-genuinely-helps-the-constructor-is-the-bottleneck" class="md-nav__link">
     <span class="md-ellipsis">
-      19. Graph structure genuinely helps -- the constructor is the bottleneck
+      19. Graph structure genuinely helps — the constructor is the bottleneck
     </span>
   </a>
   
@@ -1521,6 +1563,48 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#brain-architecture-phases-5557" class="md-nav__link">
+    <span class="md-ellipsis">
+      Brain Architecture (Phases 55–57)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Brain Architecture (Phases 55–57)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#36-brainencoder-validates-differentiable-graph-construction-for-link-prediction" class="md-nav__link">
+    <span class="md-ellipsis">
+      36. BrainEncoder validates differentiable graph construction for link prediction
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#37-constructor-density-is-a-critical-hyperparameter-fewer-edges-strictly-dominate" class="md-nav__link">
+    <span class="md-ellipsis">
+      37. Constructor density is a critical hyperparameter — fewer edges strictly dominate
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#38-temperature-annealing-is-counterproductive-on-brain_hybrid-baseline-dominates" class="md-nav__link">
+    <span class="md-ellipsis">
+      38. Temperature annealing is counterproductive on brain_hybrid — baseline dominates
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1540,7 +1624,7 @@
 
 
 <h1 id="key-findings">Key Findings<a class="headerlink" href="#key-findings" title="Permanent link">&para;</a></h1>
-<p>35 key findings from 54 experiment phases, organized by research stage. See <a href="../validation-phases/">Validation Phases</a> for complete result tables.</p>
+<p>38 key findings from 57 experiment phases, organized by research stage. See <a href="../validation-phases/">Validation Phases</a> for complete result tables.</p>
 <hr />
 <h2 id="core-architecture-phases-1-15">Core Architecture (Phases 1-15)<a class="headerlink" href="#core-architecture-phases-1-15" title="Permanent link">&para;</a></h2>
 <h3 id="1-edge-attention-is-deltas-strongest-signal">1. Edge attention is DELTA's strongest signal<a class="headerlink" href="#1-edge-attention-is-deltas-strongest-signal" title="Permanent link">&para;</a></h3>
@@ -1550,7 +1634,7 @@
 <h3 id="3-gumbel-softmax-routing-enables-differentiable-selection">3. Gumbel-softmax routing enables differentiable selection<a class="headerlink" href="#3-gumbel-softmax-routing-enables-differentiable-selection" title="Permanent link">&para;</a></h3>
 <p>The straight-through estimator lets all 12 router parameters receive gradients (vs 0 with hard top-k). Temperature annealing provides a curriculum from exploration to exploitation.</p>
 <h3 id="4-multi-hop-edge-adjacency-solves-compositional-reasoning">4. Multi-hop edge adjacency solves compositional reasoning<a class="headerlink" href="#4-multi-hop-edge-adjacency-solves-compositional-reasoning" title="Permanent link">&para;</a></h3>
-<p>2-hop edge adjacency achieves <strong>100% on derived/transitive relations</strong> -- a +38.9% jump from 1-hop (61.1%) and beating Node GNN (83.3%). The biggest architectural improvement in the project.</p>
+<p>2-hop edge adjacency achieves <strong>100% on derived/transitive relations</strong> — a +38.9% jump from 1-hop (61.1%) and beating Node GNN (83.3%). The biggest architectural improvement in the project.</p>
 <h3 id="5-compositional-logic-rules-are-deltas-sweet-spot">5. Compositional logic rules are DELTA's sweet spot<a class="headerlink" href="#5-compositional-logic-rules-are-deltas-sweet-spot" title="Permanent link">&para;</a></h3>
 <p>Phase 13: DELTA hit 100% on all 7 relation types including derived, while Node GNN achieved only 87.5% on derived.</p>
 <h3 id="6-edge-embeddings-are-inherently-discriminative">6. Edge embeddings are inherently discriminative<a class="headerlink" href="#6-edge-embeddings-are-inherently-discriminative" title="Permanent link">&para;</a></h3>
@@ -1558,11 +1642,11 @@
 <h3 id="7-router-sparsity-needs-careful-calibration">7. Router sparsity needs careful calibration<a class="headerlink" href="#7-router-sparsity-needs-careful-calibration" title="Permanent link">&para;</a></h3>
 <p>Aggressive sparsity (40-50%) hurts on relation classification. Works well at moderate sparsity (80%) but needs gentler schedules at higher compression.</p>
 <h3 id="8-delta-matches-node-gnn-at-scale-excels-on-derived-relations">8. DELTA matches Node GNN at scale, excels on derived relations<a class="headerlink" href="#8-delta-matches-node-gnn-at-scale-excels-on-derived-relations" title="Permanent link">&para;</a></h3>
-<p>On the 500-triple benchmark, both reach 100% -- but DELTA's advantage emerges specifically on compositional/transitive tasks.</p>
+<p>On the 500-triple benchmark, both reach 100% — but DELTA's advantage emerges specifically on compositional/transitive tasks.</p>
 <hr />
 <h2 id="architectural-fixes-phases-16-21">Architectural Fixes (Phases 16-21)<a class="headerlink" href="#architectural-fixes-phases-16-21" title="Permanent link">&para;</a></h2>
 <h3 id="9-sparse-coo-multi-hop-is-the-clearest-win">9. Sparse COO multi-hop is the clearest win<a class="headerlink" href="#9-sparse-coo-multi-hop-is-the-clearest-win" title="Permanent link">&para;</a></h3>
-<p>O(E^0.97) sub-quadratic scaling -- 2500-edge 2-hop completes in 0.18s where the old dense approach timed out at ~500 edges.</p>
+<p>O(E^0.97) sub-quadratic scaling — 2500-edge 2-hop completes in 0.18s where the old dense approach timed out at ~500 edges.</p>
 <h3 id="10-bfs-partitioning-scales-linearly">10. BFS partitioning scales linearly<a class="headerlink" href="#10-bfs-partitioning-scales-linearly" title="Permanent link">&para;</a></h3>
 <p>O(N^0.99) scaling from 50 to 2500 nodes (2ms to 91ms), replacing O(N^3) spectral clustering. Balance ratio of 0.79.</p>
 <h3 id="11-variational-memory-compression-preserves-accuracy">11. Variational memory compression preserves accuracy<a class="headerlink" href="#11-variational-memory-compression-preserves-accuracy" title="Permanent link">&para;</a></h3>
@@ -1580,10 +1664,10 @@
 <h3 id="16-delta-matches-compgcn-crushes-embedding-baselines">16. DELTA matches CompGCN, crushes embedding baselines<a class="headerlink" href="#16-delta-matches-compgcn-crushes-embedding-baselines" title="Permanent link">&para;</a></h3>
 <p>Phase 23: DELTA and CompGCN both 100% on FB15k-237-like benchmark. TransE 67.6%, RotatE 70.7%.</p>
 <h3 id="17-all-fixes-integrate-cleanly-at-scale">17. All fixes integrate cleanly at scale<a class="headerlink" href="#17-all-fixes-integrate-cleanly-at-scale" title="Permanent link">&para;</a></h3>
-<p>Phase 24: full pipeline on N=1000 noisy benchmark. No fix caused degradation -- all ablations matched full DELTA at 100%.</p>
+<p>Phase 24: full pipeline on N=1000 noisy benchmark. No fix caused degradation — all ablations matched full DELTA at 100%.</p>
 <h3 id="18-deltagate-leads-on-real-fb15k-237">18. DELTA+Gate leads on real FB15k-237<a class="headerlink" href="#18-deltagate-leads-on-real-fb15k-237" title="Permanent link">&para;</a></h3>
 <p>Phase 25: 97.6% on actual Freebase triples (2000-entity dense subgraph), narrowly beating CompGCN (97.2%).</p>
-<h3 id="19-graph-structure-genuinely-helps-the-constructor-is-the-bottleneck">19. Graph structure genuinely helps -- the constructor is the bottleneck<a class="headerlink" href="#19-graph-structure-genuinely-helps-the-constructor-is-the-bottleneck" title="Permanent link">&para;</a></h3>
+<h3 id="19-graph-structure-genuinely-helps-the-constructor-is-the-bottleneck">19. Graph structure genuinely helps — the constructor is the bottleneck<a class="headerlink" href="#19-graph-structure-genuinely-helps-the-constructor-is-the-bottleneck" title="Permanent link">&para;</a></h3>
 <p>Phase 27b: FixedChain DELTA (40.7%) beat Transformer (36.3%), but the attention-thresholded constructor (34.3%) discards sequential adjacency edges needed for path composition.</p>
 <h3 id="20-dual-attentions-advantage-is-noise-robustness">20. Dual attention's advantage is noise robustness<a class="headerlink" href="#20-dual-attentions-advantage-is-noise-robustness" title="Permanent link">&para;</a></h3>
 <p>Phase 28: at 80% feature corruption, Dual Attention 64.2% vs Vanilla EdgeAttention 40.2% (+24%). Node context is the key differentiator at extreme noise. Soft gating adds only +/-0.6% beyond dual attention.</p>
@@ -1600,7 +1684,7 @@
 <h3 id="25-multi-seed-confirms-statistical-robustness">25. Multi-seed confirms statistical robustness<a class="headerlink" href="#25-multi-seed-confirms-statistical-robustness" title="Permanent link">&para;</a></h3>
 <p>Phase 45: 3p MRR 0.742 +/- 0.009 vs GraphGPS 0.713 +/- 0.007. Std bars don't overlap. DELTA's worst seed (0.731) exceeds GraphGPS's best (0.722).</p>
 <h3 id="26-inference-cost-is-deployment-friendly">26. Inference cost is deployment-friendly<a class="headerlink" href="#26-inference-cost-is-deployment-friendly" title="Permanent link">&para;</a></h3>
-<p>Phase 45: encoding is 51.8x slower (2-hop edge adjacency, once per graph), but per-query scoring is 0.8-0.9x GraphGPS -- DELTA is <em>faster</em> per query. Training is 34x slower but one-time.</p>
+<p>Phase 45: encoding is 51.8x slower (2-hop edge adjacency, once per graph), but per-query scoring is 0.8-0.9x GraphGPS — DELTA is <em>faster</em> per query. Training is 34x slower but one-time.</p>
 <hr />
 <h2 id="attention-temperature-phases-46-48">Attention Temperature (Phases 46-48)<a class="headerlink" href="#attention-temperature-phases-46-48" title="Permanent link">&para;</a></h2>
 <h3 id="27-learnable-temperature-reveals-edgenode-asymmetry">27. Learnable temperature reveals edge/node asymmetry<a class="headerlink" href="#27-learnable-temperature-reveals-edgenode-asymmetry" title="Permanent link">&para;</a></h3>
@@ -1621,6 +1705,14 @@
 <p>Phase 53: Multi-seed validation (3 seeds: 42, 123, 456) reveals that <strong>K's 3p advantage and N's deep-hop advantage are seed-dependent artifacts.</strong> K mean 3p=0.3699±0.0200 — <strong>BELOW baseline A (0.3725)</strong>. N mean 4p=0.2354±0.0618, 5p=0.2665±0.0738 — HUGE variance. Even seed=42 re-runs differ due to CUDA non-determinism (K 3p: 0.4148→0.3812). <strong>LP MRR IS robust</strong>: K=0.4832±0.0052, N=0.4842±0.0089. The 500-query multi-hop evaluation is too noisy for single-seed conclusions. All Phases 46-52 claims about 3p/4p/5p advantages from temperature tuning must be treated as unreliable. Only LP improvements are statistically supported.</p>
 <h3 id="35-evaluation-noise-dominates-multi-hop-variance-investigation-closed">35. Evaluation noise dominates multi-hop variance — investigation CLOSED<a class="headerlink" href="#35-evaluation-noise-dominates-multi-hop-variance-investigation-closed" title="Permanent link">&para;</a></h3>
 <p>Phase 54: 10k-query evaluation reduces cross-seed multi-hop std by <strong>66-84%</strong> (avg K=75%, N=79%), confirming evaluation noise was the dominant variance source. With tight CIs, K and N are <strong>statistically indistinguishable</strong> on multi-hop (3p: 0.2614±0.0032 vs 0.2560±0.0091). 500q and 10kq give dramatically different absolute MRR (K 3p: 0.37→0.26) because larger query samples include harder paths. LP MRR remains robust and protocol-independent (K=0.4845±0.0051, N=0.4865±0.0086). After <strong>9 phases (46-54)</strong>, the conclusion: temperature reliably improves LP but has <strong>no statistically supported effect on multi-hop reasoning depth</strong> in DELTA-Full. Multi-hop investigation CLOSED.</p>
+<hr />
+<h2 id="brain-architecture-phases-5557">Brain Architecture (Phases 55–57)<a class="headerlink" href="#brain-architecture-phases-5557" title="Permanent link">&para;</a></h2>
+<h3 id="36-brainencoder-validates-differentiable-graph-construction-for-link-prediction">36. BrainEncoder validates differentiable graph construction for link prediction<a class="headerlink" href="#36-brainencoder-validates-differentiable-graph-construction-for-link-prediction" title="Permanent link">&para;</a></h3>
+<p>Phase 55: BrainEncoder (Gumbel-sigmoid differentiable edge selection) achieves LP MRR 0.4773 on FB15k-237 — within 0.002 of the 0.475 threshold — while delivering <strong>+3.7% H@10</strong> over delta_full (0.7973 vs 0.7603). First successful integration of differentiable graph construction with DELTA. Constructed edges improve recall at the cost of precision.</p>
+<h3 id="37-constructor-density-is-a-critical-hyperparameter-fewer-edges-strictly-dominate">37. Constructor density is a critical hyperparameter — fewer edges strictly dominate<a class="headerlink" href="#37-constructor-density-is-a-critical-hyperparameter-fewer-edges-strictly-dominate" title="Permanent link">&para;</a></h3>
+<p>Phase 56: Halving density from 0.02 to 0.01 gains <strong>+0.012 MRR</strong> and <strong>+0.058 H@10</strong> with half the edges (2,435 vs 4,870). Density=0.01 matches delta_full MRR (0.4794 vs 0.4796) while adding +4.7% H@10. The constructor's Gumbel-sigmoid selection is more discriminating at lower density, producing fewer but higher-quality edges.</p>
+<h3 id="38-temperature-annealing-is-counterproductive-on-brain_hybrid-baseline-dominates">38. Temperature annealing is counterproductive on brain_hybrid — baseline dominates<a class="headerlink" href="#38-temperature-annealing-is-counterproductive-on-brain_hybrid-baseline-dominates" title="Permanent link">&para;</a></h3>
+<p>Phase 57: brain_hybrid exceeds 0.480 MRR (A: 0.4808, B: 0.4818), but the improvement comes from reducing epochs (200 vs 300), not from annealing. K-style annealing adds only +0.001 MRR while <strong>dropping H@10 by -0.046</strong> (0.7613 vs 0.8076). Constructed edges already provide structural information that overlaps with what temperature sharpening achieves, making annealing redundant for MRR and harmful for recall. The optimal brain_hybrid configuration is baseline temp=1.0 at 200 epochs.</p>
 <hr />
 <p><em>See <a href="../validation-phases/">Validation Phases</a> for complete result tables. See <a href="../status-and-roadmap/">Status &amp; Roadmap</a> for current priorities.</em></p>
 

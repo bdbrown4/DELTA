@@ -470,6 +470,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#brainencoder" class="md-nav__link">
+    <span class="md-ellipsis">
+      BrainEncoder
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -982,6 +991,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#brainencoder" class="md-nav__link">
+    <span class="md-ellipsis">
+      BrainEncoder
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1071,7 +1089,7 @@
 <p>The dual parallel design converges 2.7x faster than sequential alternatives (Phase 2). The two streams remain independent until the ReconciliationBridge merges their outputs.</p>
 <h3 id="multi-hop-edge-adjacency">Multi-Hop Edge Adjacency<a class="headerlink" href="#multi-hop-edge-adjacency" title="Permanent link">&para;</a></h3>
 <p>The mechanism that enables compositional reasoning. Two edges are "adjacent" if they share a node, creating an edge-to-edge connectivity structure. At 2 hops, an edge can "see" edges two hops away, enabling transitive inference without explicit rule learning.</p>
-<p>Phase 11: 2-hop achieves <strong>100% on derived/transitive relations</strong> -- a +38.9% jump from 1-hop (61.1%) and beating Node GNN (83.3%). This was the single biggest architectural improvement in the project. Implemented as sparse COO tensors for O(E^0.97) scaling (Phase 17), handling 2500+ edges where the original dense approach timed out at ~500.</p>
+<p>Phase 11: 2-hop achieves <strong>100% on derived/transitive relations</strong> — a +38.9% jump from 1-hop (61.1%) and beating Node GNN (83.3%). This was the single biggest architectural improvement in the project. Implemented as sparse COO tensors for O(E^0.97) scaling (Phase 17), handling 2500+ edges where the original dense approach timed out at ~500.</p>
 <h3 id="reconciliationbridge">ReconciliationBridge<a class="headerlink" href="#reconciliationbridge" title="Permanent link">&para;</a></h3>
 <p>The cross-stream interaction mechanism. After both attention streams complete, the ReconciliationBridge co-updates nodes and edges in a sequential cascade:</p>
 <ol>
@@ -1081,7 +1099,7 @@
 <p>Both updates use residual connections and LayerNorm, providing direct high-bandwidth gradient flow.</p>
 <div class="admonition note">
 <p class="admonition-title">Cross-Stream Interaction Comparison</p>
-<p>A <a href="https://github.com/bdbrown4/DELTA/blob/main/experiments/prototypes/shared_latent_bottleneck.py">prototype comparison</a> tested ReconciliationBridge (0.889 val) against Cross-Attention Gates (0.218, at majority baseline) and Shared Latent Bottleneck (0.210, at majority baseline). Direct linear mixing is fundamentally superior -- gated alternatives never open properly.</p>
+<p>A <a href="https://github.com/bdbrown4/DELTA/blob/main/experiments/prototypes/shared_latent_bottleneck.py">prototype comparison</a> tested ReconciliationBridge (0.889 val) against Cross-Attention Gates (0.218, at majority baseline) and Shared Latent Bottleneck (0.210, at majority baseline). Direct linear mixing is fundamentally superior — gated alternatives never open properly.</p>
 </div>
 <h3 id="postattentionpruner">PostAttentionPruner<a class="headerlink" href="#postattentionpruner" title="Permanent link">&para;</a></h3>
 <p>Prunes graph elements based on <em>observed</em> attention weights rather than predicting importance before attention (the original router's chicken-and-egg problem). Uses soft sigmoid gates with per-head attention features, avoiding the non-differentiable hard top-k that caused the original 29% accuracy gap.</p>
@@ -1090,12 +1108,12 @@
 <p>Transformer-bootstrapped graph construction with per-layer edge projections and typed edges. Solves the bootstrap "chicken-and-egg" problem: a lightweight transformer builds an initial graph, then DELTA refines it.</p>
 <div class="admonition warning">
 <p class="admonition-title">Limited Contribution (KG domain)</p>
-<p>Phase 36: GraphConstructor adds &lt;=1.3% over fixed topology. DELTA's core architecture is powerful enough that the given topology suffices for KG tasks. For sequence domain generalization (where the constructor must discover structure from scratch), the constructor becomes the critical component -- and has three identified deficiencies.</p>
+<p>Phase 36: GraphConstructor adds &lt;=1.3% over fixed topology. DELTA's core architecture is powerful enough that the given topology suffices for KG tasks. For sequence domain generalization (where the constructor must discover structure from scratch), the constructor becomes the critical component — and has three identified deficiencies.</p>
 </div>
 <div class="admonition bug">
 <p class="admonition-title">Three Constructor Deficiencies (Active)</p>
 <p><strong>1. Gradient wall at edge selection</strong> (<code>constructor.py:127</code>): Hard binary <code>attn &gt; threshold</code> blocks gradient flow. Fix: replace with Gumbel-sigmoid (proven in Phase 38/39).</p>
-<p><strong>2. Dead <code>edge_type_weights</code></strong> (<code>constructor.py:173-175</code>): Softmax output is computed then discarded -- never included in the returned <code>DeltaGraph</code>. Fix: fold into <code>edge_features</code> before returning.</p>
+<p><strong>2. Dead <code>edge_type_weights</code></strong> (<code>constructor.py:173-175</code>): Softmax output is computed then discarded — never included in the returned <code>DeltaGraph</code>. Fix: fold into <code>edge_features</code> before returning.</p>
 <p><strong>3. One token = one node (no conceptual compression)</strong>: "New York City" produces three nodes. Acceptable for short sequences; caused the Phase 25 VRAM problem for LRA (4096 tokens).</p>
 <p>Fixes 1 and 2 are backward-compatible and verifiable on FB15k-237 LP.</p>
 </div>
@@ -1104,19 +1122,29 @@
 <h3 id="bfs-graph-partitioner">BFS Graph Partitioner<a class="headerlink" href="#bfs-graph-partitioner" title="Permanent link">&para;</a></h3>
 <p>O(N+E) BFS seed-expansion clustering, replacing the original O(N^3) spectral partitioning. Balance ratio of 0.79 with importance-aware seeding (Phase 20).</p>
 <h3 id="learnable-temperature">Learnable Temperature<a class="headerlink" href="#learnable-temperature" title="Permanent link">&para;</a></h3>
-<p>Per-head temperature scaling reveals an edge/node asymmetry in attention sharpness (Phases 46-48). Edge heads converge to sharper temperatures while node heads prefer softer distributions. Asymmetric initialization (node=2, edge=6) yields the best link prediction MRR of 0.4856. This confirms that edge attention and node attention have fundamentally different optimal operating regimes.</p>
+<p>Per-head temperature scaling reveals an edge/node asymmetry in attention sharpness (Phases 46–52). Edge heads converge to sharper temperatures while node heads prefer softer distributions. Temperature annealing (high node temp early, anneal down) breaks the 3p ceiling (Phase 50: K achieves 3p MRR 0.4148). Edge sharpness boosts LP further (Phase 52: Q achieves LP MRR 0.4905). Multi-seed validation (Phase 53) confirmed LP improvements are robust but multi-hop claims are seed-dependent. After 9 phases, three operating modes emerged: LP-optimized, balanced-3p, and deep-reasoning.</p>
+<h3 id="brainencoder">BrainEncoder<a class="headerlink" href="#brainencoder" title="Permanent link">&para;</a></h3>
+<p>Differentiable graph construction via Gumbel-sigmoid edge selection (Phases 55–57). BrainEncoder uses a <code>BrainConstructor</code> to build new edges from learned node representations, then runs DELTA message passing over the augmented graph (original + constructed edges).</p>
+<ul>
+<li><strong>brain_hybrid mode</strong>: Preserves original KG edges and adds constructed edges. 311K params.</li>
+<li><strong>Gumbel-sigmoid selection</strong>: Differentiable edge selection with configurable target density. No gradient wall — task loss flows through edge selection.</li>
+<li><strong>Density control</strong>: <code>target_density=0.01</code> produces 2,435 edges and strictly dominates <code>0.02</code> (4,870 edges) on MRR, H@3, and H@10 (Phase 56).</li>
+<li><strong>Results</strong>: MRR 0.4818 (matches delta_full) with H@10 <strong>0.8076</strong> (+4.7% over delta_full). Constructed edges genuinely add recall.</li>
+<li><strong>Temperature</strong>: Annealing is counterproductive on brain_hybrid — baseline temp=1.0 at 200 epochs is optimal (Phase 57).</li>
+</ul>
+<p>See <code>delta/brain.py</code> for implementation. See <a href="../the-brain/">The Brain</a> for the long-term vision.</p>
 <hr />
 <h2 id="self-bootstrap-removing-the-transformer-scaffold">Self-Bootstrap: Removing the Transformer Scaffold<a class="headerlink" href="#self-bootstrap-removing-the-transformer-scaffold" title="Permanent link">&para;</a></h2>
 <p>Graph construction faces a bootstrapping dilemma: you need to understand the input to build the graph, but the graph is how you understand input.</p>
 <p><strong>The journey:</strong></p>
 <ul>
 <li><strong>Phases 5-27b (Transformer scaffold):</strong> A lightweight transformer bootstraps the initial graph. Phase 27b confirms graph structure helps (+4.4% over Transformer), but the hard-thresholded constructor is the bottleneck.</li>
-<li><strong>Phase 36 (Constructor at scale):</strong> GraphConstructor adds &lt;=1.3% over fixed topology -- hard thresholding blocks gradient flow, not the concept of learned construction.</li>
+<li><strong>Phase 36 (Constructor at scale):</strong> GraphConstructor adds &lt;=1.3% over fixed topology — hard thresholding blocks gradient flow, not the concept of learned construction.</li>
 <li><strong>Phase 38 (Differentiable construction):</strong> Gumbel-sigmoid replaces the hard threshold. Hybrid variant (base topology + learned edges) reaches <strong>98% of FixedChain</strong> with minimal variance.</li>
-<li><strong>Phase 39 (Self-bootstrap):</strong> Replace the transformer with a FixedChain DELTA layer. DELTA bootstraps DELTA -- no transformer anywhere. SelfBootstrap reaches <strong>157% of FixedChain</strong> (0.757 vs 0.481 accuracy, 3-seed average).</li>
+<li><strong>Phase 39 (Self-bootstrap):</strong> Replace the transformer with a FixedChain DELTA layer. DELTA bootstraps DELTA — no transformer anywhere. SelfBootstrap reaches <strong>157% of FixedChain</strong> (0.757 vs 0.481 accuracy, 3-seed average).</li>
 </ul>
-<p><strong>Real-data confirmation:</strong> Phase 40 validates transfer to FB15k-237: SelfBootstrapHybrid MRR 0.5089, within 0.004 of GraphGPS -- the best-performing DELTA variant on real data.</p>
-<p><strong>Why it works:</strong> DELTA-enriched embeddings contain relational information that raw positional embeddings lack. The constructor builds a graph informed by DELTA's own understanding of the input structure -- each pass makes the next pass smarter. This is the mechanism behind <a href="../the-brain/">The Brain</a>.</p>
+<p><strong>Real-data confirmation:</strong> Phase 40 validates transfer to FB15k-237: SelfBootstrapHybrid MRR 0.5089, within 0.004 of GraphGPS — the best-performing DELTA variant on real data.</p>
+<p><strong>Why it works:</strong> DELTA-enriched embeddings contain relational information that raw positional embeddings lack. The constructor builds a graph informed by DELTA's own understanding of the input structure — each pass makes the next pass smarter. This is the mechanism behind <a href="../the-brain/">The Brain</a>.</p>
 <p>See <a href="../validation-phases/">Validation Phases</a> for full results.</p>
 <hr />
 <h2 id="how-delta-differs">How DELTA Differs<a class="headerlink" href="#how-delta-differs" title="Permanent link">&para;</a></h2>
@@ -1177,7 +1205,7 @@
 </table>
 <hr />
 <h2 id="development-timeline">Development Timeline<a class="headerlink" href="#development-timeline" title="Permanent link">&para;</a></h2>
-<p>DELTA has gone through six development stages, each building on validated results from the previous stage.</p>
+<p>DELTA has gone through eight development stages, each building on validated results from the previous stage.</p>
 <table>
 <thead>
 <tr>
@@ -1189,12 +1217,12 @@
 <tbody>
 <tr>
 <td>1. Core Validation</td>
-<td>1-15</td>
+<td>1–15</td>
 <td>Edge-first dual attention proven: 2-hop edge adjacency hits 100% on derived relations, O(n^0.81) scaling</td>
 </tr>
 <tr>
 <td>2. Pitfall Fixes</td>
-<td>16-21</td>
+<td>16–21</td>
 <td>Six architectural fixes: post-attention pruning, sparse COO, BFS partitioning, variational memory, per-layer constructor, learned dropout</td>
 </tr>
 <tr>
@@ -1204,25 +1232,35 @@
 </tr>
 <tr>
 <td>4. Scale Validation</td>
-<td>22-24</td>
+<td>22–24</td>
 <td>Full architecture validated at 10x scale; DELTA matches CompGCN, crushes TransE/RotatE on realistic KG benchmark</td>
 </tr>
 <tr>
 <td>5. Real-World GPU</td>
-<td>25</td>
-<td>First real-data benchmark: DELTA+Gate 97.6% on FB15k-237 dense subgraph (14,505 entities, 310k triples)</td>
+<td>25–37</td>
+<td>Real-data benchmarks: DELTA+Gate 97.4% on FB15k-237, noise robustness (+24%), self-bootstrap (157%), frozen encoder transfer (0.961)</td>
 </tr>
 <tr>
-<td>6. Roadmap + Review</td>
-<td>26-37</td>
-<td>External review, noise robustness (+24%), self-bootstrap (157% of FixedChain), frozen encoder transfer (0.961), H100 scaling</td>
+<td>6. Compositional Reasoning</td>
+<td>38–45</td>
+<td>Multi-hop dominance: 5p MRR 0.790 vs GraphGPS 0.690; only model improving with depth; inference 0.8–0.9x GraphGPS</td>
+</tr>
+<tr>
+<td>7. Temperature Optimization</td>
+<td>46–54</td>
+<td>Learnable temperature reveals edge/node asymmetry; LP MRR 0.4905; LP/3p trade-off characterized as fundamental</td>
+</tr>
+<tr>
+<td>8. Brain Architecture</td>
+<td>55–57</td>
+<td>Differentiable graph construction via BrainEncoder; matches delta_full MRR with +4.7% H@10</td>
 </tr>
 </tbody>
 </table>
 <p>See <a href="../validation-phases/">Validation Phases</a> for complete results. See <a href="../status-and-roadmap/">Status &amp; Roadmap</a> for current priorities.</p>
 <hr />
 <h2 id="backward-compatibility">Backward Compatibility<a class="headerlink" href="#backward-compatibility" title="Permanent link">&para;</a></h2>
-<p>All 6 architectural fixes are additive -- they extend existing classes or add new ones without modifying interfaces used by earlier phases. No regression was introduced during the fix implementation cycle.</p>
+<p>All 6 architectural fixes are additive — they extend existing classes or add new ones without modifying interfaces used by earlier phases. No regression was introduced during the fix implementation cycle.</p>
 <p><strong>Verification against critical phases:</strong></p>
 <table>
 <thead>

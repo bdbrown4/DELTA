@@ -135,6 +135,8 @@ class DELTALayer(nn.Module):
                 node_importance=graph.node_importance,
                 edge_importance=graph.edge_importance,
             )
+            # Propagate edge adjacency cache
+            graph._edge_adj_cache = active_graph._edge_adj_cache
         else:
             graph = active_graph
 

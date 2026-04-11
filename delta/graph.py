@@ -135,30 +135,30 @@ class DeltaGraph:
             co.fill_diagonal_(0)
             adj_1hop = co.nonzero(as_tuple=False).T.long()  # [2, num_pairs]
         else:
-            # Original approach for large graphs (avoids O(E^2) dense matrix)
-            edge_pairs_src = []
-            edge_pairs_tgt = []
+            # Sparse matmul approach for large graphs (vectorized, no Python loop)
+            # Uses torch_sparse.spspmm for efficient sparse × sparse → sparse
+            from torch_sparse import spspmm as _spspmm
 
             all_nodes = torch.cat([src_nodes, tgt_nodes])
             all_edge_ids = torch.arange(E, device=self.device).repeat(2)
+            N = all_nodes.max().item() + 1
 
-            for node_id in torch.unique(all_nodes):
-                incident = all_edge_ids[all_nodes == node_id]
-                if len(incident) < 2:
-                    continue
-                grid = torch.meshgrid(incident, incident, indexing='ij')
-                mask = grid[0] != grid[1]
-                edge_pairs_src.append(grid[0][mask])
-                edge_pairs_tgt.append(grid[1][mask])
+            # Incidence matrix I [N, E]: I[node, edge] = 1
+            inc_idx = torch.stack([all_nodes, all_edge_ids])
+            inc_val = torch.ones(inc_idx.shape[1], device=self.device)
 
-            if edge_pairs_src:
-                adj_1hop = torch.stack([
-                    torch.cat(edge_pairs_src),
-                    torch.cat(edge_pairs_tgt)
-                ])
-                adj_1hop = self._deduplicate_edge_adj(adj_1hop)
-            else:
-                adj_1hop = torch.zeros(2, 0, dtype=torch.long, device=self.device)
+            # Coalesce to handle multi-edges (self-loops have both endpoints same)
+            inc_sparse = torch.sparse_coo_tensor(inc_idx, inc_val, (N, E)).coalesce()
+            c_idx = inc_sparse.indices()
+            c_val = inc_sparse.values()
+
+            # I^T [E, N] @ I [N, E] → co-incidence [E, E] (sparse)
+            inc_t_idx = torch.stack([c_idx[1], c_idx[0]])  # swap for transpose
+            co_idx, co_val = _spspmm(inc_t_idx, c_val, c_idx, c_val, E, N, E)
+
+            # Remove self-loops (diagonal)
+            mask = co_idx[0] != co_idx[1]
+            adj_1hop = co_idx[:, mask].long()
 
         if hops <= 1 or adj_1hop.shape[1] == 0:
             self._edge_adj_cache = (hops, adj_1hop)

@@ -214,10 +214,12 @@ class LinkPredictionModel(nn.Module):
         nn.init.xavier_uniform_(self.edge_rel_emb.weight)
         nn.init.xavier_uniform_(self.decoder_rel_emb.weight)
 
-    def encode(self, edge_index, edge_types):
+    def encode(self, edge_index, edge_types, cached_edge_adj=None):
         """Run GNN on train graph → enriched entity features [N, d_node].
 
         If encoder is None (DistMult baseline), returns raw entity embeddings.
+        If cached_edge_adj is provided, injects it into the DeltaGraph to avoid
+        recomputing edge adjacency (major speedup for large graphs).
         """
         nf = self.entity_emb.weight
 
@@ -235,6 +237,8 @@ class LinkPredictionModel(nn.Module):
             edge_features=ef,
             edge_index=edge_index,
         )
+        if cached_edge_adj is not None:
+            graph._edge_adj_cache = (1, cached_edge_adj)
         encoded = self.encoder(graph)
         nf_out = encoded.node_features
 
@@ -381,7 +385,8 @@ def create_lp_model(model_type, num_entities, num_relations,
 # ═══════════════════════════════════════════════════════════════════════════
 
 def train_epoch(model, train_triples, edge_index, edge_types,
-                optimizer, device, batch_size=512, label_smoothing=0.1):
+                optimizer, device, batch_size=512, label_smoothing=0.1,
+                cached_edge_adj=None):
     """One training epoch with 1-vs-all DistMult scoring + BCE loss.
 
     For each batch of (h, r, t):
@@ -407,7 +412,7 @@ def train_epoch(model, train_triples, edge_index, edge_types,
         N = model.num_entities
 
         # Encode (gradients flow through GNN)
-        node_feats = model.encode(ei, et)
+        node_feats = model.encode(ei, et, cached_edge_adj=cached_edge_adj)
 
         # --- Tail prediction ---
         scores_t = model.score_all_tails(node_feats, h, r)   # [B, N]
@@ -442,7 +447,8 @@ def train_epoch(model, train_triples, edge_index, edge_types,
 
 @torch.no_grad()
 def evaluate_lp(model, triples, edge_index, edge_types,
-                hr_to_tails, rt_to_heads, device, batch_size=128):
+                hr_to_tails, rt_to_heads, device, batch_size=128,
+                cached_edge_adj=None):
     """Filtered MRR / Hits@K evaluation (standard KGE protocol).
 
     For each triple (h, r, t):
@@ -458,7 +464,7 @@ def evaluate_lp(model, triples, edge_index, edge_types,
     et = edge_types.to(device)
 
     # Encode once for evaluation (no gradient needed)
-    node_feats = model.encode(ei, et)
+    node_feats = model.encode(ei, et, cached_edge_adj=cached_edge_adj)
 
     all_ranks = []
 

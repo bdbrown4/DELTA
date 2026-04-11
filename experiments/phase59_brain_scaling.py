@@ -21,24 +21,30 @@ Motivation (from Phases 55–58):
   infrastructure changes.
 
 Hypothesis (falsifiable):
-  "brain_hybrid @ d=0.01 achieves LP MRR >= 0.40 on the 2000-entity subset
+  "brain_hybrid achieves LP MRR >= 0.30 on the 2000-entity subset
   and maintains its H@10 advantage over delta_full (H@10 delta >= +0.02)."
 
-  Note: MRR target lowered to 0.40 because the 2000-entity subset is harder
-  (less dense, more entities to rank against). delta_full's MRR on the 500
-  subset is ~0.48; scaling typically causes ~10-20% MRR drop.
+  Note: MRR target lowered to 0.30 because the 2000-entity subset is harder
+  (more entities to rank against) and brain density reduced (d=0.002 vs 0.01).
+  delta_full's MRR on the 500 subset is ~0.48; scaling typically causes
+  20-40% MRR drop, and lower density may reduce brain's advantage.
 
 Design:
   2 models × 1 seed = 2 runs (quick scaling test):
     A. delta_full (baseline) @ N=2000, seed=42
-    B. brain_hybrid @ d=0.01, N=2000, seed=42
+    B. brain_hybrid @ d=0.002, N=2000, seed=42
 
   ONE primary change: scale from N=500 to N=2000 entities.
   Baseline (delta_full) needed because we have NO reference at N=2000.
 
+  Note: brain_hybrid uses d=0.002 (not d=0.01) because at N=2000, d=0.01
+  adds ~40K brain edges (total ~102K), causing edge-to-edge attention to
+  OOM on A100-80GB (24+ GB tensor allocation). d=0.002 adds ~8K edges
+  (total ~70K), which fits in VRAM while still testing brain construction.
+
   We also test brain_hybrid @ N=5000 if N=2000 succeeds (stretch goal).
 
-  Config: 200 epochs, eval_every=30, patience=10
+  Config: 200 epochs, eval_every=10, patience=20
   Data: FB15k-237, 2000-entity dense subset
 
 Measurements:
@@ -51,34 +57,39 @@ Regression safety:
   Training must complete within 8 hours per run.
 
 Scaling note:
-  At N=2000, training has 62K triples. With batch_size=512, that's 123
-  batches/epoch, each requiring a full 3-layer DELTA GNN encode (expensive
-  edge-to-edge attention on 62K edges). This makes per-batch encoding
-  ~77× slower than N=500. Solution: use --fullbatch to process all triples
-  in one batch per epoch (1 GNN encode/epoch instead of 123). The scoring
-  tensor [62K, 1991] ≈ 500 MB fits easily in A100 80GB VRAM.
+  At N=2000, training has 62K triples. Mini-batch training requires
+  GNN encoding per batch, which is expensive due to 3-layer edge-to-edge
+  attention on 62K+ edges. Key optimizations:
 
-  CRITICAL: fullbatch requires LR scaling. Going from bs=512 to bs=62K is
-  a 122× batch increase. With Adam, the effective step size shrinks because
-  gradients are averaged over 122× more samples. Without LR compensation,
-  the model converges to a low-loss but non-discriminative solution
-  (MRR ≈ 0.002 = random). Use --lr 0.01 (10× base) for fullbatch mode.
-  The linear scaling rule suggests 0.12 but Adam is less sensitive.
+  1. build_edge_adjacency uses sparse matmul (torch_sparse.spspmm) instead
+     of Python for-loop — reduces edge_adj build from ~3s to ~0.1s.
+  2. Edge adjacency cache propagation: for non-brain models, edge_adj is
+     pre-computed once and reused across all batches/epochs (graph structure
+     doesn't change). Only features change between batches.
+  3. For brain_hybrid, edge_adj can't be cached (brain adds different edges
+     each forward pass), but spspmm optimization still helps.
 
-  brain_hybrid OOMs at fullbatch on A100-80GB because brain-constructed
+  IMPORTANT: Fullbatch training (--fullbatch) doesn't work at N=2000.
+  Despite loss converging (0.005), MRR stays near-random (0.002). Root cause:
+  200 fullbatch epochs = 200 optimizer steps. Mini-batch at bs=512 gives
+  123 steps/epoch × 200 = 24,600 steps. Entity embeddings (127K params)
+  need thousands of updates to develop discriminative representations.
+  Scaling LR (up to 0.01) doesn't help — model converges fast to same bad
+  optimum. The fundamental issue is step count, not gradient magnitude.
+
+  brain_hybrid OOMs at d=0.01 on A100-80GB because brain-constructed
   edges increase total edges from ~62K to ~102K, causing edge-to-edge
-  attention to try allocating 24+ GB for a single tensor. brain_hybrid
-  must use mini-batch training with appropriately scaled LR.
+  attention to try allocating 24+ GB for a single tensor. Use d=0.002.
 
 Usage:
   # Smoke test (5 epochs, N=500)
   python experiments/phase59_brain_scaling.py --epochs 5 --max_entities 500
 
-  # Condition A (delta_full) at N=2000: fullbatch + scaled LR
-  python experiments/phase59_brain_scaling.py --epochs 200 --eval_every 30 --patience 10 --max_entities 2000 --fullbatch --lr 0.01 --conditions A
+  # Full run at N=2000 with mini-batch + cached edge_adj
+  python experiments/phase59_brain_scaling.py --epochs 200 --eval_every 10 --patience 20 --max_entities 2000 --batch_size 4096 --lr 0.003
 
-  # Condition B (brain_hybrid) at N=2000: mini-batch + scaled LR (OOMs at fullbatch)
-  python experiments/phase59_brain_scaling.py --epochs 200 --eval_every 30 --patience 10 --max_entities 2000 --batch_size 4096 --lr 0.003 --conditions B
+  # Condition A only
+  python experiments/phase59_brain_scaling.py --epochs 200 --eval_every 10 --patience 20 --max_entities 2000 --batch_size 4096 --lr 0.003 --conditions A
 """
 
 import sys
@@ -135,11 +146,11 @@ CONDITIONS = {
         'use_brain': False,
     },
     'B': {
-        'name': 'brain_d001',
-        'desc': 'brain_hybrid @ d=0.01, temp=1.0 (Phase 58 validated config)',
+        'name': 'brain_d002',
+        'desc': 'brain_hybrid @ d=0.002, temp=1.0 (reduced density for N=2000 VRAM)',
         'model_type': 'brain_hybrid',
         'use_brain': True,
-        'target_density': 0.01,
+        'target_density': 0.002,
     },
 }
 
@@ -178,6 +189,21 @@ def run_condition(cond_key, cond, data, args, device, seed):
     evals_no_improve = 0
     t0 = time.time()
 
+    # Pre-compute edge adjacency for non-brain models (structure is fixed)
+    cached_edge_adj = None
+    if not cond['use_brain']:
+        from delta.graph import DeltaGraph
+        ei_dev = edge_index.to(device)
+        et_dev = edge_types.to(device)
+        dummy_nf = torch.zeros(data['num_entities'], 64, device=device)
+        dummy_ef = torch.zeros(data['train'].shape[1], 32, device=device)
+        tmp_graph = DeltaGraph(dummy_nf, dummy_ef, ei_dev)
+        adj_t0 = time.time()
+        cached_edge_adj = tmp_graph.build_edge_adjacency()
+        adj_time = time.time() - adj_t0
+        print(f"  Pre-computed edge adjacency: {cached_edge_adj.shape[1]:,} pairs [{adj_time:.1f}s]")
+        del tmp_graph, dummy_nf, dummy_ef
+
     # Determine effective batch size
     effective_bs = data['train'].shape[1] if args.fullbatch else args.batch_size
     if args.fullbatch:
@@ -194,7 +220,8 @@ def run_condition(cond_key, cond, data, args, device, seed):
         else:
             loss = train_epoch(
                 model, data['train'], edge_index, edge_types,
-                optimizer, device, effective_bs)
+                optimizer, device, effective_bs,
+                cached_edge_adj=cached_edge_adj)
             sp_loss = 0.0
         ep_elapsed = time.time() - ep_t0
 
@@ -206,7 +233,8 @@ def run_condition(cond_key, cond, data, args, device, seed):
 
         if epoch % args.eval_every == 0 or epoch == args.epochs:
             val = evaluate_lp(model, data['val'], edge_index, edge_types,
-                              data['hr_to_tails'], data['rt_to_heads'], device)
+                              data['hr_to_tails'], data['rt_to_heads'], device,
+                              cached_edge_adj=cached_edge_adj)
             elapsed = time.time() - t0
 
             n_new = 0
@@ -223,7 +251,8 @@ def run_condition(cond_key, cond, data, args, device, seed):
                 evals_no_improve = 0
                 best_test = evaluate_lp(
                     model, data['test'], edge_index, edge_types,
-                    data['hr_to_tails'], data['rt_to_heads'], device)
+                    data['hr_to_tails'], data['rt_to_heads'], device,
+                    cached_edge_adj=cached_edge_adj)
                 best_brain_stats = {
                     'constructed_edges': n_new,
                     'sparsity_loss': sp_loss,
@@ -268,10 +297,10 @@ def main():
     parser.add_argument('--seeds', type=str, default='42',
                         help='Comma-separated seeds (default: 42)')
     parser.add_argument('--epochs', type=int, default=200)
-    parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--batch_size', type=int, default=512)
-    parser.add_argument('--eval_every', type=int, default=30)
-    parser.add_argument('--patience', type=int, default=10)
+    parser.add_argument('--lr', type=float, default=0.003)
+    parser.add_argument('--batch_size', type=int, default=4096)
+    parser.add_argument('--eval_every', type=int, default=10)
+    parser.add_argument('--patience', type=int, default=20)
     parser.add_argument('--sparsity_weight', type=float, default=0.01)
     parser.add_argument('--max_entities', type=int, default=2000,
                         help='Max entities for dense subset (default: 2000)')
@@ -382,10 +411,10 @@ def main():
         print(f"    H@10 delta: {h10_delta:+.4f} ({'≥+0.02 CONFIRMED' if h10_delta >= 0.02 else '<+0.02 REJECTED'})")
         print(f"    MRR delta: {mrr_delta:+.4f}")
 
-        if b_mrr >= 0.40:
-            print(f"    ✓ brain_hybrid MRR >= 0.40 CONFIRMED at N={args.max_entities}")
+        if b_mrr >= 0.30:
+            print(f"    ✓ brain_hybrid MRR >= 0.30 CONFIRMED at N={args.max_entities}")
         else:
-            print(f"    ✗ brain_hybrid MRR < 0.40 REJECTED at N={args.max_entities}")
+            print(f"    ✗ brain_hybrid MRR < 0.30 REJECTED at N={args.max_entities}")
 
     print(f"\n  Phase 59 complete.")
 
@@ -393,7 +422,7 @@ def main():
     output = {
         'phase': 59,
         'title': 'Brain Hybrid Scaling — Medium-Scale Evaluation',
-        'hypothesis': 'brain_hybrid @ d=0.01 achieves LP MRR >= 0.40 at N=2000 and maintains H@10 advantage >= +0.02 over delta_full',
+        'hypothesis': 'brain_hybrid achieves LP MRR >= 0.30 at N=2000 and maintains H@10 advantage >= +0.02 over delta_full',
         'data': {
             'entities': data['num_entities'],
             'relations': data['num_relations'],

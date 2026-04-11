@@ -292,6 +292,8 @@ class DualParallelAttention(nn.Module):
             node_importance=graph.node_importance,
             edge_importance=graph.edge_importance,
         )
+        # Propagate edge adjacency cache (structure unchanged across layers)
+        result_graph._edge_adj_cache = graph._edge_adj_cache
 
         if return_weights:
             return result_graph, node_attn_w, edge_attn_w

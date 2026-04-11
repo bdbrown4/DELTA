@@ -58,15 +58,27 @@ Scaling note:
   in one batch per epoch (1 GNN encode/epoch instead of 123). The scoring
   tensor [62K, 1991] ≈ 500 MB fits easily in A100 80GB VRAM.
 
+  CRITICAL: fullbatch requires LR scaling. Going from bs=512 to bs=62K is
+  a 122× batch increase. With Adam, the effective step size shrinks because
+  gradients are averaged over 122× more samples. Without LR compensation,
+  the model converges to a low-loss but non-discriminative solution
+  (MRR ≈ 0.002 = random). Use --lr 0.01 (10× base) for fullbatch mode.
+  The linear scaling rule suggests 0.12 but Adam is less sensitive.
+
+  brain_hybrid OOMs at fullbatch on A100-80GB because brain-constructed
+  edges increase total edges from ~62K to ~102K, causing edge-to-edge
+  attention to try allocating 24+ GB for a single tensor. brain_hybrid
+  must use mini-batch training with appropriately scaled LR.
+
 Usage:
   # Smoke test (5 epochs, N=500)
   python experiments/phase59_brain_scaling.py --epochs 5 --max_entities 500
 
-  # Full run at N=2000 (fullbatch for efficiency)
-  python experiments/phase59_brain_scaling.py --epochs 200 --eval_every 30 --patience 10 --max_entities 2000 --fullbatch
+  # Condition A (delta_full) at N=2000: fullbatch + scaled LR
+  python experiments/phase59_brain_scaling.py --epochs 200 --eval_every 30 --patience 10 --max_entities 2000 --fullbatch --lr 0.01 --conditions A
 
-  # Stretch goal at N=5000
-  python experiments/phase59_brain_scaling.py --epochs 200 --eval_every 30 --patience 10 --max_entities 5000 --conditions B --fullbatch
+  # Condition B (brain_hybrid) at N=2000: mini-batch + scaled LR (OOMs at fullbatch)
+  python experiments/phase59_brain_scaling.py --epochs 200 --eval_every 30 --patience 10 --max_entities 2000 --batch_size 4096 --lr 0.003 --conditions B
 """
 
 import sys
@@ -74,6 +86,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import argparse
+import gc
 import json
 import time
 import numpy as np
@@ -309,6 +322,13 @@ def main():
         for seed in seeds:
             result = run_condition(cond_key, cond, data, args, device, seed)
             all_results.append(result)
+
+        # Free GPU memory between conditions to avoid OOM on subsequent runs
+        if device == 'cuda':
+            torch.cuda.empty_cache()
+            gc.collect()
+            free_mb = torch.cuda.mem_get_info()[0] / (1024**2)
+            print(f"  GPU cleanup: {free_mb:.0f} MB free")
 
     # ═══════════════════════════════════════════════════════════════
     # Summary table

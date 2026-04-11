@@ -50,15 +50,23 @@ Regression safety:
   LP MRR must be > 0.0 (model converges at new scale).
   Training must complete within 8 hours per run.
 
+Scaling note:
+  At N=2000, training has 62K triples. With batch_size=512, that's 123
+  batches/epoch, each requiring a full 3-layer DELTA GNN encode (expensive
+  edge-to-edge attention on 62K edges). This makes per-batch encoding
+  ~77× slower than N=500. Solution: use --fullbatch to process all triples
+  in one batch per epoch (1 GNN encode/epoch instead of 123). The scoring
+  tensor [62K, 1991] ≈ 500 MB fits easily in A100 80GB VRAM.
+
 Usage:
   # Smoke test (5 epochs, N=500)
   python experiments/phase59_brain_scaling.py --epochs 5 --max_entities 500
 
-  # Full run at N=2000
-  python experiments/phase59_brain_scaling.py --epochs 200 --eval_every 30 --patience 10 --max_entities 2000
+  # Full run at N=2000 (fullbatch for efficiency)
+  python experiments/phase59_brain_scaling.py --epochs 200 --eval_every 30 --patience 10 --max_entities 2000 --fullbatch
 
   # Stretch goal at N=5000
-  python experiments/phase59_brain_scaling.py --epochs 200 --eval_every 30 --patience 10 --max_entities 5000 --conditions B
+  python experiments/phase59_brain_scaling.py --epochs 200 --eval_every 30 --patience 10 --max_entities 5000 --conditions B --fullbatch
 """
 
 import sys
@@ -157,17 +165,31 @@ def run_condition(cond_key, cond, data, args, device, seed):
     evals_no_improve = 0
     t0 = time.time()
 
+    # Determine effective batch size
+    effective_bs = data['train'].shape[1] if args.fullbatch else args.batch_size
+    if args.fullbatch:
+        print(f"  Using full-batch training: batch_size={effective_bs} "
+              f"(1 GNN encode/epoch)")
+
     for epoch in range(1, args.epochs + 1):
+        ep_t0 = time.time()
         if cond['use_brain']:
             loss, sp_loss = train_epoch_brain(
                 model, data['train'], edge_index, edge_types,
-                optimizer, device, args.batch_size,
+                optimizer, device, effective_bs,
                 sparsity_weight=args.sparsity_weight)
         else:
             loss = train_epoch(
                 model, data['train'], edge_index, edge_types,
-                optimizer, device, args.batch_size)
+                optimizer, device, effective_bs)
             sp_loss = 0.0
+        ep_elapsed = time.time() - ep_t0
+
+        # Per-epoch progress (lightweight, no eval)
+        if epoch % args.eval_every != 0 and epoch != args.epochs:
+            if epoch <= 3 or epoch % 10 == 0:
+                elapsed = time.time() - t0
+                print(f"    Ep {epoch:4d}  loss={loss:.4f}  [{ep_elapsed:.1f}s/ep, {elapsed:.0f}s total]")
 
         if epoch % args.eval_every == 0 or epoch == args.epochs:
             val = evaluate_lp(model, data['val'], edge_index, edge_types,
@@ -242,6 +264,8 @@ def main():
                         help='Max entities for dense subset (default: 2000)')
     parser.add_argument('--conditions', type=str, default=None,
                         help='Comma-separated condition letters to run (e.g. A,B). Default: all')
+    parser.add_argument('--fullbatch', action='store_true',
+                        help='Use full-batch training (1 GNN encode/epoch). Essential for N>=2000.')
     args = parser.parse_args()
 
     seeds = [int(s) for s in args.seeds.split(',')]
@@ -360,6 +384,8 @@ def main():
             'epochs': args.epochs,
             'lr': args.lr,
             'batch_size': args.batch_size,
+            'fullbatch': args.fullbatch,
+            'effective_batch_size': data['train'].shape[1] if args.fullbatch else args.batch_size,
             'eval_every': args.eval_every,
             'patience': args.patience,
             'seeds': seeds,

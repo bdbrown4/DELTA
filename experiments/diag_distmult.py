@@ -18,9 +18,13 @@ print(f'DistMult params: {sum(p.numel() for p in model.parameters()):,}')
 ei, et = build_train_graph_tensors(data['train'])
 opt = torch.optim.Adam(model.parameters(), lr=0.001)
 t0 = time.time()
-for ep in range(1, 101):
+for ep in range(1, 201):
     loss = train_epoch(model, data['train'], ei, et, opt, device, 512)
-    if ep <= 3 or ep % 10 == 0:
+    if ep % 10 == 0:
+        elapsed = time.time() - t0
+        print(f'Ep {ep:3d}  loss={loss:.4f}  [{elapsed:.0f}s]')
+    if ep in (50, 100, 150, 200):
         val = evaluate_lp(model, data['val'], ei, et,
                           data['hr_to_tails'], data['rt_to_heads'], device)
-        print(f'Ep {ep:3d}  loss={loss:.4f}  MRR={val["MRR"]:.4f}  H@10={val["Hits@10"]:.4f}  [{time.time()-t0:.0f}s]')
+        elapsed = time.time() - t0
+        print(f'  EVAL Ep {ep:3d}  MRR={val["MRR"]:.4f}  H@1={val["Hits@1"]:.4f}  H@3={val["Hits@3"]:.4f}  H@10={val["Hits@10"]:.4f}  [{elapsed:.0f}s]')

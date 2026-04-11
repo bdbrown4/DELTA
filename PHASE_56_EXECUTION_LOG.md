@@ -1,31 +1,19 @@
 # Phase 56: Constructor Density Ablation — Execution Log
 
-## Status: IN PROGRESS (Condition A running)
+> **Status: COMPLETE** — See [docs/phase_56.md](docs/phase_56.md) for full results.
 
-**Start Time**: 2026-04-09, ~21:00 UTC
-**Hardware**: RTX 3080 Ti (12.9GB VRAM) — local fallback due to Colab tunnel expiration
-**Expected Duration**: ~20-24 hours (full 4 conditions × 300 epochs)
+## Result
 
-## Conditions Progress
+Conditions C (d=0.01) and D (d=0.02) were executed. Density=0.01 strictly dominates 0.02: **+0.012 MRR, +0.058 H@10** with half the edges. Conditions A and B were deferred.
 
-### Condition A: delta_full (baseline, no construction)
-- **Status**: IN PROGRESS
-- **Epochs**: 30/300 complete (~10%)
-- **Time Elapsed**: ~460s (~7.7 min)
-- **Val MRR @ Ep 30**: 0.0151 (still early in training)
-- **Expected Completion**: ~40-50 epochs of conditions A × 300 epochs cumulative
+## Conditions
 
-### Condition B: brain_hybrid @ density=0.005
-- **Status**: QUEUED
-- **Expected Start**: After Condition A completes (~4-5 hours)
-
-### Condition C: brain_hybrid @ density=0.01
-- **Status**: QUEUED
-- **Expected Start**: After Condition B completes (~8-10 hours)
-
-### Condition D: brain_hybrid @ density=0.02
-- **Status**: QUEUED
-- **Expected Start**: After Condition C completes (~12-14 hours)
+| Condition | Density | Status | MRR | H@10 |
+|-----------|---------|--------|-----|------|
+| A: delta_full (baseline) | — | Reused from Phase 55 | 0.4796 | 0.7603 |
+| B: brain_hybrid @ d=0.005 | 0.005 | Deferred | — | — |
+| C: brain_hybrid @ d=0.01 | 0.01 | ✅ Complete | **0.4794** | **0.8076** |
+| D: brain_hybrid @ d=0.02 | 0.02 | ✅ Complete | 0.4678 | 0.7500 |
 
 ## Context
 

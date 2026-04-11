@@ -13,7 +13,7 @@ This project was developed by a solo software engineer using LLMs and AI agents 
 
 - Identify the three-paradigm gap
 - Formulate the edge-as-first-class-citizen thesis
-- Design the 48-phase ablation structure
+- Design the 57-phase ablation structure
 - Recognize when results were confounded (e.g., Phase 27 batch-1 bug)
 - Decide which failures were scientifically meaningful vs. implementation artifacts
 

@@ -1,6 +1,6 @@
 # Status & Roadmap
 
-*Last updated: Phase 49 active (April 6, 2026)*
+*Last updated: Phase 57 complete (2026-04-10)*
 
 ---
 
@@ -8,16 +8,18 @@
 
 | Metric | Model | Value | Phase |
 |--------|-------|-------|-------|
-| LP MRR (DELTA-Full, temp) | E: node=2, edge=6 | **0.4856** | 48 |
-| LP H@10 (DELTA-Full, temp) | F: node=3, edge=5 | **0.8014** | 48 |
+| LP MRR (DELTA-Full, temp) | Q: K-anneal + edge=7.0 | **0.4905** | 52 |
+| LP MRR (brain_hybrid) | B: K-anneal @ d=0.01 | **0.4818** | 57 |
+| LP H@10 (brain_hybrid) | A: baseline @ d=0.01 | **0.8076** | 57 |
+| LP H@10 (DELTA-Full, temp) | S: anneal + edge=7.0 | **0.8045** | 52 |
 | 3p MRR (multi-hop) | DELTA-Matched @10% drop | **0.742 +/- 0.009** | 45 (3-seed) |
 | 5p MRR | DELTA-Matched @0% drop | **0.790** | 44 |
 | Depth advantage (5p) | DELTA vs GraphGPS | **+0.100** | 44 |
-| Per-query inference | DELTA vs GraphGPS | **0.8-0.9x** (faster) | 45 |
+| Per-query inference | DELTA vs GraphGPS | **0.8–0.9x** (faster) | 45 |
 
 ---
 
-## What's Validated (14 Propositions)
+## What's Validated (17 Propositions)
 
 | # | Proposition | Confidence | Key Evidence |
 |---|---|---|---|
@@ -29,80 +31,84 @@
 | P6 | Results stable across random seeds | High | Phase 29 (5 seeds), Phase 45 (3 seeds multi-hop) |
 | P7 | Sampling robustness at 26% VRAM budget | High | Phase 30: all 4 strategies within +/-0.2% |
 | P8 | DELTA competitive with GraphGPS on LP | High | Phase 40: SBHybrid MRR 0.5089 (within 0.004) |
-| P9 | DELTA excels on multi-hop compositional queries | High | Phase 42-44: only model with 2p->3p improvement; 5p MRR 0.790 |
+| P9 | DELTA excels on multi-hop compositional queries | High | Phase 42–44: only model with 2p->3p improvement; 5p MRR 0.790 |
 | P10 | Advantage accelerates with reasoning depth | High | Phase 44: +0.004 at 2p -> +0.100 at 5p vs GraphGPS |
-| P11 | Per-query inference competitive with GraphGPS | High | Phase 45: 0.8-0.9x per query |
-| P12 | Learnable temperature discovers edge/node asymmetry | High | Phase 46-48: edge wants sharper, node wants softer |
+| P11 | Per-query inference competitive with GraphGPS | High | Phase 45: 0.8–0.9x per query |
+| P12 | Learnable temperature discovers edge/node asymmetry | High | Phase 46–48: edge wants sharper, node wants softer |
 | P13 | Selective sharpening outperforms uniform | High | Phase 47: B (L0=1, L1+L2=4) best of 4 configs |
 | P14 | Asymmetric node/edge temp improves LP | High | Phase 48: E (node=2, edge=6) MRR 0.4856 (+1.5%) |
+| P15 | Differentiable graph construction is viable for LP | High | Phase 55–57: brain_hybrid matches delta_full MRR with +4.7% H@10 |
+| P16 | Constructor density controls precision/recall trade-off | High | Phase 56: d=0.01 strictly dominates d=0.02 on MRR, H@3, H@10 |
+| P17 | Temperature annealing is counterproductive on brain_hybrid | High | Phase 57: annealing trades H@10 for marginal MRR; baseline optimal |
 
 ---
 
 ## Known Issues
 
-- **Phase 37 leakage** -- invalidated (5 evaluation bugs). Replaced by Phase 40.
-- **Training cost** -- DELTA 34x slower per epoch than GraphGPS; inference is comparable.
-- **3p gap** -- D (all temp=4.0) achieves best 3p MRR but L0 temperature contribution unresolved.
-- **Constructor gradient wall** -- `constructor.py` line 127 uses a hard binary threshold (`attn > 0.1`) to create edges. No gradient flows through this decision -- the constructor cannot learn which edges help the downstream task. The fix (Gumbel-sigmoid, same as Phase 38) exists in the codebase and needs porting to the constructor.
-- **Dead `edge_type_weights`** -- `constructor.py` lines 173-175 compute `edge_type_weights` via softmax but never fold them into the returned `DeltaGraph`. The edge type classification head contributes zero to representation quality despite consuming parameters. One-line fix: concatenate `edge_type_weights` into `edge_features` before returning.
+- **Phase 37 leakage** — invalidated (5 evaluation bugs). Replaced by Phase 40.
+- **Training cost** — DELTA 34x slower per epoch than GraphGPS; inference is comparable.
+- **LP/3p trade-off is fundamental** — After 9 phases (46–54) testing 20+ temperature configurations, temperature reliably improves LP but has no statistically supported effect on multi-hop reasoning depth. Three operating modes: LP-optimized (P/Q), balanced-3p (K), deep-reasoning (N).
+- **Multi-hop temperature claims not statistically robust** — Phase 53 multi-seed validation shows single-seed 3p/4p/5p advantages are seed-dependent. Only LP improvements are statistically supported.
+- **brain_hybrid overfitting** — Both density conditions overfit after epoch 150. Early stopping around epoch 150–180 preserves best test performance.
 
 ---
 
 ## Open Gaps
 
-### Gap 1: Full-scale evaluation -- HIGH priority
+### Gap 1: Full-scale evaluation — HIGH priority
 - Current: 494-entity FB15k-237 subset (3.4% of full dataset)
 - Needed: Full FB15k-237 (14,505 entities) or YAGO3-10 (123K entities)
 - Requires mini-batching infrastructure for 2-hop edge adjacency at scale
 
-### Gap 2: LP/3p trade-off -- ACTIVE (Phase 49)
-- Best LP config (E: node=2, edge=6, L0=1.0) and best 3p config (D: all=4.0) diverge
-- Hypothesis: D's L0=4.0 may be key to 3p advantage. Phase 49 tests H (L0=4,4 + E's L1+L2), I (L0=4,4 + F's), J (L0=2,4 + E's)
+### Gap 2: LP/3p trade-off — CHARACTERIZED (Phases 46–54)
+- After 9 phases and 20+ configurations, the trade-off is confirmed fundamental at the temperature level
+- Three operating modes: LP-optimized (Q: 0.4905), balanced-3p (K: 0.4148), deep-reasoning (N: 5p 0.3788)
+- Dynamic temperature (annealing) helps but doesn't fully resolve the trade-off
 
 ### Gap 3: Cross-family generalization
-- WN18RR (transfer): 0.961 probe accuracy (Phase 35) -- but frozen encoder, not trained LP
+- WN18RR (transfer): 0.961 probe accuracy (Phase 35) — but frozen encoder, not trained LP
 - YAGO3-10: untested. Would demonstrate generalization beyond Freebase
 
-### Gap 4: Constructor gradient wall -- BLOCKING for sequence domains
-- `constructor.py:127` uses a hard threshold (`attn > 0.1`) to select edges -- no gradient flows through this decision
-- The constructor cannot learn to build task-optimal graphs because the task loss can't reach the edge-selection step
-- Fix: Gumbel-sigmoid differentiable edge selection (mechanism already validated in Phase 38)
-- Priority: apply to KG LP first to confirm no regression, then enable sequence domain work
+### Gap 4: Brain architecture optimization — ACTIVE
+- BrainEncoder validated (Phases 55–57) but MRR gains over delta_full are marginal (+0.002)
+- H@10 advantage (+4.7%) is substantial — constructed edges genuinely add recall
+- Next: density=0.005 exploration, multi-seed validation, architecture improvements
 
-### Gap 5: Dead `edge_type_weights` in constructor -- LOW effort fix
-- `constructor.py:173-175` computes edge type weights via softmax but discards the result before returning the `DeltaGraph`
-- The edge type classification head contributes zero to representation quality
-- Fix: fold `edge_type_weights` into `edge_features` (one-line change, backward-compatible)
-
-### Gap 6: Sequence domain generalization -- FUTURE (Horizon 3)
+### Gap 5: Sequence domain generalization — FUTURE (Horizon 3)
 - All current evidence is on knowledge graphs where structure is pre-defined or semi-explicit
-- LRA (Long Range Arena) requires discovering structure from raw sequences -- this is what Phase 33/36 failed on at small scale
-- The SelfBootstrap result (157% of FixedChain, Phase 39) is the closest precedent: DELTA learning its own structure
-- Prerequisites: Gaps 4 and 5 fixed; then LRA pilot on ListOps (hierarchical numerical expressions map naturally to DELTA's edge-first reasoning)
+- BrainEncoder's Gumbel-sigmoid construction (Phases 55–57) is the mechanism for sequence domains
+- Prerequisites: Brain architecture optimization; then LRA pilot on ListOps
 
 ---
 
 ## Roadmap
 
-### Horizon 2: Adaptive Architecture (Phases 46-50) -- Active
+### Horizon 2: Adaptive Architecture (Phases 46–57) — Complete
 
 | Phase | Goal | Status |
 |-------|------|--------|
-| 46 | Learnable per-head temperature | Done -- Dead heads 83%->38%, edge/node asymmetry |
-| 47 | Layer-specific temperature | Done -- B (L0 soft, L1+L2 sharp) = best LP 0.4783 |
-| 48 | Asymmetric node/edge temperature | Done -- E = new LP record 0.4856; node stable, edge drifts UP |
-| 49 | L0 temperature + asymmetric L1+L2 | Active -- H (L0=4,4 + E's L1+L2), I (L0=4,4 + F's L1+L2), J (L0=2,4 + E's L1+L2); target: LP >= 0.4856 and 3p >= 0.4018 |
-| 50 | Constructor fixes + differentiable edge selection | Planned -- fix gradient wall (Gap 4), dead edge_type_weights (Gap 5), then port Gumbel-sigmoid selector |
+| 46 | Learnable per-head temperature | Done — dead heads 83%->38%, edge/node asymmetry |
+| 47 | Layer-specific temperature | Done — B (L0 soft, L1+L2 sharp) = best LP 0.4783 |
+| 48 | Asymmetric node/edge temperature | Done — E = LP record 0.4856; node stable, edge drifts UP |
+| 49 | L0 temperature + asymmetric L1+L2 | Done — H achieves LP 0.4887 but 3p still below D |
+| 50 | Temperature annealing | Done — K breaks 3p ceiling (0.4148), first to beat D's 0.4018 |
+| 51 | Static vs trajectory | Done — annealing trajectory creates representations static init cannot replicate |
+| 52 | Edge sharpness + closing LP gap | Done — Q achieves LP 0.4905 (record); LP/3p trade-off confirmed fundamental |
+| 53 | Multi-seed validation | Done — multi-hop claims are seed-dependent; only LP is robust |
+| 54 | High-power multi-hop eval | Done — 10k queries confirm evaluation noise dominates; investigation CLOSED |
+| 55 | Brain architecture port | Done — BrainEncoder MRR 0.4773, H@10 +3.7% over delta_full |
+| 56 | Constructor density ablation | Done — d=0.01 strictly dominates d=0.02 |
+| 57 | Brain temperature annealing | Done — baseline (no annealing) optimal; MRR 0.4808–0.4818 |
 
-### Horizon 3: Sequence Domain Generalization (Phases 51-60) -- Planned
+### Horizon 3: Brain Optimization & Sequence Domains (Phases 58+) — Active
 
-Differentiable edge construction for sequence inputs (LRA pilot: ListOps first), position-preserving edges, task-conditioned construction. The jump from KG reasoning to sequence domains requires the constructor fixes in Phase 50 -- see [Architecture Overview](architecture.md#graph-constructor) for details.
+Brain architecture validated; next steps are density optimization (d=0.005), multi-seed validation, and extending to sequence domain inputs. See [The Brain](the-brain.md) for the long-term vision.
 
-### Horizon 4: Dynamic Reasoning (Phases 61-70) -- Future
+### Horizon 4: Dynamic Reasoning — Future
 
 Iterative graph refinement, temporal reasoning, multi-scale construction. See [The Brain](the-brain.md).
 
-### Horizon 5: The Brain (Phases 71+)
+### Horizon 5: The Brain
 
 Multi-modal construction, associative memory, compositional generalization. See [The Brain](the-brain.md).
 
@@ -110,38 +116,38 @@ Multi-modal construction, associative memory, compositional generalization. See 
 
 ## Publication Pathway
 
-**Target:** NeurIPS / ICLR -- *"DELTA: Edge-Centric Dual Attention for Relational Reasoning on Knowledge Graphs"*
+**Target:** NeurIPS / ICLR — *"DELTA: Edge-Centric Dual Attention for Relational Reasoning on Knowledge Graphs"*
 
 ### What We Have
 
 - [x] Novel architecture with theoretical motivation
-- [x] 48 experiment phases with honest failure documentation
-- [x] Multi-seed statistical validation (Phases 29, 45)
-- [x] Competitive LP on real FB15k-237 (Phase 40, 48)
-- [x] Multi-hop compositional dominance (Phases 42-44)
+- [x] 57 experiment phases with honest failure documentation
+- [x] Multi-seed statistical validation (Phases 29, 45, 53)
+- [x] Competitive LP on real FB15k-237 (Phases 40, 48, 52)
+- [x] Multi-hop compositional dominance (Phases 42–44)
 - [x] Inference efficiency story (Phase 45)
-- [x] Learnable temperature with mechanistic insight (Phases 46-48)
+- [x] Learnable temperature with mechanistic insight (Phases 46–52)
 - [x] Self-bootstrap result (Phase 39: 157% of FixedChain)
+- [x] Differentiable graph construction via BrainEncoder (Phases 55–57)
+- [x] LP/3p trade-off fully characterized (Phases 46–54)
 
 ### What We Still Need
 
-- [ ] Full-scale dataset evaluation (14.5K+ entities) -- Gap 1
-- [ ] Cross-family benchmark (YAGO3-10 or WN18RR LP) -- Gap 3
-- [ ] LP/3p trade-off resolution or clear characterization -- Gap 2, Phase 49 active
+- [ ] Full-scale dataset evaluation (14.5K+ entities) — Gap 1
+- [ ] Cross-family benchmark (YAGO3-10 or WN18RR LP) — Gap 3
 - [ ] Interpretability figure (attention heatmap on known reasoning chain)
-- [ ] Constructor gradient wall fix -- Gap 4, needed before sequence domain work
-- [ ] Dead `edge_type_weights` fix -- Gap 5, low effort, high correctness value
+- [ ] Multi-seed brain_hybrid validation for statistical confidence
 
 ### Paper Structure
 
-1. **Introduction** -- The three-paradigm gap (Transformers -> GNNs -> DELTA); edges as first-class computational citizens; self-bootstrapped graph construction
-2. **Related Work** -- Message-passing GNNs (CompGCN, RGCN); Transformers on graphs (GraphGPS, GRIT); KG completion (TransE, RotatE, BetaE)
-3. **Architecture** -- DualParallelAttention; 2-hop edge adjacency; ReconciliationBridge; self-bootstrapped construction; learnable per-head temperature with edge/node asymmetry
-4. **Experiments** -- Setup (FB15k-237 subset, evaluation protocol); LP results (Phase 40 + Phase 48 temperature); multi-hop path queries (Phase 42/44, 1p-5p); robustness (Phase 43 DropEdge, Phase 45 multi-seed); temperature analysis (Phases 46-48)
-5. **Inference Efficiency** -- Phase 45: per-query faster than GraphGPS
-6. **Self-Bootstrap Results** -- Phase 39: 157% of FixedChain
-7. **Conclusion** -- The Brain vision
+1. **Introduction** — The three-paradigm gap (Transformers -> GNNs -> DELTA); edges as first-class computational citizens; self-bootstrapped graph construction
+2. **Related Work** — Message-passing GNNs (CompGCN, RGCN); Transformers on graphs (GraphGPS, GRIT); KG completion (TransE, RotatE, BetaE)
+3. **Architecture** — DualParallelAttention; 2-hop edge adjacency; ReconciliationBridge; BrainEncoder (differentiable construction); learnable per-head temperature with edge/node asymmetry
+4. **Experiments** — Setup (FB15k-237 subset, evaluation protocol); LP results (Phases 40, 48, 52); multi-hop path queries (Phases 42–44, 1p–5p); robustness (Phase 43 DropEdge, Phase 45 multi-seed); temperature analysis (Phases 46–54); brain architecture (Phases 55–57)
+5. **Inference Efficiency** — Phase 45: per-query faster than GraphGPS
+6. **Self-Bootstrap & Brain** — Phase 39: 157% of FixedChain; Phases 55–57: differentiable construction matches delta_full with +4.7% H@10
+7. **Conclusion** — The Brain vision
 
 ---
 
-*See [The Brain](the-brain.md) for long-term vision. See [Validation Phases](validation-phases.md) for all experiment results. See [Key Findings](key-findings.md) for the 29 consolidated findings.*
+*See [The Brain](the-brain.md) for long-term vision. See [Validation Phases](validation-phases.md) for all experiment results. See [Key Findings](key-findings.md) for the 38 consolidated findings.*

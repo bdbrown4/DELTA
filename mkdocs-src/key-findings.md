@@ -1,6 +1,6 @@
 # Key Findings
 
-35 key findings from 54 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
+38 key findings from 57 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
 
 ---
 
@@ -16,7 +16,7 @@ DELTA scales at O(n^0.81) from 20 to 400 nodes thanks to the importance router's
 The straight-through estimator lets all 12 router parameters receive gradients (vs 0 with hard top-k). Temperature annealing provides a curriculum from exploration to exploitation.
 
 ### 4. Multi-hop edge adjacency solves compositional reasoning
-2-hop edge adjacency achieves **100% on derived/transitive relations** -- a +38.9% jump from 1-hop (61.1%) and beating Node GNN (83.3%). The biggest architectural improvement in the project.
+2-hop edge adjacency achieves **100% on derived/transitive relations** — a +38.9% jump from 1-hop (61.1%) and beating Node GNN (83.3%). The biggest architectural improvement in the project.
 
 ### 5. Compositional logic rules are DELTA's sweet spot
 Phase 13: DELTA hit 100% on all 7 relation types including derived, while Node GNN achieved only 87.5% on derived.
@@ -28,14 +28,14 @@ All training methods (classification, contrastive, joint) achieve 100% nearest-n
 Aggressive sparsity (40-50%) hurts on relation classification. Works well at moderate sparsity (80%) but needs gentler schedules at higher compression.
 
 ### 8. DELTA matches Node GNN at scale, excels on derived relations
-On the 500-triple benchmark, both reach 100% -- but DELTA's advantage emerges specifically on compositional/transitive tasks.
+On the 500-triple benchmark, both reach 100% — but DELTA's advantage emerges specifically on compositional/transitive tasks.
 
 ---
 
 ## Architectural Fixes (Phases 16-21)
 
 ### 9. Sparse COO multi-hop is the clearest win
-O(E^0.97) sub-quadratic scaling -- 2500-edge 2-hop completes in 0.18s where the old dense approach timed out at ~500 edges.
+O(E^0.97) sub-quadratic scaling — 2500-edge 2-hop completes in 0.18s where the old dense approach timed out at ~500 edges.
 
 ### 10. BFS partitioning scales linearly
 O(N^0.99) scaling from 50 to 2500 nodes (2ms to 91ms), replacing O(N^3) spectral clustering. Balance ratio of 0.79.
@@ -63,12 +63,12 @@ N=1000 with 15% label noise: soft gating 100%, old router 81.6% (+18.4% gap). Ze
 Phase 23: DELTA and CompGCN both 100% on FB15k-237-like benchmark. TransE 67.6%, RotatE 70.7%.
 
 ### 17. All fixes integrate cleanly at scale
-Phase 24: full pipeline on N=1000 noisy benchmark. No fix caused degradation -- all ablations matched full DELTA at 100%.
+Phase 24: full pipeline on N=1000 noisy benchmark. No fix caused degradation — all ablations matched full DELTA at 100%.
 
 ### 18. DELTA+Gate leads on real FB15k-237
 Phase 25: 97.6% on actual Freebase triples (2000-entity dense subgraph), narrowly beating CompGCN (97.2%).
 
-### 19. Graph structure genuinely helps -- the constructor is the bottleneck
+### 19. Graph structure genuinely helps — the constructor is the bottleneck
 Phase 27b: FixedChain DELTA (40.7%) beat Transformer (36.3%), but the attention-thresholded constructor (34.3%) discards sequential adjacency edges needed for path composition.
 
 ### 20. Dual attention's advantage is noise robustness
@@ -94,7 +94,7 @@ Phase 44: the centerpiece result. DELTA's lead over GraphGPS: +0.004 (2p) -> +0.
 Phase 45: 3p MRR 0.742 +/- 0.009 vs GraphGPS 0.713 +/- 0.007. Std bars don't overlap. DELTA's worst seed (0.731) exceeds GraphGPS's best (0.722).
 
 ### 26. Inference cost is deployment-friendly
-Phase 45: encoding is 51.8x slower (2-hop edge adjacency, once per graph), but per-query scoring is 0.8-0.9x GraphGPS -- DELTA is *faster* per query. Training is 34x slower but one-time.
+Phase 45: encoding is 51.8x slower (2-hop edge adjacency, once per graph), but per-query scoring is 0.8-0.9x GraphGPS — DELTA is *faster* per query. Training is 34x slower but one-time.
 
 ---
 
@@ -126,6 +126,19 @@ Phase 53: Multi-seed validation (3 seeds: 42, 123, 456) reveals that **K's 3p ad
 
 ### 35. Evaluation noise dominates multi-hop variance — investigation CLOSED
 Phase 54: 10k-query evaluation reduces cross-seed multi-hop std by **66-84%** (avg K=75%, N=79%), confirming evaluation noise was the dominant variance source. With tight CIs, K and N are **statistically indistinguishable** on multi-hop (3p: 0.2614±0.0032 vs 0.2560±0.0091). 500q and 10kq give dramatically different absolute MRR (K 3p: 0.37→0.26) because larger query samples include harder paths. LP MRR remains robust and protocol-independent (K=0.4845±0.0051, N=0.4865±0.0086). After **9 phases (46-54)**, the conclusion: temperature reliably improves LP but has **no statistically supported effect on multi-hop reasoning depth** in DELTA-Full. Multi-hop investigation CLOSED.
+
+---
+
+## Brain Architecture (Phases 55–57)
+
+### 36. BrainEncoder validates differentiable graph construction for link prediction
+Phase 55: BrainEncoder (Gumbel-sigmoid differentiable edge selection) achieves LP MRR 0.4773 on FB15k-237 — within 0.002 of the 0.475 threshold — while delivering **+3.7% H@10** over delta_full (0.7973 vs 0.7603). First successful integration of differentiable graph construction with DELTA. Constructed edges improve recall at the cost of precision.
+
+### 37. Constructor density is a critical hyperparameter — fewer edges strictly dominate
+Phase 56: Halving density from 0.02 to 0.01 gains **+0.012 MRR** and **+0.058 H@10** with half the edges (2,435 vs 4,870). Density=0.01 matches delta_full MRR (0.4794 vs 0.4796) while adding +4.7% H@10. The constructor's Gumbel-sigmoid selection is more discriminating at lower density, producing fewer but higher-quality edges.
+
+### 38. Temperature annealing is counterproductive on brain_hybrid — baseline dominates
+Phase 57: brain_hybrid exceeds 0.480 MRR (A: 0.4808, B: 0.4818), but the improvement comes from reducing epochs (200 vs 300), not from annealing. K-style annealing adds only +0.001 MRR while **dropping H@10 by -0.046** (0.7613 vs 0.8076). Constructed edges already provide structural information that overlaps with what temperature sharpening achieves, making annealing redundant for MRR and harmful for recall. The optimal brain_hybrid configuration is baseline temp=1.0 at 200 epochs.
 
 ---
 

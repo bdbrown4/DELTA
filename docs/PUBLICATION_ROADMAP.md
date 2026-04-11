@@ -2,28 +2,30 @@
 
 **Target:** NeurIPS / ICLR (top-tier ML venue)
 **Title placeholder:** *"DELTA: Edge-Centric Dual Attention for Relational Reasoning on Knowledge Graphs"*
-**Status:** Phase I active (35–36 complete, 37 queued on Colab Pro+)
+**Status:** 57 experiment phases complete. Brain architecture validated (Phases 55–57). Publication gaps: full-scale evaluation, cross-family benchmark.
 
-**Current evidence base:** 37 experiment phases, 44 unit tests, real FB15k-237 results (97.4% ± 0.1% over 5 seeds), synthetic task superiority over GraphGPS/GRIT. Cross-domain transfer: 0.961 on WN18RR with 100 samples (frozen encoder).
+**Current evidence base:** 57 experiment phases, 44 unit tests, real FB15k-237 results (97.4% ± 0.1% over 5 seeds, LP MRR 0.4905), multi-hop dominance (5p MRR 0.790), differentiable graph construction (brain_hybrid MRR 0.4818 with H@10 0.8076). Cross-domain transfer: 0.961 on WN18RR with 100 samples (frozen encoder).
 
 ---
 
-## Phase Completion Overview
+## Completed Evidence Base
 
-| Phase | Experiment | Status | Notes |
-|-------|-----------|--------|-------|
-| 35 | Domain-agnostic relational transfer (GRL + linear probe) | ✅ Complete | Probe 0.961; GRL unnecessary (encoder already invariant) |
-| 36 | Task-aware construction at scale (500–5000 nodes) | ✅ Complete | Constructor adds ≤1.3%; de-emphasize in paper |
-| 37 | Real FB15k-237 parameter-matched comparison (4 models × 5 seeds) | ⏳ Queued | Ready to run after 35 |
-| 34 | GraphGPS/GRIT vs DELTA — synthetic baseline | ✅ Complete | DELTA 0.880 vs GraphGPS 0.293 (H100) |
-| 38 | Component ablation on real FB15k-237 | 🔲 Planned | Script to be written |
-| 39 | Multi-hop path queries on real FB15k-237 (1p/2p/3p) | 🔲 Planned | Script + `load_path_queries()` |
-| 40 | YAGO3-10 benchmark (123K entities, 4-model × 5 seeds) | 🔲 Planned | Add YAGO3-10 to `datasets.py` first |
-| 41 | Codex-M benchmark (17K entities, 51 relations) | 🔲 Planned | Add Codex-M to `datasets.py` first |
-| 42 | Scaling analysis (500→123K entities, O(E^x) characterization) | 🔲 Planned | Script to be written |
-| 43 | Interpretability (EdgeAttention top-k + t-SNE edge embeddings) | 🔲 Planned | Script to be written |
-| 44 | ReasoningMesh — cross-attention gates between node/edge streams | 🔲 Planned (conditional) | Only if Phase 39 shows 3p drop |
-| 45 | Paper assembly and submission | 🔲 Planned | Depends on 35–43 (44 optional) |
+| Area | Phases | Key Result |
+|------|--------|------------|
+| Core architecture validation | 1–24 | Edge-first dual attention, 2-hop edge adjacency, 6 architectural fixes |
+| Real-data benchmarks | 25–37 | FB15k-237 97.4% ± 0.1% (5 seeds), cross-domain transfer 0.961 |
+| Compositional reasoning | 42–45 | 5p MRR 0.790 vs GraphGPS 0.690; only model improving with depth |
+| Temperature optimization | 46–54 | LP MRR 0.4905; LP/3p trade-off characterized as fundamental |
+| Brain architecture | 55–57 | Differentiable graph construction; MRR 0.4818, H@10 0.8076 |
+
+## Remaining Publication Gaps
+
+| Gap | Priority | Notes |
+|-----|----------|-------|
+| Full-scale dataset evaluation (14.5K+ entities) | HIGH | Need full FB15k-237 or YAGO3-10 |
+| Cross-family benchmark (YAGO3-10 or WN18RR LP) | HIGH | Proves generalization beyond Freebase |
+| Interpretability figure | MEDIUM | Attention heatmap on known reasoning chain |
+| Multi-seed brain_hybrid validation | MEDIUM | Statistical confidence on construction gains |
 
 ---
 
@@ -308,17 +310,17 @@ Abstract: 3 sentences — gap, method, result
 
 ## Verification Summary
 
-| Gate | Target | Measured |
-|------|--------|---------|
+| Gate | Target | Status |
+|------|--------|--------|
 | Phase 35: frozen probe | > 0.5 on WN18RR | ✅ 0.961 |
-| Phase 37: DELTA-Matched vs GraphGPS | DELTA > GraphGPS (real FB15k-237) | TBD |
-| Phase 38: each ablation hurts | All drops > 0% | TBD |
-| Phase 39: multi-hop | DELTA ≥ GraphGPS on 2p/3p | TBD |
-| Phase 40: YAGO3-10 | DELTA-Matched > GraphGPS | TBD |
-| Phase 41: Codex-M | DELTA-Matched > GraphGPS | TBD |
-| Phase 42: scaling | O(E^x), x < 2 | TBD |
-| Phase 43: interpretability | ≥1 interpretable attention pattern | TBD |
-| Phase 44: ReasoningMesh (conditional) | ≥3% improvement on 3p queries | TBD (skip if Phase 39 gap < 15%) |
+| Phase 42–44: multi-hop dominance | DELTA > GraphGPS on 2p–5p | ✅ 5p MRR 0.790 vs 0.690 |
+| Phase 45: inference efficiency | Per-query ≤ GraphGPS | ✅ 0.8–0.9x (faster) |
+| Phase 46–52: temperature optimization | LP MRR improvement | ✅ 0.4905 (record) |
+| Phase 53: multi-seed validation | LP robust across seeds | ✅ LP robust; multi-hop not |
+| Phase 55–57: brain architecture | Differentiable construction viable | ✅ MRR 0.4818, H@10 +4.7% |
+| Full-scale evaluation (14.5K+ entities) | Required for publication | TBD |
+| Cross-family benchmark (YAGO3-10) | Required for publication | TBD |
+| Interpretability figure | Required for publication | TBD |
 
 All publication-grade results: **5 seeds, mean ± std reported.**
 
@@ -327,13 +329,10 @@ All publication-grade results: **5 seeds, mean ± std reported.**
 ## Decisions
 
 - Target: NeurIPS (May deadline) or ICLR (October deadline) — no hard date, get results right
-- 4 datasets: FB15k-237 (flagship), WN18RR (transfer), YAGO3-10 (scale), Codex-M (hardness)
-- Parameter matching: DELTA-Matched (`d_node=48, d_edge=24, num_layers=2`, ~128K params on real data) vs GraphGPS (~214K) vs GRIT (~183K) — DELTA-Matched is actually smaller, making wins more impressive
-- ReasoningMesh: conditional on Phase 39 multi-hop gap. If 3p drops >15% vs 1p, implement gated cross-attention (Option 1). If not, current architecture is sufficient — mention mesh as future work in Conclusion.
-- No "DELTA-Lite" spinoff — just constructor args change, same codebase
-- Phase 34 results (synthetic) already establish direction; Phase 37 is the paper-grade result
-- Consensus from ChatGPT + Gemini + code analysis: Option 1 (cross-attention gates) first, Option 2 (message-passing mesh) if warranted, avoid Option 3 (shared latent bottleneck) — it would destroy edge-specific representations that drive DELTA's transfer ability
+- Datasets needed: FB15k-237 (flagship), WN18RR (transfer), YAGO3-10 (scale), Codex-M (hardness)
+- Parameter matching: DELTA-Matched (~128K params) vs GraphGPS (~214K) vs GRIT (~183K) — DELTA-Matched is smaller, making wins more impressive
+- Paper thesis: specialized architecture with edge-first dual attention and differentiable graph construction beats brute-force scale for structured relational reasoning
 
 ---
 
-*Last updated: April 2, 2026. Phase 37 in-progress on Colab (DELTA-Full seed 1 complete: test 0.991; DELTA-Matched seeds 1-2 complete: test 0.986/0.987; resuming remaining seeds with Drive checkpointing). ReasoningMesh (gated cross-attention between node/edge streams) added as conditional Phase 44 — triggers only if Phase 39 multi-hop path queries show significant 3p accuracy drop. Consensus: Option 1 (cross-attention gates) → Option 2 (message-passing mesh) → avoid Option 3 (shared latent bottleneck). Paper thesis: specialized 128K-param architecture beats brute-force scale for structured relational reasoning.*
+*Last updated: 2026-04-10. 57 experiment phases complete. Brain architecture validated (Phases 55–57). Primary remaining gaps: full-scale evaluation, cross-family benchmark, interpretability figures.*

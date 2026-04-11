@@ -1,5 +1,7 @@
 # Phase 54 → Phase 55 Transition Summary
 
+> **Historical document.** Phase 55 is now complete — see [docs/phase_55.md](docs/phase_55.md) for results.
+
 ## What Was Completed in This Session
 
 ### Phase 54: Final Validation (High-Power Multi-Hop Evaluation)

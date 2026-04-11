@@ -2,30 +2,32 @@
 
 > **[Full Documentation](https://bdbrown4.github.io/DELTA/)** — Architecture, experiment results, research agenda, and setup guides.
 
-A research implementation of the DELTA architecture — a novel AI framework that operates on dynamic graphs with dual parallel attention across nodes and edges, tiered memory, and a learned importance router.
+A research implementation of the DELTA architecture — a novel AI framework that operates on dynamic graphs with dual parallel attention across nodes and edges, tiered memory, and a learned importance router. Building toward **[The Brain](https://bdbrown4.github.io/DELTA/the-brain/)**: a system that dynamically constructs its own relational graphs and reasons over them.
 
 ## Core Thesis
 
 Reality is a graph. Language is a lossy compression of reality into sequences. Transformers reconstruct relational structure from flat sequences. DELTA operates on relational structure directly.
 
-GNN edges are passive scalar wires. DELTA edges are **first-class computational citizens** that attend to each other. That edge-to-edge attention is what produces the Phase 28 +24% noise robustness gap.
+GNN edges are passive scalar wires. DELTA edges are **first-class computational citizens** that attend to each other. That edge-to-edge attention is what produces the Phase 28 +24% noise robustness gap — and Phase 39's self-bootstrapped DELTA proves the system can build its own graph without any transformer scaffold.
 
 ## Headline Results
 
-| Metric | Value |
-|--------|-------|
-| Real FB15k-237 (5 seeds) | DELTA+Gate **97.4% ± 0.1%** |
-| Cross-domain transfer (frozen encoder, 100 samples) | **0.961** on WN18RR |
-| vs GraphGPS (synthetic edge classification) | DELTA **0.880** vs GraphGPS 0.293 |
-| Noise robustness at 80% corruption | **+24%** over vanilla GNN |
-| Experiment phases | 37 (Phases 1–30, 27b, 31–37) |
-| Unit tests | 44/44 passing |
+| Metric | Value | Phase |
+|--------|-------|-------|
+| Real FB15k-237 (5 seeds) | DELTA+Gate **97.4% ± 0.1%** | 29 |
+| Best LP MRR (DELTA-Full, temp-tuned) | **0.4905** | 52 |
+| Brain LP MRR (self-constructed graph) | **0.4818** with H@10 **0.8076** | 55–57 |
+| Multi-hop 5p MRR | **0.790** vs GraphGPS 0.690 | 44 |
+| Cross-domain transfer (frozen encoder, 100 samples) | **0.961** on WN18RR | 35 |
+| Noise robustness at 80% corruption | **+24%** over vanilla GNN | 28 |
+| Experiment phases | 57 complete (Phases 1–57) | — |
+| Unit tests | 44/44 passing | — |
 
 ## Architecture
 
 ```
 Raw Input (any modality)
-    → Graph Constructor (transformer-bootstrapped)
+    → Graph Constructor (transformer-bootstrapped or BrainConstructor)
     → BFS Graph Partitioner (O(N+E))
     → PARALLEL DUAL ATTENTION
         [Node Attention + Edge Attention simultaneously]
@@ -41,7 +43,7 @@ Raw Input (any modality)
 ```bash
 pip install -r requirements.txt
 
-# Run core validation (Phases 1-6)
+# Run core validation (Phases 1–6)
 python -m experiments.phase1_edge_attention
 python -m experiments.phase2_dual_attention
 
@@ -54,12 +56,12 @@ python -m pytest tests/ -q  # 44/44 should pass
 Full documentation is hosted at **[bdbrown4.github.io/DELTA](https://bdbrown4.github.io/DELTA/)**:
 
 - **[Architecture Overview](https://bdbrown4.github.io/DELTA/architecture/)** — Core thesis, components, and how DELTA differs from Transformers and GNNs
-- **[Validation Phases](https://bdbrown4.github.io/DELTA/validation-phases/)** — All 37 phase result tables
-- **[Key Findings](https://bdbrown4.github.io/DELTA/key-findings/)** — 21 key findings from experiments
-- **[Research Agenda](https://bdbrown4.github.io/DELTA/RESEARCH_AGENDA/)** — Propositions, open gaps, publication pathway
-- **[Publication Roadmap](https://bdbrown4.github.io/DELTA/PUBLICATION_ROADMAP/)** — Path to NeurIPS/ICLR (Phases 38–45)
-- **[Colab Setup](https://bdbrown4.github.io/DELTA/COLAB_SETUP/)** — Google Colab Pro+ for GPU experiments
-- **[Current Status](https://bdbrown4.github.io/DELTA/status-and-roadmap/)** — What's working, what needs proof, next steps
+- **[The Brain: End Goal](https://bdbrown4.github.io/DELTA/the-brain/)** — Long-term vision, capacity paradox, roadmap horizons
+- **[Validation Phases](https://bdbrown4.github.io/DELTA/validation-phases/)** — All 57 phase result tables
+- **[Key Findings](https://bdbrown4.github.io/DELTA/key-findings/)** — 35 key findings from experiments
+- **[Status & Roadmap](https://bdbrown4.github.io/DELTA/status-and-roadmap/)** — What's validated, open gaps, next steps
+- **[Getting Started](https://bdbrown4.github.io/DELTA/setup-and-running/)** — Installation, experiment commands, cloud GPU setup
+- **[Research Methodology](https://bdbrown4.github.io/DELTA/research-methodology/)** — AI assistance disclosure
 
 ## Requirements
 
@@ -73,4 +75,4 @@ This project was developed by a solo software engineer using LLMs and AI agents 
 
 ---
 
-*DELTA architecture — conceived March 25, 2026. 37 experiment phases, 6 architectural fixes, 44 unit tests. Target: NeurIPS/ICLR. See [Publication Roadmap](https://bdbrown4.github.io/DELTA/PUBLICATION_ROADMAP/) for Phases 38–45.*
+*DELTA architecture — conceived March 25, 2026. 57 experiment phases, 6 architectural fixes, 44 unit tests. Target: NeurIPS/ICLR.*

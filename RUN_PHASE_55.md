@@ -1,5 +1,7 @@
 # Phase 55: How to Run
 
+> **Phase 55 is complete.** See [docs/phase_55.md](docs/phase_55.md) for results. This guide is retained for reference.
+
 You have **two options** to run Phase 55. Choose based on your local setup.
 
 ## Option 1: Local CLI (Recommended if you have local GPU)
@@ -162,18 +164,8 @@ tail -f phase55_run.log  # Git Bash
 
 ---
 
-## Next Steps
+## Results
 
-After Phase 55 completes:
+Phase 55 achieved MRR **0.4773** (PARTIAL — misses 0.475 by 0.002) with H@10 **0.7973** (+3.7% over delta_full). See [docs/phase_55.md](docs/phase_55.md) for detailed analysis.
 
-1. Review `phase55_output.json` results
-2. If MRR >= 0.475 on `brain_hybrid`, the architecture is validated
-3. If >= 0.490, it's competitive with temperature-tuned DELTA-Full
-4. Proceed to Phase 56: Scale to full FB15k-237 (if needed)
-
----
-
-Questions? See:
-- [LOCAL_EXECUTION.md](LOCAL_EXECUTION.md) for detailed local setup
-- [COLAB_SETUP.md](COLAB_SETUP.md) for detailed Colab setup
-- [PHASE_55_README.md](PHASE_55_README.md) for technical details
+Follow-up phases: [Phase 56](docs/phase_56.md) (density ablation) and [Phase 57](docs/phase_57.md) (temperature annealing) are also complete.

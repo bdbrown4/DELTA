@@ -1,8 +1,10 @@
-# Phase 55: Brain Architecture Port — Google Colab Setup Guide
+# Google Colab Setup Guide
 
-## Why Colab for Phase 55?
+Guide for running DELTA experiments on Google Colab. Originally created for Phase 55 (Brain Architecture Port); applicable to any GPU-intensive phase.
 
-Local 12 GB GPU hits memory fragmentation and timing bottlenecks with the BrainConstructor's Gumbel-sigmoid edge selection creating 12K-edge augmented graphs. Colab's T4 GPU (15 GB) provides:
+## Why Colab?
+
+Local GPUs with limited VRAM can hit memory fragmentation with larger models. Colab provides:
 
 - **Fresh CUDA state** per run (no fragmentation)
 - **Sufficient memory** for 2% target density (2,435 edges safely)

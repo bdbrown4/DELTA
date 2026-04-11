@@ -1,12 +1,11 @@
-# Phase 55 Local Execution Guide
+# Local Execution Guide
 
-Run Phase 55 directly from your personal machine's CLI without needing Colab.
+Run DELTA experiments directly from your machine's CLI without needing Colab.
 
 ## Prerequisites
 
-Make sure you have:
-- Python 3.8+ installed
-- PyTorch installed (CPU or GPU)
+- Python 3.10+
+- PyTorch 2.0+ (CPU or GPU)
 - The DELTA repository cloned
 
 ## Quick Start
@@ -14,24 +13,29 @@ Make sure you have:
 ### 1. Install dependencies (one-time)
 
 ```bash
-cd c:\dev\DELTA
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-pip install tqdm numpy scipy scikit-learn
+cd DELTA
+pip install -r requirements.txt
 ```
 
-If you don't have CUDA, just use the CPU version:
+For GPU support with CUDA:
 ```bash
-pip install torch torchvision torchaudio
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
 ```
 
-### 2. Run Phase 55 from CLI
+### 2. Run an experiment
 
 ```bash
-cd c:\dev\DELTA
-python phase55_colab_launcher.py --seeds 42 --epochs 150 --eval_every 30 --target_density 0.02
+# Core validation (CPU OK)
+python -m experiments.phase1_edge_attention
+
+# Brain architecture (GPU recommended)
+python experiments/phase55_brain_port.py --seeds 42 --epochs 150 --eval_every 30
+
+# Run all tests
+python -m pytest tests/ -q  # 44/44 should pass
 ```
 
-That's it! Results will stream to your terminal and save to `phase55_output.json`.
+Results stream to your terminal and save to output JSON files.
 
 ## Optional: Save output to file while monitoring
 

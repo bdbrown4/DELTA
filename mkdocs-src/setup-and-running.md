@@ -68,7 +68,7 @@ python experiments/phase36_task_aware_at_scale.py      # Constructor at scale
 python experiments/phase37_real_comparison.py           # Parameter-matched comparison
 ```
 
-### Phase 38-49: Construction & Temperature
+### Phase 38–49: Construction & Temperature
 
 ```bash
 python experiments/phase46_differentiable_constructor.py  # Phase 38: Differentiable constructor
@@ -83,6 +83,24 @@ python experiments/phase46_capacity_signal.py             # Phase 46: Learnable 
 python experiments/phase47_layer_specific_temp.py         # Phase 47: Layer-specific temp
 python experiments/phase48_asymmetric_temp.py             # Phase 48: Asymmetric node/edge temp
 python experiments/phase49_l0_temp.py --epochs 500        # Phase 49: L0 temp + asymmetric L1+L2
+```
+
+### Phase 50–54: Temperature Annealing & Validation
+
+```bash
+python experiments/phase50_temp_anneal.py                 # Phase 50: Temperature annealing (breaks 3p ceiling)
+python experiments/phase51_static_vs_trajectory.py        # Phase 51: Static init vs annealing trajectory
+python experiments/phase52_closing_lp_gap.py              # Phase 52: Edge sharpness + LP gap
+python experiments/phase53_multiseed_validation.py        # Phase 53: Multi-seed statistical validation
+python experiments/phase54_highpower_multihop.py          # Phase 54: 10k-query multi-hop evaluation
+```
+
+### Phase 55–57: Brain Architecture (Differentiable Graph Construction)
+
+```bash
+python experiments/phase55_brain_port.py                  # Phase 55: BrainEncoder LP validation
+python experiments/phase56_density_ablation.py            # Phase 56: Constructor density ablation
+python experiments/phase57_brain_temp_anneal.py           # Phase 57: Brain temperature annealing
 ```
 
 ---
@@ -131,9 +149,11 @@ For longer runtimes or 80GB A100/H100:
 
 ### Estimated GPU Times
 
-| Experiment | Est. Time (H100) |
-|-----------|-------------------|
-| Phase 34 (synthetic, 5 seeds) | 5-8 min |
-| Phase 31 (full FB15k-237, 50 epochs) | ~3.7 hours |
-| Phase 32 (cross-domain, 100 epochs) | ~2-4 hours |
-| Phase 42-45 (multi-hop + timing) | ~2-3 hours |
+| Experiment | Est. Time |
+|-----------|-----------|
+| Phase 34 (synthetic, 5 seeds) | 5–8 min (H100) |
+| Phase 31 (full FB15k-237, 50 epochs) | ~3.7 hours (H100) |
+| Phase 42–45 (multi-hop + timing) | ~2–3 hours (H100) |
+| Phase 55 (brain port, 1 seed, 150 epochs) | ~30–40 min (T4/Colab) |
+| Phase 56 (density ablation, 2 conditions, 300 epochs) | ~2 hours (RTX 6000) |
+| Phase 57 (brain temp annealing, 3 conditions, 200 epochs) | ~2 hours (RTX 6000) |

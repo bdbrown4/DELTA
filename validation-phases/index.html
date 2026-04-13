@@ -1837,6 +1837,66 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#phase-60-residual-gating-for-depth-scaling-n2000" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 60 — Residual Gating for Depth Scaling (N=2000)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 60 — Residual Gating for Depth Scaling (N=2000)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#summary-results-test-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      Summary Results (Test Set)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gate-evolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gate Evolution
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-observations_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Observations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hypothesis-evaluation_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hypothesis Evaluation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3279,6 +3339,66 @@
         
           <li class="md-nav__item">
   <a href="#hypothesis-evaluation_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hypothesis Evaluation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-60-residual-gating-for-depth-scaling-n2000" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 60 — Residual Gating for Depth Scaling (N=2000)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 60 — Residual Gating for Depth Scaling (N=2000)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#summary-results-test-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      Summary Results (Test Set)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gate-evolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gate Evolution
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-observations_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Observations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hypothesis-evaluation_14" class="md-nav__link">
     <span class="md-ellipsis">
       Hypothesis Evaluation
     </span>
@@ -8049,6 +8169,136 @@
 <td>brain_hybrid viable at N=2000</td>
 <td><strong>DEFERRED</strong></td>
 <td>OOM at 102K edges on A100 (80GB).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="phase-60-residual-gating-for-depth-scaling-n2000">Phase 60 — Residual Gating for Depth Scaling (N=2000)<a class="headerlink" href="#phase-60-residual-gating-for-depth-scaling-n2000" title="Permanent link">&para;</a></h2>
+<p><strong>Goal:</strong> Test whether learnable residual gates enable multi-layer DELTA at N=2000, recovering from Phase 59's catastrophic 3-layer over-smoothing.</p>
+<h3 id="configuration_5">Configuration<a class="headerlink" href="#configuration_5" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Dataset: FB15k-237, max_entities=2000 → 1,991 entities, 207 relations, 62,733 train triples</li>
+<li>Edge adjacency: 15,217,194 pairs (shared, pre-computed)</li>
+<li>Gate: per-layer learnable logits, init so sigmoid(α)≈0.1 → 90% residual</li>
+<li>d_node=64, d_edge=32, num_heads=4, lr=0.003, bs=4096, seed=42, 200 epochs</li>
+<li>Hardware: RTX PRO 6000 Blackwell 98GB (RunPod)</li>
+</ul>
+<h3 id="summary-results-test-set">Summary Results (Test Set)<a class="headerlink" href="#summary-results-test-set" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Layers</th>
+<th>Gate</th>
+<th>Test MRR</th>
+<th>H@1</th>
+<th>H@3</th>
+<th>H@10</th>
+<th>Params</th>
+<th>Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A: 2L+gate</td>
+<td>2</td>
+<td>Yes</td>
+<td>0.3065</td>
+<td>0.1851</td>
+<td>0.3490</td>
+<td>0.5689</td>
+<td>311,652</td>
+<td>3.2hr</td>
+</tr>
+<tr>
+<td>B: 3L+gate</td>
+<td>3</td>
+<td>Yes</td>
+<td><strong>0.3138</strong></td>
+<td><strong>0.1962</strong></td>
+<td><strong>0.3511</strong></td>
+<td>0.5591</td>
+<td>393,830</td>
+<td>4.8hr</td>
+</tr>
+<tr>
+<td>C: 1L ctrl</td>
+<td>1</td>
+<td>No</td>
+<td>0.3093</td>
+<td>0.1796</td>
+<td>0.3495</td>
+<td><strong>0.5939</strong></td>
+<td>229,472</td>
+<td>1.6hr</td>
+</tr>
+<tr>
+<td>Phase 59: 3L ungated</td>
+<td>3</td>
+<td>No</td>
+<td>0.0018</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h3 id="gate-evolution">Gate Evolution<a class="headerlink" href="#gate-evolution" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Final Node Gates</th>
+<th>Final Edge Gates</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A: 2L+gate</td>
+<td>[0.135, 0.137]</td>
+<td>[0.097, 0.100]</td>
+</tr>
+<tr>
+<td>B: 3L+gate</td>
+<td>[0.129, 0.130, 0.130]</td>
+<td>[0.105, 0.102, 0.100]</td>
+</tr>
+</tbody>
+</table>
+<p>Gates barely shift from initialization (0.100) over 200 epochs. The model operates at ~10-13% layer contribution, ~87-90% residual.</p>
+<h3 id="key-observations_2">Key Observations<a class="headerlink" href="#key-observations_2" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Residual gating is a complete fix for over-smoothing</strong> — 3L+gate MRR=0.3138 vs 3L ungated MRR=0.0018 (174× improvement).</li>
+<li><strong>All depths produce equivalent test MRR</strong> (~0.31) — depth adds no accuracy benefit with gating.</li>
+<li><strong>Gates are frozen hyperparameters, not learned parameters</strong> — they don't shift during training.</li>
+<li><strong>1-layer remains most efficient</strong> — 1.6hr vs 4.8hr for 3-layer, with comparable accuracy.</li>
+</ol>
+<h3 id="hypothesis-evaluation_14">Hypothesis Evaluation<a class="headerlink" href="#hypothesis-evaluation_14" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Hypothesis</th>
+<th>Result</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2L+gate MRR ≥ 0.30 at N=2000</td>
+<td><strong>CONFIRMED</strong></td>
+<td>Test MRR=0.3065, meets threshold.</td>
+</tr>
+<tr>
+<td>3L+gate recovers from catastrophic over-smoothing</td>
+<td><strong>CONFIRMED</strong></td>
+<td>MRR 0.0018→0.3138 (174× improvement).</td>
+</tr>
+<tr>
+<td>Multi-layer outperforms 1-layer with gating</td>
+<td><strong>NOT CONFIRMED</strong></td>
+<td>3L=0.3138, 2L=0.3065, 1L=0.3093 — within noise.</td>
 </tr>
 </tbody>
 </table>

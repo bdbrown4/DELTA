@@ -1002,9 +1002,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#41-residual-gating-eliminates-over-smoothing-but-depth-doesnt-help" class="md-nav__link">
+  <a href="#41-residual-gating-eliminates-over-smoothing-but-reveals-layers-contribute-nothing" class="md-nav__link">
     <span class="md-ellipsis">
-      41. Residual gating eliminates over-smoothing — but depth doesn't help
+      41. Residual gating eliminates over-smoothing — but reveals layers contribute nothing
     </span>
   </a>
   
@@ -1676,9 +1676,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#41-residual-gating-eliminates-over-smoothing-but-depth-doesnt-help" class="md-nav__link">
+  <a href="#41-residual-gating-eliminates-over-smoothing-but-reveals-layers-contribute-nothing" class="md-nav__link">
     <span class="md-ellipsis">
-      41. Residual gating eliminates over-smoothing — but depth doesn't help
+      41. Residual gating eliminates over-smoothing — but reveals layers contribute nothing
     </span>
   </a>
   
@@ -1803,8 +1803,8 @@
 <h2 id="scaling-depth-management-phase-59">Scaling &amp; Depth Management (Phase 59+)<a class="headerlink" href="#scaling-depth-management-phase-59" title="Permanent link">&para;</a></h2>
 <h3 id="40-3-layer-delta-catastrophically-over-smooths-at-n2000-1-layer-surpasses-distmult">40. 3-layer DELTA catastrophically over-smooths at N=2000 — 1-layer surpasses DistMult<a class="headerlink" href="#40-3-layer-delta-catastrophically-over-smooths-at-n2000-1-layer-surpasses-distmult" title="Permanent link">&para;</a></h3>
 <p>Phase 59: First medium-scale evaluation (1,991 entities, 62,733 train triples, <strong>15.2M edge adjacency pairs</strong>). 3-layer DELTA achieves MRR=<strong>0.0018</strong> across three training configurations — near-random and <strong>200× below DistMult</strong> (0.3185). However, <strong>1-layer DELTA achieves val MRR=0.3338 (ep150), surpassing DistMult by +0.015</strong> and matching it on test H@10 (0.5935 vs 0.5820). The edge-to-edge attention mechanism is not broken; <strong>depth is the sole cause of over-smoothing</strong>. Each additional layer compounds representation homogenization through the dense 15.2M-pair adjacency graph. This is the most important architectural finding since Phase 4 (multi-hop edge adjacency): DELTA's expressiveness gain from edge attention is real at scale, but the architecture needs depth management to preserve it beyond 1 layer.</p>
-<h3 id="41-residual-gating-eliminates-over-smoothing-but-depth-doesnt-help">41. Residual gating eliminates over-smoothing — but depth doesn't help<a class="headerlink" href="#41-residual-gating-eliminates-over-smoothing-but-depth-doesnt-help" title="Permanent link">&para;</a></h3>
-<p>Phase 60: Per-layer learnable gates (sigmoid(α) × layer_output + (1−sigmoid(α)) × input, init α≈0.1) completely eliminate catastrophic over-smoothing. <strong>3-layer+gate test MRR=0.3138</strong> vs ungated 0.0018 — a <strong>174× improvement</strong>. However, all depths converge to the same performance: 2L+gate=0.3065, 3L+gate=0.3138, 1L=0.3093. Gates remain frozen near initialization (~13% layer, ~87% residual). The model doesn't learn to modulate gating — it succeeds by heavily favouring the residual path. <strong>Depth is no longer catastrophic, but it adds no value at N=2000.</strong> The 1-layer model remains most efficient (1.6hr vs 4.8hr for 3-layer) with comparable accuracy.</p>
+<h3 id="41-residual-gating-eliminates-over-smoothing-but-reveals-layers-contribute-nothing">41. Residual gating eliminates over-smoothing — but reveals layers contribute nothing<a class="headerlink" href="#41-residual-gating-eliminates-over-smoothing-but-reveals-layers-contribute-nothing" title="Permanent link">&para;</a></h3>
+<p>Phase 60: Per-layer learnable gates (sigmoid(α) × layer_output + (1−sigmoid(α)) × input, init α≈0.1) completely eliminate catastrophic over-smoothing. <strong>3-layer+gate test MRR=0.3138</strong> vs ungated 0.0018 — a <strong>174× improvement</strong>. However, gates froze at ~10% layer / 90% residual — the model learned that layer output is mostly noise and should be mostly ignored. All depths converge to MRR~0.31: 2L+gate=0.3065, 3L+gate=0.3138, 1L=0.3093, <strong>which is also where DistMult (0.3185) lands without any GNN.</strong> This isn't "depth doesn't help" — it's <strong>"DELTA's edge-to-edge attention contributes zero measurable value at N=2000."</strong> The existence question is now: does DELTA beat DistMult at <em>any</em> scale?</p>
 <hr />
 <p><em>See <a href="../validation-phases/">Validation Phases</a> for complete result tables. See <a href="../status-and-roadmap/">Status &amp; Roadmap</a> for current priorities.</em></p>
 

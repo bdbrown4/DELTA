@@ -664,9 +664,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#gap-5-depth-management-at-scale-resolved-phase-60" class="md-nav__link">
+  <a href="#gap-5-depth-management-at-scale-resolved-but-exposed-deeper-issue-phase-60" class="md-nav__link">
     <span class="md-ellipsis">
-      Gap 5: Depth management at scale — RESOLVED (Phase 60)
+      Gap 5: Depth management at scale — RESOLVED but exposed deeper issue (Phase 60)
     </span>
   </a>
   
@@ -1004,9 +1004,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#gap-5-depth-management-at-scale-resolved-phase-60" class="md-nav__link">
+  <a href="#gap-5-depth-management-at-scale-resolved-but-exposed-deeper-issue-phase-60" class="md-nav__link">
     <span class="md-ellipsis">
-      Gap 5: Depth management at scale — RESOLVED (Phase 60)
+      Gap 5: Depth management at scale — RESOLVED but exposed deeper issue (Phase 60)
     </span>
   </a>
   
@@ -1391,14 +1391,15 @@
 <li>brain_hybrid OOMs at N=2000 (102K edges). Scaling brain architecture requires solving depth management first.</li>
 <li>Next: resume after Gap 5 resolved</li>
 </ul>
-<h3 id="gap-5-depth-management-at-scale-resolved-phase-60">Gap 5: Depth management at scale — RESOLVED (Phase 60)<a class="headerlink" href="#gap-5-depth-management-at-scale-resolved-phase-60" title="Permanent link">&para;</a></h3>
+<h3 id="gap-5-depth-management-at-scale-resolved-but-exposed-deeper-issue-phase-60">Gap 5: Depth management at scale — RESOLVED but exposed deeper issue (Phase 60)<a class="headerlink" href="#gap-5-depth-management-at-scale-resolved-but-exposed-deeper-issue-phase-60" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Phase 59: 3-layer over-smooths catastrophically at N=2000 (MRR=0.002); 1-layer works (MRR=0.334)</li>
 <li>Phase 60: Residual gating eliminates over-smoothing: 3L+gate MRR=0.3138 (174× vs ungated 0.0018)</li>
-<li>However, all depths converge to MRR~0.31 — depth doesn't help at N=2000, even with gating</li>
-<li>Gates frozen near init (~10% layer, 90% residual) — function as fixed hyperparameters</li>
-<li><strong>Decision: accept 1-layer as the scaling architecture</strong> (most efficient at 1.6hr vs 4.8hr for 3L)</li>
-<li>Remaining budget (Phases 61-62): redirect to full-scale evaluation (N=14,505) or attention sparsification</li>
+<li>However, all depths converge to MRR~0.31 — <strong>matching DistMult (0.3185) without any GNN</strong></li>
+<li>Gates frozen at ~10% layer / 90% residual → model learned layers are noise, not signal</li>
+<li><strong>DELTA's edge-to-edge attention contributes zero measurable value at N=2000</strong></li>
+<li>Critical unknown: does DistMult also match DELTA at N=500? If so, DELTA never beat DistMult at any scale.</li>
+<li>Phase 61: DistMult-across-scales diagnostic to answer the existence question</li>
 </ul>
 <h3 id="gap-5-sequence-domain-generalization-future-horizon-3">Gap 5: Sequence domain generalization — FUTURE (Horizon 3)<a class="headerlink" href="#gap-5-sequence-domain-generalization-future-horizon-3" title="Permanent link">&para;</a></h3>
 <ul>

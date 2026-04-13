@@ -982,6 +982,30 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#scaling-depth-management-phase-59" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scaling &amp; Depth Management (Phase 59+)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scaling & Depth Management (Phase 59+)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#40-3-layer-delta-catastrophically-over-smooths-at-n2000-1-layer-surpasses-distmult" class="md-nav__link">
+    <span class="md-ellipsis">
+      40. 3-layer DELTA catastrophically over-smooths at N=2000 — 1-layer surpasses DistMult
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1623,6 +1647,30 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#scaling-depth-management-phase-59" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scaling &amp; Depth Management (Phase 59+)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scaling & Depth Management (Phase 59+)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#40-3-layer-delta-catastrophically-over-smooths-at-n2000-1-layer-surpasses-distmult" class="md-nav__link">
+    <span class="md-ellipsis">
+      40. 3-layer DELTA catastrophically over-smooths at N=2000 — 1-layer surpasses DistMult
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1642,7 +1690,7 @@
 
 
 <h1 id="key-findings">Key Findings<a class="headerlink" href="#key-findings" title="Permanent link">&para;</a></h1>
-<p>38 key findings from 57 experiment phases, organized by research stage. See <a href="../validation-phases/">Validation Phases</a> for complete result tables.</p>
+<p>40 key findings from 59 experiment phases, organized by research stage. See <a href="../validation-phases/">Validation Phases</a> for complete result tables.</p>
 <hr />
 <h2 id="core-architecture-phases-1-15">Core Architecture (Phases 1-15)<a class="headerlink" href="#core-architecture-phases-1-15" title="Permanent link">&para;</a></h2>
 <h3 id="1-edge-attention-is-deltas-strongest-signal">1. Edge attention is DELTA's strongest signal<a class="headerlink" href="#1-edge-attention-is-deltas-strongest-signal" title="Permanent link">&para;</a></h3>
@@ -1733,6 +1781,10 @@
 <p>Phase 57: brain_hybrid exceeds 0.480 MRR (A: 0.4808, B: 0.4818), but the improvement comes from reducing epochs (200 vs 300), not from annealing. K-style annealing adds only +0.001 MRR while <strong>dropping H@10 by -0.046</strong> (0.7613 vs 0.8076). Constructed edges already provide structural information that overlaps with what temperature sharpening achieves, making annealing redundant for MRR and harmful for recall. The optimal brain_hybrid configuration is baseline temp=1.0 at 200 epochs.</p>
 <h3 id="39-d001-is-the-optimal-density-sweet-spot-multi-seed-validated-sparser-fails">39. d=0.01 is the optimal density sweet spot — multi-seed validated, sparser fails<a class="headerlink" href="#39-d001-is-the-optimal-density-sweet-spot-multi-seed-validated-sparser-fails" title="Permanent link">&para;</a></h3>
 <p>Phase 58: Multi-seed validation (3 seeds: 42, 123, 456) across two densities confirms <strong>d=0.01 is statistically robust</strong>: mean MRR=0.4844±0.0097, H@10=0.7994±0.0058. All 3 seeds maintain H@10&gt;0.79; seed=456 achieves a new brain_hybrid <strong>MRR record of 0.4956</strong>. d=0.005 (1,217 edges) <strong>fails to continue the improvement trend</strong>: mean MRR=0.4673 (−0.017 vs d=0.01), and H@10 variance increases 4.4× (std 0.026 vs 0.006). The density curve from d=0.02→d=0.01→d=0.005 shows clear optimum at d=0.01 — halving density further loses recall without compensating precision gains. Brain density optimization CLOSED.</p>
+<hr />
+<h2 id="scaling-depth-management-phase-59">Scaling &amp; Depth Management (Phase 59+)<a class="headerlink" href="#scaling-depth-management-phase-59" title="Permanent link">&para;</a></h2>
+<h3 id="40-3-layer-delta-catastrophically-over-smooths-at-n2000-1-layer-surpasses-distmult">40. 3-layer DELTA catastrophically over-smooths at N=2000 — 1-layer surpasses DistMult<a class="headerlink" href="#40-3-layer-delta-catastrophically-over-smooths-at-n2000-1-layer-surpasses-distmult" title="Permanent link">&para;</a></h3>
+<p>Phase 59: First medium-scale evaluation (1,991 entities, 62,733 train triples, <strong>15.2M edge adjacency pairs</strong>). 3-layer DELTA achieves MRR=<strong>0.0018</strong> across three training configurations — near-random and <strong>200× below DistMult</strong> (0.3185). However, <strong>1-layer DELTA achieves val MRR=0.3338 (ep150), surpassing DistMult by +0.015</strong> and matching it on test H@10 (0.5935 vs 0.5820). The edge-to-edge attention mechanism is not broken; <strong>depth is the sole cause of over-smoothing</strong>. Each additional layer compounds representation homogenization through the dense 15.2M-pair adjacency graph. This is the most important architectural finding since Phase 4 (multi-hop edge adjacency): DELTA's expressiveness gain from edge attention is real at scale, but the architecture needs depth management to preserve it beyond 1 layer.</p>
 <hr />
 <p><em>See <a href="../validation-phases/">Validation Phases</a> for complete result tables. See <a href="../status-and-roadmap/">Status &amp; Roadmap</a> for current priorities.</em></p>
 

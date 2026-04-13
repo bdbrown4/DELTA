@@ -628,9 +628,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#gap-1-full-scale-evaluation-high-priority" class="md-nav__link">
+  <a href="#gap-1-full-scale-evaluation-high-priority-blocked-by-depth" class="md-nav__link">
     <span class="md-ellipsis">
-      Gap 1: Full-scale evaluation — HIGH priority
+      Gap 1: Full-scale evaluation — HIGH priority (BLOCKED by depth)
     </span>
   </a>
   
@@ -655,9 +655,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#gap-4-brain-architecture-optimization-active" class="md-nav__link">
+  <a href="#gap-4-brain-architecture-optimization-paused-blocked-by-gap-5" class="md-nav__link">
     <span class="md-ellipsis">
-      Gap 4: Brain architecture optimization — ACTIVE
+      Gap 4: Brain architecture optimization — PAUSED (blocked by Gap 5)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gap-5-depth-management-at-scale-active-phases-6062" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gap 5: Depth management at scale — ACTIVE (Phases 60–62)
     </span>
   </a>
   
@@ -959,9 +968,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#gap-1-full-scale-evaluation-high-priority" class="md-nav__link">
+  <a href="#gap-1-full-scale-evaluation-high-priority-blocked-by-depth" class="md-nav__link">
     <span class="md-ellipsis">
-      Gap 1: Full-scale evaluation — HIGH priority
+      Gap 1: Full-scale evaluation — HIGH priority (BLOCKED by depth)
     </span>
   </a>
   
@@ -986,9 +995,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#gap-4-brain-architecture-optimization-active" class="md-nav__link">
+  <a href="#gap-4-brain-architecture-optimization-paused-blocked-by-gap-5" class="md-nav__link">
     <span class="md-ellipsis">
-      Gap 4: Brain architecture optimization — ACTIVE
+      Gap 4: Brain architecture optimization — PAUSED (blocked by Gap 5)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gap-5-depth-management-at-scale-active-phases-6062" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gap 5: Depth management at scale — ACTIVE (Phases 60–62)
     </span>
   </a>
   
@@ -1120,7 +1138,7 @@
 
 
 <h1 id="status-roadmap">Status &amp; Roadmap<a class="headerlink" href="#status-roadmap" title="Permanent link">&para;</a></h1>
-<p><em>Last updated: Phase 58 complete (2026-04-11)</em></p>
+<p><em>Last updated: Phase 59 complete (2026-04-12)</em></p>
 <hr />
 <h2 id="current-best-results">Current Best Results<a class="headerlink" href="#current-best-results" title="Permanent link">&para;</a></h2>
 <table>
@@ -1186,6 +1204,18 @@
 <td>DELTA vs GraphGPS</td>
 <td><strong>0.8–0.9x</strong> (faster)</td>
 <td>45</td>
+</tr>
+<tr>
+<td>LP MRR (1-layer DELTA, N=2000)</td>
+<td>delta_1layer</td>
+<td><strong>0.3338</strong> (val peak)</td>
+<td>59</td>
+</tr>
+<tr>
+<td>LP MRR (DistMult, N=2000)</td>
+<td>DistMult (no GNN)</td>
+<td><strong>0.3185</strong></td>
+<td>59</td>
 </tr>
 </tbody>
 </table>
@@ -1309,6 +1339,18 @@
 <td>High</td>
 <td>Phase 58: d=0.01 mean MRR=0.4844±0.0097 (robust); d=0.005 MRR=0.4673 (−0.017). Density optimization CLOSED.</td>
 </tr>
+<tr>
+<td>P19</td>
+<td>Edge-to-edge attention mechanism works at N=2000 (1-layer)</td>
+<td>High</td>
+<td>Phase 59: 1-layer DELTA val_MRR=0.3338 surpasses DistMult (0.3185). Mechanism viable, depth is the bottleneck.</td>
+</tr>
+<tr>
+<td>P20</td>
+<td>3-layer DELTA catastrophically over-smooths at N=2000</td>
+<td>High</td>
+<td>Phase 59: MRR=0.0018 across 3 training configs. 15.2M E_adj pairs × 3 layers = representation collapse.</td>
+</tr>
 </tbody>
 </table>
 <hr />
@@ -1319,14 +1361,16 @@
 <li><strong>LP/3p trade-off is fundamental</strong> — After 9 phases (46–54) testing 20+ temperature configurations, temperature reliably improves LP but has no statistically supported effect on multi-hop reasoning depth. Three operating modes: LP-optimized (P/Q), balanced-3p (K), deep-reasoning (N).</li>
 <li><strong>Multi-hop temperature claims not statistically robust</strong> — Phase 53 multi-seed validation shows single-seed 3p/4p/5p advantages are seed-dependent. Only LP improvements are statistically supported.</li>
 <li><strong>brain_hybrid overfitting</strong> — Both density conditions overfit after epoch 150. Early stopping around epoch 150–180 preserves best test performance.</li>
+<li><strong>3-layer depth over-smoothing at N=2000</strong> — Phase 59: catastrophic collapse (MRR=0.002). 1-layer works (MRR=0.334). Depth management is the critical architectural challenge for scaling.</li>
 </ul>
 <hr />
 <h2 id="open-gaps">Open Gaps<a class="headerlink" href="#open-gaps" title="Permanent link">&para;</a></h2>
-<h3 id="gap-1-full-scale-evaluation-high-priority">Gap 1: Full-scale evaluation — HIGH priority<a class="headerlink" href="#gap-1-full-scale-evaluation-high-priority" title="Permanent link">&para;</a></h3>
+<h3 id="gap-1-full-scale-evaluation-high-priority-blocked-by-depth">Gap 1: Full-scale evaluation — HIGH priority (BLOCKED by depth)<a class="headerlink" href="#gap-1-full-scale-evaluation-high-priority-blocked-by-depth" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Current: 494-entity FB15k-237 subset (3.4% of full dataset)</li>
-<li>Needed: Full FB15k-237 (14,505 entities) or YAGO3-10 (123K entities)</li>
-<li>Requires mini-batching infrastructure for 2-hop edge adjacency at scale</li>
+<li>Current: 494-entity subset (3.4%) works at 3-layer; 1,991-entity subset (13.7%) works at 1-layer only</li>
+<li>Phase 59 proved 3-layer collapses at N=2000 (MRR=0.002). 1-layer achieves MRR=0.334.</li>
+<li>Full FB15k-237 (14,505 entities) requires solving depth management first (Phases 60–62)</li>
+<li>spspmm optimization reduces edge adjacency build from 3s to 0.2s at N=2000</li>
 </ul>
 <h3 id="gap-2-lp3p-trade-off-characterized-phases-4654">Gap 2: LP/3p trade-off — CHARACTERIZED (Phases 46–54)<a class="headerlink" href="#gap-2-lp3p-trade-off-characterized-phases-4654" title="Permanent link">&para;</a></h3>
 <ul>
@@ -1339,13 +1383,20 @@
 <li>WN18RR (transfer): 0.961 probe accuracy (Phase 35) — but frozen encoder, not trained LP</li>
 <li>YAGO3-10: untested. Would demonstrate generalization beyond Freebase</li>
 </ul>
-<h3 id="gap-4-brain-architecture-optimization-active">Gap 4: Brain architecture optimization — ACTIVE<a class="headerlink" href="#gap-4-brain-architecture-optimization-active" title="Permanent link">&para;</a></h3>
+<h3 id="gap-4-brain-architecture-optimization-paused-blocked-by-gap-5">Gap 4: Brain architecture optimization — PAUSED (blocked by Gap 5)<a class="headerlink" href="#gap-4-brain-architecture-optimization-paused-blocked-by-gap-5" title="Permanent link">&para;</a></h3>
 <ul>
 <li>BrainEncoder validated (Phases 55–58) with MRR gains over delta_full marginal (+0.002 single-seed) but multi-seed mean 0.4844±0.0097 is robust</li>
 <li>H@10 advantage (+4.7%) is substantial — constructed edges genuinely add recall</li>
 <li>Density optimization CLOSED: d=0.01 (2,435 edges) is the sweet spot. d=0.02 too noisy, d=0.005 too sparse.</li>
-<li>Seed=456 achieves MRR 0.4956 — approaching delta_full temp-tuned record (0.4905), suggesting untapped potential</li>
-<li>Next: constructor architecture improvements (multi-head construction, learned density, attention-guided scoring), full-scale evaluation</li>
+<li>brain_hybrid OOMs at N=2000 (102K edges). Scaling brain architecture requires solving depth management first.</li>
+<li>Next: resume after Gap 5 resolved</li>
+</ul>
+<h3 id="gap-5-depth-management-at-scale-active-phases-6062">Gap 5: Depth management at scale — ACTIVE (Phases 60–62)<a class="headerlink" href="#gap-5-depth-management-at-scale-active-phases-6062" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Phase 59: 3-layer over-smooths catastrophically at N=2000 (MRR=0.002); 1-layer works (MRR=0.334)</li>
+<li>2-layer with skip connections is the critical next test</li>
+<li>Options: DenseNet-style skip connections, PairNorm/NodeNorm, adaptive depth based on graph density</li>
+<li>Budget: 3 phases (60, 61, 62). If 2-layer can't beat DistMult by Phase 62, accept 1-layer architecture for scale.</li>
 </ul>
 <h3 id="gap-5-sequence-domain-generalization-future-horizon-3">Gap 5: Sequence domain generalization — FUTURE (Horizon 3)<a class="headerlink" href="#gap-5-sequence-domain-generalization-future-horizon-3" title="Permanent link">&para;</a></h3>
 <ul>

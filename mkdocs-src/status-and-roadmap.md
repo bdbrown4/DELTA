@@ -121,7 +121,7 @@
 
 ### Horizon 3: Brain Optimization & Sequence Domains (Phases 59+) — Active
 
-Brain density optimization CLOSED (Phases 55–58). d=0.01 is the sweet spot. Next: constructor architecture improvements (multi-head construction, learned density threshold, attention-guided scoring), full-scale evaluation (14K entities), or sequence domain pilot (LRA ListOps). See [The Brain](the-brain.md) for the long-term vision.
+Brain density optimization CLOSED (Phases 55–58). d=0.01 is the sweet spot. Phase 59–60: medium-scale evaluation at N=2000 — depth over-smoothing solved by residual gating (Phase 60), but depth provides no accuracy benefit. 1-layer accepted as scaling architecture. Next: full-scale evaluation (N=14,505), attention sparsification for efficiency, or sequence domain pilot (LRA ListOps). See [The Brain](the-brain.md) for the long-term vision.
 
 ### Horizon 4: Dynamic Reasoning — Future
 

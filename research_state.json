@@ -456,7 +456,11 @@
     "Can 2-layer DELTA with skip connections preserve signal at N=2000? 1-layer surpasses DistMult; 3-layer collapses. 2-layer is the critical test.",
     "Should DELTA use adaptive depth based on graph density? N=500 (sparse) → 3 layers; N=2000 (dense edge adjacency) → 1-2 layers.",
     "Can PairNorm, NodeNorm, or DenseNet-style skip connections fight over-smoothing across DELTA layers at scale?",
-    "brain_hybrid OOMs at N=2000 (102K edges → edge-to-edge attention tensor exceeds 80GB). Requires attention sparsification or model size reduction."
+    "brain_hybrid OOMs at N=2000 (102K edges → edge-to-edge attention tensor exceeds 80GB). Requires attention sparsification or model size reduction.",
+    "ANSWERED Phase 60: 2-layer with residual gating achieves MRR=0.3065 (≥0.30), but doesn't outperform 1-layer. Gating solves over-smoothing but depth doesn't add value at N=2000.",
+    "Would higher gate_init (0.3-0.5) allow layers to contribute more and give multi-layer an advantage? Current init=0.1 stays near init (gates frozen).",
+    "Does depth help at full FB15k-237 (N=14,505) where information bottleneck is tighter? All 3 configurations identical at N=2000 — maybe larger graphs need more layers.",
+    "Should Phase 61 focus on improving 1-layer quality (attention sparsification, efficient edge adjacency) rather than adding depth?"
     "Both densities produce exactly target edge count every epoch — BrainConstructor density control is precise and consistent",
     "Sparsity loss is near-zero (0.0000) at both densities — constructor already produces sparse outputs without regularization pressure",
     "Condition D peaks earlier (ep 120) than C (ep 150) — more edges cause faster overfitting, higher density hurts generalization",

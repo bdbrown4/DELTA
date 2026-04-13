@@ -157,6 +157,9 @@ class DELTAModel(nn.Module):
                  max_partition_size: int = 32, dropout: float = 0.1,
                  sparse_ratio: float = 0.7,
                  init_temp: float = 1.0,
+                 # Phase 60: residual gating for depth scaling
+                 residual_gate: bool = False,
+                 residual_gate_init: float = 0.1,
                  # Constructor params (Phase 5+)
                  use_constructor: bool = False,
                  vocab_size: int = 1000, d_model: int = 128,
@@ -167,6 +170,7 @@ class DELTAModel(nn.Module):
         self.d_node = d_node
         self.d_edge = d_edge
         self.use_constructor = use_constructor
+        self.residual_gate = residual_gate
 
         if use_constructor:
             self.constructor = GraphConstructor(
@@ -181,7 +185,22 @@ class DELTAModel(nn.Module):
             for _ in range(num_layers)
         ])
 
-        # Optional classification head
+        # Phase 60: learnable per-layer residual gates
+        # gate_alpha in [0,1] via sigmoid; initialized so sigmoid(x) ≈ residual_gate_init
+        if residual_gate and num_layers > 1:
+            import math
+            init_logit = math.log(residual_gate_init / (1 - residual_gate_init))
+            self.node_gate_logits = nn.ParameterList([
+                nn.Parameter(torch.tensor(init_logit))
+                for _ in range(num_layers)
+            ])
+            self.edge_gate_logits = nn.ParameterList([
+                nn.Parameter(torch.tensor(init_logit))
+                for _ in range(num_layers)
+            ])
+        else:
+            self.node_gate_logits = None
+            self.edge_gate_logits = None
         self.classifier = None
         if num_classes is not None:
             self.classifier = nn.Sequential(
@@ -219,11 +238,33 @@ class DELTAModel(nn.Module):
         else:
             graph = input_data
 
-        for layer in self.layers:
+        for i, layer in enumerate(self.layers):
+            if self.node_gate_logits is not None:
+                # Save pre-layer features for residual gating
+                prev_node = graph.node_features
+                prev_edge = graph.edge_features
+
             graph = layer(graph, use_router=use_router,
                          use_partitioning=use_partitioning,
                          use_memory=use_memory,
                          gumbel_temperature=gumbel_temperature)
+
+            if self.node_gate_logits is not None:
+                # alpha near 0 at init → output ≈ prev (residual dominates)
+                node_alpha = torch.sigmoid(self.node_gate_logits[i])
+                edge_alpha = torch.sigmoid(self.edge_gate_logits[i])
+                gated_node = node_alpha * graph.node_features + (1 - node_alpha) * prev_node
+                gated_edge = edge_alpha * graph.edge_features + (1 - edge_alpha) * prev_edge
+                cached = getattr(graph, '_edge_adj_cache', None)
+                graph = DeltaGraph(
+                    node_features=gated_node,
+                    edge_features=gated_edge,
+                    edge_index=graph.edge_index,
+                    node_tiers=getattr(graph, 'node_tiers', None),
+                    node_importance=getattr(graph, 'node_importance', None),
+                    edge_importance=getattr(graph, 'edge_importance', None),
+                )
+                graph._edge_adj_cache = cached
 
         return graph
 

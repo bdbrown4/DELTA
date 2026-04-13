@@ -1382,3 +1382,48 @@ Average variance reduction: K = **75.0%**, N = **79.1%** (both far above 50% tar
 | 3-layer DELTA MRR ≥ 0.30 at N=2000 | **REJECTED** | MRR=0.0018, near-random across 3 training configs. |
 | 1-layer edge-to-edge attention works at N=2000 | **CONFIRMED** | val_MRR=0.3338, surpasses DistMult baseline. |
 | brain_hybrid viable at N=2000 | **DEFERRED** | OOM at 102K edges on A100 (80GB). |
+
+---
+
+## Phase 60 — Residual Gating for Depth Scaling (N=2000)
+
+**Goal:** Test whether learnable residual gates enable multi-layer DELTA at N=2000, recovering from Phase 59's catastrophic 3-layer over-smoothing.
+
+### Configuration
+- Dataset: FB15k-237, max_entities=2000 → 1,991 entities, 207 relations, 62,733 train triples
+- Edge adjacency: 15,217,194 pairs (shared, pre-computed)
+- Gate: per-layer learnable logits, init so sigmoid(α)≈0.1 → 90% residual
+- d_node=64, d_edge=32, num_heads=4, lr=0.003, bs=4096, seed=42, 200 epochs
+- Hardware: RTX PRO 6000 Blackwell 98GB (RunPod)
+
+### Summary Results (Test Set)
+
+| Condition | Layers | Gate | Test MRR | H@1 | H@3 | H@10 | Params | Time |
+|-----------|--------|------|----------|------|------|------|--------|------|
+| A: 2L+gate | 2 | Yes | 0.3065 | 0.1851 | 0.3490 | 0.5689 | 311,652 | 3.2hr |
+| B: 3L+gate | 3 | Yes | **0.3138** | **0.1962** | **0.3511** | 0.5591 | 393,830 | 4.8hr |
+| C: 1L ctrl | 1 | No | 0.3093 | 0.1796 | 0.3495 | **0.5939** | 229,472 | 1.6hr |
+| Phase 59: 3L ungated | 3 | No | 0.0018 | — | — | — | — | — |
+
+### Gate Evolution
+
+| Condition | Final Node Gates | Final Edge Gates |
+|-----------|-----------------|-----------------|
+| A: 2L+gate | [0.135, 0.137] | [0.097, 0.100] |
+| B: 3L+gate | [0.129, 0.130, 0.130] | [0.105, 0.102, 0.100] |
+
+Gates barely shift from initialization (0.100) over 200 epochs. The model operates at ~10-13% layer contribution, ~87-90% residual.
+
+### Key Observations
+1. **Residual gating is a complete fix for over-smoothing** — 3L+gate MRR=0.3138 vs 3L ungated MRR=0.0018 (174× improvement).
+2. **All depths produce equivalent test MRR** (~0.31) — depth adds no accuracy benefit with gating.
+3. **Gates are frozen hyperparameters, not learned parameters** — they don't shift during training.
+4. **1-layer remains most efficient** — 1.6hr vs 4.8hr for 3-layer, with comparable accuracy.
+
+### Hypothesis Evaluation
+
+| Hypothesis | Result | Evidence |
+|-----------|--------|----------|
+| 2L+gate MRR ≥ 0.30 at N=2000 | **CONFIRMED** | Test MRR=0.3065, meets threshold. |
+| 3L+gate recovers from catastrophic over-smoothing | **CONFIRMED** | MRR 0.0018→0.3138 (174× improvement). |
+| Multi-layer outperforms 1-layer with gating | **NOT CONFIRMED** | 3L=0.3138, 2L=0.3065, 1L=0.3093 — within noise. |

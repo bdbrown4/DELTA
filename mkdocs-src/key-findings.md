@@ -1,6 +1,6 @@
 # Key Findings
 
-40 key findings from 59 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
+41 key findings from 60 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
 
 ---
 
@@ -149,6 +149,9 @@ Phase 58: Multi-seed validation (3 seeds: 42, 123, 456) across two densities con
 
 ### 40. 3-layer DELTA catastrophically over-smooths at N=2000 — 1-layer surpasses DistMult
 Phase 59: First medium-scale evaluation (1,991 entities, 62,733 train triples, **15.2M edge adjacency pairs**). 3-layer DELTA achieves MRR=**0.0018** across three training configurations — near-random and **200× below DistMult** (0.3185). However, **1-layer DELTA achieves val MRR=0.3338 (ep150), surpassing DistMult by +0.015** and matching it on test H@10 (0.5935 vs 0.5820). The edge-to-edge attention mechanism is not broken; **depth is the sole cause of over-smoothing**. Each additional layer compounds representation homogenization through the dense 15.2M-pair adjacency graph. This is the most important architectural finding since Phase 4 (multi-hop edge adjacency): DELTA's expressiveness gain from edge attention is real at scale, but the architecture needs depth management to preserve it beyond 1 layer.
+
+### 41. Residual gating eliminates over-smoothing — but depth doesn't help
+Phase 60: Per-layer learnable gates (sigmoid(α) × layer_output + (1−sigmoid(α)) × input, init α≈0.1) completely eliminate catastrophic over-smoothing. **3-layer+gate test MRR=0.3138** vs ungated 0.0018 — a **174× improvement**. However, all depths converge to the same performance: 2L+gate=0.3065, 3L+gate=0.3138, 1L=0.3093. Gates remain frozen near initialization (~13% layer, ~87% residual). The model doesn't learn to modulate gating — it succeeds by heavily favouring the residual path. **Depth is no longer catastrophic, but it adds no value at N=2000.** The 1-layer model remains most efficient (1.6hr vs 4.8hr for 3-layer) with comparable accuracy.
 
 ---
 

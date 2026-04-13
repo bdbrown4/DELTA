@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-04-12",
-  "last_completed_phase": 59,
-  "next_phase": 60,
+  "last_updated": "2026-04-13",
+  "last_completed_phase": 60,
+  "next_phase": 61,
   "current_phase": null,
 
   "best_results": {
@@ -205,6 +205,12 @@
       "hypothesis": "1-layer DELTA edge-to-edge attention works at N=2000, surpassing DistMult no-GNN baseline",
       "evidence": "1-layer DELTA val_MRR=0.3338 (ep150 peak) vs DistMult MRR=0.3185 (+0.015). Test MRR=0.3094, H@10=0.5935 vs DistMult H@10=0.5820. Mechanism provides genuine value even on 15.2M edge adjacency pairs.",
       "significance": "landmark"
+    },
+    {
+      "phase": 60,
+      "hypothesis": "Residual gating eliminates catastrophic over-smoothing at N=2000",
+      "evidence": "3-layer+gate test MRR=0.3138 vs 3-layer ungated MRR=0.0018 — 174× improvement. 2-layer+gate MRR=0.3065. Both meet ≥0.30 threshold. Gates operate near initialization (~10% layer, 90% residual) but this minimal mixing prevents representation homogenization.",
+      "significance": "landmark"
     }
   ],
 
@@ -346,6 +352,12 @@
       "hypothesis": "3-layer DELTA-Full achieves LP MRR >= 0.30 at N=2000",
       "evidence": "3-layer DELTA MRR=0.0018 (fullbatch lr=0.001), MRR=0.0021 (fullbatch lr=0.01), MRR=0.0014 (mini-batch bs=4096 lr=0.003). All near-random — 200× below DistMult baseline (0.3185). Catastrophic over-smoothing from 15.2M edge adjacency pairs passed through 3 attention layers.",
       "significance": "landmark"
+    },
+    {
+      "phase": 60,
+      "hypothesis": "Multi-layer DELTA with gating outperforms 1-layer at N=2000",
+      "evidence": "3L+gate test MRR=0.3138, 2L+gate=0.3065, 1L=0.3093. All within noise — no clear multi-layer advantage. Depth doesn't help at N=2000 even with gating; the 1-layer model achieves highest val peak (0.3338) and best H@10 (0.5939).",
+      "significance": "high"
     }
   ],
 
@@ -459,8 +471,18 @@
     "d=0.005 has 4.4× higher H@10 variance than d=0.01 (std 0.0258 vs 0.0058) — fewer constructed edges make the model more sensitive to initialization",
     "Val/test gap is larger at sparser density: d=0.005 seed=123 gap=0.044 (val 0.5008 → test 0.4567) vs d=0.01 seed=42 gap=0.033 (val 0.5187 → test 0.4856). Sparser graphs may overfit more readily.",
     "Seed=456 achieves new brain_hybrid MRR record: 0.4956 — approaching delta_full temperature-tuned record of 0.4905. brain_hybrid's ceiling is higher than single-seed results suggested.",
-    "All Phase 58 conditions peak at ep 150-180, decline by ep 200 — consistent with Phases 56-57. 150-180 epochs with early stopping would be optimal.",
-    "CRITICAL: 3-layer DELTA catastrophically over-smooths at N=2000 (MRR=0.002, 200× below DistMult). Every prior result (Phases 40-58) was at N≈500 where edge-to-edge attention is in its useful regime.",
+    "All Phase 58 conditions peak at ep 150-180, decline by ep 200 — consistent with Phases 56-57. 150-180 epochs with early stopping would be optimal.",,
+    "Residual gating at 10% layer / 90% residual completely eliminates catastrophic over-smoothing: 3L+gate MRR=0.3138 vs 3L ungated MRR=0.0018 (174× improvement). Minimal mixing is sufficient.",
+    "Gate logits are essentially frozen at initialization — node gates shift from 0.100 to 0.130 over 200 epochs, edge gates barely move. The model does NOT learn to modulate gating; it operates with a near-fixed residual ratio.",
+    "With residual gating, all depths (1L/2L/3L) converge to the same test MRR (~0.31) at N=2000 — depth does not help even when over-smoothing is prevented.",
+    "Warmup plateau extends with depth: 1-layer breaks through at ep40-50, 2-layer and 3-layer at ep75-100. More layers delay learning onset but don't affect final performance.",
+    "Training cost scales linearly with DELTA layers: 1L=1.6hr, 2L=3.2hr, 3L=4.8hr at N=2000. Given identical accuracy, 1-layer is most efficient."
+    "CRITICAL: 3-layer DELTA catastrophically over-smooths at N=2000 (MRR=0.002, 200× below DistMult). Every prior result (Phases 40-58) was at N≈500 where edge-to-edge attention is in its useful regime.",,
+    "Residual gating at 10% layer / 90% residual completely eliminates catastrophic over-smoothing: 3L+gate MRR=0.3138 vs 3L ungated MRR=0.0018 (174× improvement). Minimal mixing is sufficient.",
+    "Gate logits are essentially frozen at initialization — node gates shift from 0.100 to 0.130 over 200 epochs, edge gates barely move. The model does NOT learn to modulate gating; it operates with a near-fixed residual ratio.",
+    "With residual gating, all depths (1L/2L/3L) converge to the same test MRR (~0.31) at N=2000 — depth does not help even when over-smoothing is prevented.",
+    "Warmup plateau extends with depth: 1-layer breaks through at ep40-50, 2-layer and 3-layer at ep75-100. More layers delay learning onset but don't affect final performance.",
+    "Training cost scales linearly with DELTA layers: 1L=1.6hr, 2L=3.2hr, 3L=4.8hr at N=2000. Given identical accuracy, 1-layer is most efficient."
     "1-layer DELTA SURPASSES DistMult at N=2000 (val_MRR=0.3338 vs 0.3185). The edge-to-edge attention mechanism is NOT broken — depth (3 layers) is the sole cause of over-smoothing.",
     "Edge adjacency explosion: N=500 has ~256K E_adj pairs (DELTA works), N=2000 has 15.2M pairs (1-layer works, 3-layer collapses). Each layer multiplies the homogenization effect.",
     "1-layer DELTA has a long warmup plateau: MRR near-random until ep40, then climbs sharply: 0.07 (ep50) → 0.16 (ep75) → 0.27 (ep100) → 0.33 (ep150).",
@@ -478,7 +500,8 @@
     "46": { "title": "Attention sharpening via learnable temperature", "result": "PARTIAL -- dead heads reduced (full 83%->38%), edge/node temp divergence discovered, full 3p +0.029 but matched 3p -0.017" },
     "47": { "title": "Layer-specific temperature initialization", "result": "PARTIAL -- B (L0 soft, L1+L2 sharp) achieves best LP MRR (0.4783) but 3p (0.3908) short of D (0.4018). Node attention requires sharpening to activate. Optimal node temp likely 2-3." },
     "48": { "title": "Asymmetric node/edge temperature", "result": "PARTIAL -- E (node=2,edge=6) achieves new LP MRR record (0.4856, +1.5%) and H@10 (0.8004). 3p gap persists (best 0.3970 vs D 0.4018). Node temps stable, edge always drifts UP. L0 temperature may explain D's 3p advantage." },
-    "49": { "title": "L0 temperature + asymmetric L1+L2", "result": "PARTIAL -- H (L0=4,4 + E's L1+L2) achieves new LP MRR record (0.4887). 3p=0.3930 still below D (0.4018). L0 node temp irrelevant (L0 100% dead). LP/3p trade-off is fundamental to asymmetric temp init. I achieves best-ever H@10 (0.8076)." },
+    "49": { "title": "L0 temperature + asymmetric L1+L2", "result": "PARTIAL -- H (L0=4,4 + E's L1+L2) achieves new LP MRR record (0.4887). 3p=0.3930 still below D (0.4018). L0 node temp irrelevant (L0 100% dead). LP/3p trade-off is fundamental to asymmetric temp init. I achieves best-ever H@10 (0.8076)." },,
+    "60": { "title": "Residual Gating for Depth Scaling", "result": "CONFIRMED -- Residual gating eliminates catastrophic over-smoothing. 3L+gate MRR=0.3138 (174× vs ungated 0.0018), 2L+gate MRR=0.3065, 1L control MRR=0.3093. All depths converge to ~0.31 test MRR. Gates frozen near init (10% layer, 90% residual). Depth doesn't help but is no longer catastrophic." }
     "50": { "title": "Temperature annealing (node temp schedule)", "result": "PARTIAL -- K (anneal 4→2 fast) achieves 3p=0.4148, FIRST to beat D's 0.4018 (+0.013). LP=0.4819 misses target (0.4856). M ties LP record (0.4887) but 3p=0.3803. L REJECTED. Pareto frontier shifted. Best checkpoint at node temp=2.6." },
     "51": { "title": "Static vs trajectory temperature optimization", "result": "PARTIAL -- P (anneal 4→2.5) achieves new LP MRR record (0.4890) and H@10 record (0.8014) but 3p=0.3823 FAIL. N (static 2.6) 3p=0.4001 just misses D's 0.4018 by 0.002. Trajectory confirmed: K (annealed)=0.4148 vs N (static)=0.4001 at same final temp=2.6, delta=+0.015. N has best-ever 4p (0.3426) and 5p (0.3788)." },
     "52": { "title": "Closing K's LP gap via edge sharpness and faster annealing", "result": "PARTIAL -- Q (K+edge7) achieves NEW LP MRR record (0.4905) but 3p=0.3927 FAIL. S (K+edge7+faster) achieves NEW H@10 record (0.8045) but 3p=0.3789 FAIL. R (K+faster anneal) preserves 3p=0.4114 but LP=0.4793 FAIL. Edge init 7.0 boosts LP by +0.009 but hurts 3p by -0.022. Combined target still unachievable. TEMPERATURE INVESTIGATION CLOSED after 7 phases (46-52)." },

@@ -84,11 +84,13 @@
 - brain_hybrid OOMs at N=2000 (102K edges). Scaling brain architecture requires solving depth management first.
 - Next: resume after Gap 5 resolved
 
-### Gap 5: Depth management at scale — ACTIVE (Phases 60–62)
+### Gap 5: Depth management at scale — RESOLVED (Phase 60)
 - Phase 59: 3-layer over-smooths catastrophically at N=2000 (MRR=0.002); 1-layer works (MRR=0.334)
-- 2-layer with skip connections is the critical next test
-- Options: DenseNet-style skip connections, PairNorm/NodeNorm, adaptive depth based on graph density
-- Budget: 3 phases (60, 61, 62). If 2-layer can't beat DistMult by Phase 62, accept 1-layer architecture for scale.
+- Phase 60: Residual gating eliminates over-smoothing: 3L+gate MRR=0.3138 (174× vs ungated 0.0018)
+- However, all depths converge to MRR~0.31 — depth doesn't help at N=2000, even with gating
+- Gates frozen near init (~10% layer, 90% residual) — function as fixed hyperparameters
+- **Decision: accept 1-layer as the scaling architecture** (most efficient at 1.6hr vs 4.8hr for 3L)
+- Remaining budget (Phases 61-62): redirect to full-scale evaluation (N=14,505) or attention sparsification
 
 ### Gap 5: Sequence domain generalization — FUTURE (Horizon 3)
 - All current evidence is on knowledge graphs where structure is pre-defined or semi-explicit

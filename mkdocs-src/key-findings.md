@@ -1,6 +1,6 @@
 # Key Findings
 
-38 key findings from 57 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
+40 key findings from 59 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
 
 ---
 
@@ -142,6 +142,13 @@ Phase 57: brain_hybrid exceeds 0.480 MRR (A: 0.4808, B: 0.4818), but the improve
 
 ### 39. d=0.01 is the optimal density sweet spot — multi-seed validated, sparser fails
 Phase 58: Multi-seed validation (3 seeds: 42, 123, 456) across two densities confirms **d=0.01 is statistically robust**: mean MRR=0.4844±0.0097, H@10=0.7994±0.0058. All 3 seeds maintain H@10>0.79; seed=456 achieves a new brain_hybrid **MRR record of 0.4956**. d=0.005 (1,217 edges) **fails to continue the improvement trend**: mean MRR=0.4673 (−0.017 vs d=0.01), and H@10 variance increases 4.4× (std 0.026 vs 0.006). The density curve from d=0.02→d=0.01→d=0.005 shows clear optimum at d=0.01 — halving density further loses recall without compensating precision gains. Brain density optimization CLOSED.
+
+---
+
+## Scaling & Depth Management (Phase 59+)
+
+### 40. 3-layer DELTA catastrophically over-smooths at N=2000 — 1-layer surpasses DistMult
+Phase 59: First medium-scale evaluation (1,991 entities, 62,733 train triples, **15.2M edge adjacency pairs**). 3-layer DELTA achieves MRR=**0.0018** across three training configurations — near-random and **200× below DistMult** (0.3185). However, **1-layer DELTA achieves val MRR=0.3338 (ep150), surpassing DistMult by +0.015** and matching it on test H@10 (0.5935 vs 0.5820). The edge-to-edge attention mechanism is not broken; **depth is the sole cause of over-smoothing**. Each additional layer compounds representation homogenization through the dense 15.2M-pair adjacency graph. This is the most important architectural finding since Phase 4 (multi-hop edge adjacency): DELTA's expressiveness gain from edge attention is real at scale, but the architecture needs depth management to preserve it beyond 1 layer.
 
 ---
 

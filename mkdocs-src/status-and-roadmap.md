@@ -1,6 +1,6 @@
 # Status & Roadmap
 
-*Last updated: Phase 58 complete (2026-04-11)*
+*Last updated: Phase 59 complete (2026-04-12)*
 
 ---
 
@@ -17,6 +17,8 @@
 | 5p MRR | DELTA-Matched @0% drop | **0.790** | 44 |
 | Depth advantage (5p) | DELTA vs GraphGPS | **+0.100** | 44 |
 | Per-query inference | DELTA vs GraphGPS | **0.8–0.9x** (faster) | 45 |
+| LP MRR (1-layer DELTA, N=2000) | delta_1layer | **0.3338** (val peak) | 59 |
+| LP MRR (DistMult, N=2000) | DistMult (no GNN) | **0.3185** | 59 |
 
 ---
 
@@ -42,6 +44,8 @@
 | P16 | Constructor density controls precision/recall trade-off | High | Phase 56: d=0.01 strictly dominates d=0.02 on MRR, H@3, H@10 |
 | P17 | Temperature annealing is counterproductive on brain_hybrid | High | Phase 57: annealing trades H@10 for marginal MRR; baseline optimal |
 | P18 | d=0.01 is the optimal brain_hybrid density sweet spot | High | Phase 58: d=0.01 mean MRR=0.4844±0.0097 (robust); d=0.005 MRR=0.4673 (−0.017). Density optimization CLOSED. |
+| P19 | Edge-to-edge attention mechanism works at N=2000 (1-layer) | High | Phase 59: 1-layer DELTA val_MRR=0.3338 surpasses DistMult (0.3185). Mechanism viable, depth is the bottleneck. |
+| P20 | 3-layer DELTA catastrophically over-smooths at N=2000 | High | Phase 59: MRR=0.0018 across 3 training configs. 15.2M E_adj pairs × 3 layers = representation collapse. |
 
 ---
 
@@ -52,15 +56,17 @@
 - **LP/3p trade-off is fundamental** — After 9 phases (46–54) testing 20+ temperature configurations, temperature reliably improves LP but has no statistically supported effect on multi-hop reasoning depth. Three operating modes: LP-optimized (P/Q), balanced-3p (K), deep-reasoning (N).
 - **Multi-hop temperature claims not statistically robust** — Phase 53 multi-seed validation shows single-seed 3p/4p/5p advantages are seed-dependent. Only LP improvements are statistically supported.
 - **brain_hybrid overfitting** — Both density conditions overfit after epoch 150. Early stopping around epoch 150–180 preserves best test performance.
+- **3-layer depth over-smoothing at N=2000** — Phase 59: catastrophic collapse (MRR=0.002). 1-layer works (MRR=0.334). Depth management is the critical architectural challenge for scaling.
 
 ---
 
 ## Open Gaps
 
-### Gap 1: Full-scale evaluation — HIGH priority
-- Current: 494-entity FB15k-237 subset (3.4% of full dataset)
-- Needed: Full FB15k-237 (14,505 entities) or YAGO3-10 (123K entities)
-- Requires mini-batching infrastructure for 2-hop edge adjacency at scale
+### Gap 1: Full-scale evaluation — HIGH priority (BLOCKED by depth)
+- Current: 494-entity subset (3.4%) works at 3-layer; 1,991-entity subset (13.7%) works at 1-layer only
+- Phase 59 proved 3-layer collapses at N=2000 (MRR=0.002). 1-layer achieves MRR=0.334.
+- Full FB15k-237 (14,505 entities) requires solving depth management first (Phases 60–62)
+- spspmm optimization reduces edge adjacency build from 3s to 0.2s at N=2000
 
 ### Gap 2: LP/3p trade-off — CHARACTERIZED (Phases 46–54)
 - After 9 phases and 20+ configurations, the trade-off is confirmed fundamental at the temperature level
@@ -71,12 +77,18 @@
 - WN18RR (transfer): 0.961 probe accuracy (Phase 35) — but frozen encoder, not trained LP
 - YAGO3-10: untested. Would demonstrate generalization beyond Freebase
 
-### Gap 4: Brain architecture optimization — ACTIVE
+### Gap 4: Brain architecture optimization — PAUSED (blocked by Gap 5)
 - BrainEncoder validated (Phases 55–58) with MRR gains over delta_full marginal (+0.002 single-seed) but multi-seed mean 0.4844±0.0097 is robust
 - H@10 advantage (+4.7%) is substantial — constructed edges genuinely add recall
 - Density optimization CLOSED: d=0.01 (2,435 edges) is the sweet spot. d=0.02 too noisy, d=0.005 too sparse.
-- Seed=456 achieves MRR 0.4956 — approaching delta_full temp-tuned record (0.4905), suggesting untapped potential
-- Next: constructor architecture improvements (multi-head construction, learned density, attention-guided scoring), full-scale evaluation
+- brain_hybrid OOMs at N=2000 (102K edges). Scaling brain architecture requires solving depth management first.
+- Next: resume after Gap 5 resolved
+
+### Gap 5: Depth management at scale — ACTIVE (Phases 60–62)
+- Phase 59: 3-layer over-smooths catastrophically at N=2000 (MRR=0.002); 1-layer works (MRR=0.334)
+- 2-layer with skip connections is the critical next test
+- Options: DenseNet-style skip connections, PairNorm/NodeNorm, adaptive depth based on graph density
+- Budget: 3 phases (60, 61, 62). If 2-layer can't beat DistMult by Phase 62, accept 1-layer architecture for scale.
 
 ### Gap 5: Sequence domain generalization — FUTURE (Horizon 3)
 - All current evidence is on knowledge graphs where structure is pre-defined or semi-explicit

@@ -112,10 +112,18 @@ All: d_node=64, d_edge=32, num_heads=4, lr=0.003, bs=4096, 200 epochs, seed=42, 
 
 ## Classification
 
-**CONFIRMED** — Residual gating eliminates depth over-smoothing and recovers performance. The mechanism works. However, multi-layer does not outperform single-layer at N=2000, and the gates operate as fixed near-initialization hyperparameters rather than learned parameters.
+**CONFIRMED (narrowly)** — Residual gating eliminates depth over-smoothing. But the harder finding is that the fix revealed the layers are not contributing useful signal. Gates frozen at ~10% mean the model learned that layer outputs are mostly noise and should be mostly ignored. When ignored, all depths and DistMult itself converge to the same ~0.31 MRR — meaning **DELTA's edge-to-edge attention contributes zero measurable value at N=2000**.
+
+The 174× improvement over ungated 3-layer is real but is an improvement over a broken baseline. The meaningful comparison is against DistMult, and DELTA isn't beating it:
+- DistMult (no GNN): 0.3185
+- 1-layer DELTA: 0.3093
+- 2-layer+gate: 0.3065
+- 3-layer+gate: 0.3138
+
+All within noise. The depth problem is solved but the value-of-attention problem is exposed.
 
 ## Implications for Phases 61–62
 
-- The depth problem is SOLVED (gating works) but depth doesn't help.
-- Worth testing: (a) higher gate_init (0.3-0.5) to allow more layer contribution, (b) LayerNorm before gating, (c) whether depth helps at N=14,505 (full FB15k-237) where the information bottleneck may be tighter.
-- Alternative direction: focus on improving 1-layer quality (attention sparsification, efficient edge adjacency) rather than adding depth.
+- Phase 60 shifted the question from "can we make DELTA work at scale?" to **"is there any scale beyond N=500 where DELTA's edge-to-edge attention provides measurable lift over a trivial baseline?"**
+- The critical missing data point: **DistMult at N=500**. If DistMult also hits ~0.48 at N=500, then DELTA never beat DistMult at any scale — every prior "DELTA works" result is "this dataset is easy and any model works."
+- Phase 61 must answer the existence question before any further mechanism work (sparsification, full-scale eval) is justified.

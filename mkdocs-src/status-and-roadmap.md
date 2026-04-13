@@ -84,13 +84,14 @@
 - brain_hybrid OOMs at N=2000 (102K edges). Scaling brain architecture requires solving depth management first.
 - Next: resume after Gap 5 resolved
 
-### Gap 5: Depth management at scale — RESOLVED (Phase 60)
+### Gap 5: Depth management at scale — RESOLVED but exposed deeper issue (Phase 60)
 - Phase 59: 3-layer over-smooths catastrophically at N=2000 (MRR=0.002); 1-layer works (MRR=0.334)
 - Phase 60: Residual gating eliminates over-smoothing: 3L+gate MRR=0.3138 (174× vs ungated 0.0018)
-- However, all depths converge to MRR~0.31 — depth doesn't help at N=2000, even with gating
-- Gates frozen near init (~10% layer, 90% residual) — function as fixed hyperparameters
-- **Decision: accept 1-layer as the scaling architecture** (most efficient at 1.6hr vs 4.8hr for 3L)
-- Remaining budget (Phases 61-62): redirect to full-scale evaluation (N=14,505) or attention sparsification
+- However, all depths converge to MRR~0.31 — **matching DistMult (0.3185) without any GNN**
+- Gates frozen at ~10% layer / 90% residual → model learned layers are noise, not signal
+- **DELTA's edge-to-edge attention contributes zero measurable value at N=2000**
+- Critical unknown: does DistMult also match DELTA at N=500? If so, DELTA never beat DistMult at any scale.
+- Phase 61: DistMult-across-scales diagnostic to answer the existence question
 
 ### Gap 5: Sequence domain generalization — FUTURE (Horizon 3)
 - All current evidence is on knowledge graphs where structure is pre-defined or semi-explicit

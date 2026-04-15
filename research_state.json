@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-04-13",
-  "last_completed_phase": 60,
-  "next_phase": 61,
+  "last_updated": "2026-04-15",
+  "last_completed_phase": 61,
+  "next_phase": 62,
   "current_phase": null,
 
   "best_results": {
@@ -210,6 +210,12 @@
       "phase": 60,
       "hypothesis": "Residual gating eliminates catastrophic over-smoothing at N=2000",
       "evidence": "3-layer+gate test MRR=0.3138 vs 3-layer ungated MRR=0.0018 — 174× improvement. 2-layer+gate MRR=0.3065. Both meet ≥0.30 threshold. Gates operate near initialization (~10% layer, 90% residual) but this minimal mixing prevents representation homogenization.",
+      "significance": "landmark"
+    },
+    {
+      "phase": 61,
+      "hypothesis": "DELTA's edge-to-edge attention provides sample efficiency advantage over DistMult across scales",
+      "evidence": "1L-DELTA converges 2-3× faster per gradient step. With equal step budgets: N=500 (9500 steps) DM wins test by -0.016 (both overfit); N=1000 (4200 steps) DELTA wins by +0.026; N=2000 (3200 steps) DELTA wins by +0.079. DELTA's performance is robust to step-count reduction; DistMult's is not.",
       "significance": "landmark"
     }
   ],

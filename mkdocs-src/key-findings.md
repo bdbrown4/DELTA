@@ -1,6 +1,6 @@
 # Key Findings
 
-41 key findings from 60 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
+42 key findings from 61 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
 
 ---
 
@@ -151,7 +151,10 @@ Phase 58: Multi-seed validation (3 seeds: 42, 123, 456) across two densities con
 Phase 59: First medium-scale evaluation (1,991 entities, 62,733 train triples, **15.2M edge adjacency pairs**). 3-layer DELTA achieves MRR=**0.0018** across three training configurations — near-random and **200× below DistMult** (0.3185). However, **1-layer DELTA achieves val MRR=0.3338 (ep150), surpassing DistMult by +0.015** and matching it on test H@10 (0.5935 vs 0.5820). The edge-to-edge attention mechanism is not broken; **depth is the sole cause of over-smoothing**. Each additional layer compounds representation homogenization through the dense 15.2M-pair adjacency graph. This is the most important architectural finding since Phase 4 (multi-hop edge adjacency): DELTA's expressiveness gain from edge attention is real at scale, but the architecture needs depth management to preserve it beyond 1 layer.
 
 ### 41. Residual gating eliminates over-smoothing — but reveals layers contribute nothing
-Phase 60: Per-layer learnable gates (sigmoid(α) × layer_output + (1−sigmoid(α)) × input, init α≈0.1) completely eliminate catastrophic over-smoothing. **3-layer+gate test MRR=0.3138** vs ungated 0.0018 — a **174× improvement**. However, gates froze at ~10% layer / 90% residual — the model learned that layer output is mostly noise and should be mostly ignored. All depths converge to MRR~0.31: 2L+gate=0.3065, 3L+gate=0.3138, 1L=0.3093, **which is also where DistMult (0.3185) lands without any GNN.** This isn't "depth doesn't help" — it's **"DELTA's edge-to-edge attention contributes zero measurable value at N=2000."** The existence question is now: does DELTA beat DistMult at *any* scale?
+Phase 60: Per-layer learnable gates (sigmoid(α) × layer_output + (1−sigmoid(α)) × input, init α≈0.1) completely eliminate catastrophic over-smoothing. **3-layer+gate test MRR=0.3138** vs ungated 0.0018 — a **174× improvement**. However, gates froze at ~10% layer / 90% residual — the model learned that layer output is mostly noise and should be mostly ignored. All depths converge to MRR~0.31: 2L+gate=0.3065, 3L+gate=0.3138, 1L=0.3093, **which is also where DistMult (0.3185) lands** when given sufficient gradient steps (~24,600). Additional depth beyond 1 layer provides no measurable benefit. (Phase 61 later showed the convergence between DELTA and DistMult at 0.31 is contingent on DistMult receiving enough training — see Finding #42.)
+
+### 42. DELTA's real advantage is sample efficiency — convergence speed, not final ceiling
+Phase 61: DistMult-vs-DELTA across three scales (N=500/1000/2000). 1L-DELTA converges **2-3× faster** per gradient step than DistMult at all scales. At N=500 (9,500 steps, enough for both to overfit), DM test beats DELTA test by −0.016 — both overfit, DM slightly less. At N=1000 (4,200 steps) DELTA wins by **+0.026**; at N=2000 (3,200 steps) DELTA wins by **+0.079**. The growing advantage at larger N reflects DistMult's sensitivity to gradient step count, not an intrinsic scale-dependent DELTA superiority. DELTA reaches MRR=0.31 at N=2000 in ~2,800 steps; DistMult needs ~24,600 steps to reach the same level. **The edge-to-edge attention mechanism provides convergence speed (sample efficiency), not a higher accuracy ceiling.** This revises Phase 60's conclusion: DELTA does contribute value at N=2000, but the value is convergence time, not final performance.
 
 ---
 

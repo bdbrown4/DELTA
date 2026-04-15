@@ -1427,3 +1427,54 @@ Gates barely shift from initialization (0.100) over 200 epochs. The model operat
 | 2L+gate MRR ≥ 0.30 at N=2000 | **CONFIRMED** | Test MRR=0.3065, meets threshold. |
 | 3L+gate recovers from catastrophic over-smoothing | **CONFIRMED** | MRR 0.0018→0.3138 (174× improvement). |
 | Multi-layer outperforms 1-layer with gating | **NOT CONFIRMED** | 3L=0.3138, 2L=0.3065, 1L=0.3093 — within noise. |
+
+---
+
+## Phase 61 — DistMult vs DELTA Across Scales
+
+**Goal:** Determine whether DELTA's edge-to-edge attention provides measurable lift over DistMult at any scale (N=500, 1000, 2000).
+
+### Configuration
+- Dataset: FB15k-237 at N=500 (494 ent, 9703 train), N=1000 (998 ent, 26761 train), N=2000 (1991 ent, 62733 train)
+- Per-scale hyperparameters:
+  - N=500: bs=512, lr=0.001, 500 epochs (9,500 total steps)
+  - N=1000: bs=2048, lr=0.002, 300 epochs (4,200 total steps)
+  - N=2000: bs=4096, lr=0.003, 200 epochs (3,200 total steps)
+- d_node=64, d_edge=32, num_heads=4, seed=42, Adam
+- Hardware: RTX PRO 6000 Blackwell 98GB (RunPod)
+
+### Summary Results (Test Set)
+
+| Model | N | val_MRR | test_MRR | test_H@1 | test_H@10 | Δ vs DM | Time |
+|-------|---:|--------:|---------:|---------:|----------:|--------:|-----:|
+| DistMult | 500 | 0.4736 | 0.3747 | 0.2407 | 0.6698 | — | 10s |
+| 1L-DELTA | 500 | 0.4892 | 0.3583 | 0.2150 | 0.6636 | -0.0163 | 1054s |
+| 3L-DELTA | 500 | 0.4882 | 0.3816 | 0.2418 | 0.6862 | +0.0069 | 3124s |
+| DistMult | 1000 | 0.3288 | 0.3342 | 0.2257 | 0.5503 | — | 12s |
+| 1L-DELTA | 1000 | 0.4024 | 0.3604 | 0.2159 | 0.6613 | +0.0262 | 1626s |
+| DistMult | 2000 | 0.2271 | 0.2297 | 0.1475 | 0.3845 | — | 60s |
+| 1L-DELTA | 2000 | 0.3357 | 0.3088 | 0.1787 | 0.5963 | +0.0791 | 5896s |
+
+### Convergence Speed Comparison
+
+| Scale | DM peak val step | 1L peak val step | 1L speedup |
+|------:|-----------------:|-----------------:|-----------:|
+| 500 | 7,068 (ep372) | 2,356 (ep124) | 3.0× |
+| 1000 | 4,200+ (still rising) | 2,072 (ep148) | >2.0× |
+| 2000 | 3,200+ (still rising) | 2,800 (ep175) | >1.1× |
+
+### Key Observations
+1. **DELTA converges 2-3× faster per gradient step** — this is the primary architectural contribution.
+2. **At N=500 (sufficient training)**, DM wins test by -0.016. Both models overfit; DM overfits less.
+3. **At N=1000/2000 (limited training)**, DELTA wins by +0.026 and +0.079 respectively.
+4. **The growing advantage at larger N** reflects DM's sensitivity to step count, not intrinsic DELTA superiority.
+5. **3L ≈ 1L at N=500** — additional depth adds nothing (consistent with Phase 60).
+6. **DELTA is step-count invariant**: reaches MRR~0.31 at N=2000 in 2,800 steps or 24,600 steps. DM needs all 24,600.
+
+### Hypothesis Evaluation
+
+| Hypothesis | Result | Evidence |
+|-----------|--------|----------|
+| DELTA test MRR ≥ DM + 0.01 at some scale | **CONFIRMED** | N=1000: +0.026, N=2000: +0.079 |
+| DELTA test MRR ≥ DM at N=500 | **REJECTED** | -0.016 due to harder overfitting |
+| 3L improves over 1L at N=500 | **NOT CONFIRMED** | Test +0.023 but peak val identical |

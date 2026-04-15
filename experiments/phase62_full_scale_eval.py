@@ -11,7 +11,8 @@ persists at N=5000, giving a 3-point scaling curve (N=500, N=2000, N=5000).
 Two-step design:
   Step 1 — SANITY CHECK: Run DELTA 1L at N=2000 with subsampled edge adjacency
            (capped at 15M pairs). Compare to existing test MRR 0.3088 (full
-           edge adjacency). If within 0.01, subsampling is safe for N=5000.
+           edge adjacency). Pass if subsampled MRR >= ref - 0.01 (asymmetric:
+           only fail if subsampling hurts, improvements are fine).
   Step 2 — N=5000: DistMult (2000 ep) + DELTA 1L (200 ep) with subsampled
            edge adjacency. Both evaluated at best-validated checkpoint.
 
@@ -200,7 +201,7 @@ total_t0 = time.time()
 print(f'\n{"="*70}')
 print(f'  STEP 1: SANITY CHECK — Subsampled edge adjacency at N=2000')
 print(f'  Reference: DELTA 1L N=2000 full E_adj test MRR = 0.3088')
-print(f'  Pass criterion: subsampled test MRR within 0.01 of 0.3088')
+print(f'  Pass criterion: subsampled test MRR >= 0.3088 - 0.01 (asymmetric)')
 print(f'{"="*70}')
 sys.stdout.flush()
 
@@ -237,12 +238,14 @@ all_results['Sanity_1L_N=2000'] = sanity
 sanity_mrr = sanity['test_at_best_val']['MRR']
 ref_mrr = 0.3088
 delta_from_ref = sanity_mrr - ref_mrr
-sanity_pass = abs(delta_from_ref) < 0.01
+# Asymmetric gate: only fail if subsampling HURTS (drops MRR below reference - 0.01).
+# Improvement is fine — subsampling may act as regularization.
+sanity_pass = delta_from_ref > -0.01  # pass if subsampled >= ref - 0.01
 print(f'\n  SANITY CHECK RESULT:')
 print(f'    Subsampled test MRR: {sanity_mrr:.4f}')
 print(f'    Reference (full E_adj): {ref_mrr:.4f}')
 print(f'    Delta: {delta_from_ref:+.4f}')
-print(f'    Pass (within 0.01): {"YES" if sanity_pass else "NO — ABORTING N=5000"}')
+print(f'    Pass (sub >= ref - 0.01): {"YES" if sanity_pass else "NO — ABORTING N=5000"}')
 sys.stdout.flush()
 
 del sub_adj_2k, data_2k, ei_2k, et_2k

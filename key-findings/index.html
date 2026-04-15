@@ -1011,9 +1011,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#42-deltas-real-advantage-is-sample-efficiency-convergence-speed-not-final-ceiling" class="md-nav__link">
+  <a href="#42-delta-vs-distmult-convergence-speed-real-advantage-or-compute-artifact-unresolved" class="md-nav__link">
     <span class="md-ellipsis">
-      42. DELTA's real advantage is sample efficiency — convergence speed, not final ceiling
+      42. DELTA vs DistMult convergence speed — real advantage or compute artifact? (UNRESOLVED)
     </span>
   </a>
   
@@ -1694,9 +1694,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#42-deltas-real-advantage-is-sample-efficiency-convergence-speed-not-final-ceiling" class="md-nav__link">
+  <a href="#42-delta-vs-distmult-convergence-speed-real-advantage-or-compute-artifact-unresolved" class="md-nav__link">
     <span class="md-ellipsis">
-      42. DELTA's real advantage is sample efficiency — convergence speed, not final ceiling
+      42. DELTA vs DistMult convergence speed — real advantage or compute artifact? (UNRESOLVED)
     </span>
   </a>
   
@@ -1822,9 +1822,9 @@
 <h3 id="40-3-layer-delta-catastrophically-over-smooths-at-n2000-1-layer-surpasses-distmult">40. 3-layer DELTA catastrophically over-smooths at N=2000 — 1-layer surpasses DistMult<a class="headerlink" href="#40-3-layer-delta-catastrophically-over-smooths-at-n2000-1-layer-surpasses-distmult" title="Permanent link">&para;</a></h3>
 <p>Phase 59: First medium-scale evaluation (1,991 entities, 62,733 train triples, <strong>15.2M edge adjacency pairs</strong>). 3-layer DELTA achieves MRR=<strong>0.0018</strong> across three training configurations — near-random and <strong>200× below DistMult</strong> (0.3185). However, <strong>1-layer DELTA achieves val MRR=0.3338 (ep150), surpassing DistMult by +0.015</strong> and matching it on test H@10 (0.5935 vs 0.5820). The edge-to-edge attention mechanism is not broken; <strong>depth is the sole cause of over-smoothing</strong>. Each additional layer compounds representation homogenization through the dense 15.2M-pair adjacency graph. This is the most important architectural finding since Phase 4 (multi-hop edge adjacency): DELTA's expressiveness gain from edge attention is real at scale, but the architecture needs depth management to preserve it beyond 1 layer.</p>
 <h3 id="41-residual-gating-eliminates-over-smoothing-but-reveals-layers-contribute-nothing">41. Residual gating eliminates over-smoothing — but reveals layers contribute nothing<a class="headerlink" href="#41-residual-gating-eliminates-over-smoothing-but-reveals-layers-contribute-nothing" title="Permanent link">&para;</a></h3>
-<p>Phase 60: Per-layer learnable gates (sigmoid(α) × layer_output + (1−sigmoid(α)) × input, init α≈0.1) completely eliminate catastrophic over-smoothing. <strong>3-layer+gate test MRR=0.3138</strong> vs ungated 0.0018 — a <strong>174× improvement</strong>. However, gates froze at ~10% layer / 90% residual — the model learned that layer output is mostly noise and should be mostly ignored. All depths converge to MRR~0.31: 2L+gate=0.3065, 3L+gate=0.3138, 1L=0.3093, <strong>which is also where DistMult (0.3185) lands</strong> when given sufficient gradient steps (~24,600). Additional depth beyond 1 layer provides no measurable benefit. (Phase 61 later showed the convergence between DELTA and DistMult at 0.31 is contingent on DistMult receiving enough training — see Finding #42.)</p>
-<h3 id="42-deltas-real-advantage-is-sample-efficiency-convergence-speed-not-final-ceiling">42. DELTA's real advantage is sample efficiency — convergence speed, not final ceiling<a class="headerlink" href="#42-deltas-real-advantage-is-sample-efficiency-convergence-speed-not-final-ceiling" title="Permanent link">&para;</a></h3>
-<p>Phase 61: DistMult-vs-DELTA across three scales (N=500/1000/2000). 1L-DELTA converges <strong>2-3× faster</strong> per gradient step than DistMult at all scales. At N=500 (9,500 steps, enough for both to overfit), DM test beats DELTA test by −0.016 — both overfit, DM slightly less. At N=1000 (4,200 steps) DELTA wins by <strong>+0.026</strong>; at N=2000 (3,200 steps) DELTA wins by <strong>+0.079</strong>. The growing advantage at larger N reflects DistMult's sensitivity to gradient step count, not an intrinsic scale-dependent DELTA superiority. DELTA reaches MRR=0.31 at N=2000 in ~2,800 steps; DistMult needs ~24,600 steps to reach the same level. <strong>The edge-to-edge attention mechanism provides convergence speed (sample efficiency), not a higher accuracy ceiling.</strong> This revises Phase 60's conclusion: DELTA does contribute value at N=2000, but the value is convergence time, not final performance.</p>
+<p>Phase 60: Per-layer learnable gates (sigmoid(α) × layer_output + (1−sigmoid(α)) × input, init α≈0.1) completely eliminate catastrophic over-smoothing. <strong>3-layer+gate test MRR=0.3138</strong> vs ungated 0.0018 — a <strong>174× improvement</strong>. However, gates froze at ~10% layer / 90% residual — the model learned that layer output is mostly noise and should be mostly ignored. All depths converge to MRR~0.31: 2L+gate=0.3065, 3L+gate=0.3138, 1L=0.3093, <strong>which is also where DistMult (0.3185) lands</strong> when given sufficient gradient steps (~24,600). Additional depth beyond 1 layer provides no measurable benefit.</p>
+<h3 id="42-delta-vs-distmult-convergence-speed-real-advantage-or-compute-artifact-unresolved">42. DELTA vs DistMult convergence speed — real advantage or compute artifact? (UNRESOLVED)<a class="headerlink" href="#42-delta-vs-distmult-convergence-speed-real-advantage-or-compute-artifact-unresolved" title="Permanent link">&para;</a></h3>
+<p>Phase 61: 1L-DELTA converges in fewer gradient steps than DistMult across N=500/1000/2000. At N=500 (enough steps for both to converge), DM test MRR slightly beats DELTA (−0.016). At N=1000/2000 (limited steps), DELTA wins (+0.026/+0.079) — but DistMult was still improving. <strong>Critical confound: at N=2000, DM trained for 60 seconds while DELTA trained for 5,896 seconds (98× more wall-clock compute).</strong> The "sample efficiency" framing is misleading without controlling for compute: per FLOP or per second, DistMult is vastly more efficient. <strong>Phase 61b (DM at N=2000 for 2000 epochs, ~5 min wall time) must determine whether DM reaches ~0.30+ with more training.</strong> If it does, the "advantage" is a compute artifact. If DM plateaus, the GNN provides genuine inductive bias. No conclusions should be cited until 61b is complete.</p>
 <hr />
 <p><em>See <a href="../validation-phases/">Validation Phases</a> for complete result tables. See <a href="../status-and-roadmap/">Status &amp; Roadmap</a> for current priorities.</em></p>
 

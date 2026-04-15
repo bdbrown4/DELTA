@@ -56,7 +56,6 @@ def run_distmult(data, ei, et, bs, lr, num_epochs, label=''):
 
     for ep in range(1, num_epochs + 1):
         loss = train_epoch(model, data['train'], ei, et,
-                           data['hr_to_tails'], data['rt_to_heads'],
                            opt, device, batch_size=bs)
         if ep % eval_every == 0 or ep == num_epochs:
             val = evaluate_lp(model, data['val'], ei, et,

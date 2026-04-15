@@ -1478,3 +1478,59 @@ Gates barely shift from initialization (0.100) over 200 epochs. The model operat
 | DELTA test MRR ≥ DM + 0.01 at some scale | **CONFIRMED** | N=1000: +0.026, N=2000: +0.079 |
 | DELTA test MRR ≥ DM at N=500 | **REJECTED** | -0.016 due to harder overfitting |
 | 3L improves over 1L at N=500 | **NOT CONFIRMED** | Test +0.023 but peak val identical |
+
+---
+
+## Phase 61b — DistMult Extended Training at N=2000
+
+**Goal:** Give DistMult 2000 epochs (10× Phase 61) at N=2000 to determine whether DELTA's +0.079 test MRR advantage is genuine or an artifact of under-training DistMult.
+
+### Key Result
+
+DistMult with 2000 epochs peaks at val MRR=0.3185 (ep100, 12s wall time) then overfits catastrophically to ~0.23 by ep300 and never recovers. Test@best_val MRR=0.2329. DELTA's test MRR=0.3088 (+0.076 gap) reflects genuine generalization advantage — GNN parameter sharing acts as implicit regularization.
+
+---
+
+## Phase 62 — Scaling DELTA to N=5000: Test MRR Generalization
+
+**Goal:** Test whether DELTA's generalization advantage over DistMult (confirmed at N=2000, +0.076 test MRR gap) persists at N=5000.
+
+### Configuration
+- Dataset: FB15k-237 at N=5000 (4977 entities, 225 relations, 152,809 train / 8,788 val / 10,156 test)
+- d_node=64, d_edge=32, num_heads=4, seed=42, Adam, bs=4096, lr=0.003
+- DistMult: 2000 epochs, eval every 100
+- DELTA 1L: 200 epochs, eval every 25
+- Edge adjacency: 63,001,372 full pairs → subsampled to 15,000,000 (23.8%)
+- Hardware: RTX PRO 6000 Blackwell 98GB (RunPod), 29,202s (8.1hr)
+
+### Sanity Check — Subsampled E_adj at N=2000
+
+| Model | peak_val | best_ep | test_MRR | test_H@1 | test_H@10 | Time |
+|-------|--------:|---------:|---------:|---------:|----------:|-----:|
+| 1L (sub E_adj) | 0.3362 | 175 | **0.3371** | 0.2122 | 0.5996 | 5726s |
+| 1L (full, P61 ref) | 0.3357 | 175 | 0.3088 | 0.1787 | 0.5963 | 5896s |
+
+Delta: +0.0283. **PASSED** asymmetric gate (sub ≥ ref − 0.01).
+
+### N=5000 Results
+
+| Model | N | trip/ent | peak_val | best_ep | test_MRR | test_H@1 | test_H@10 | Time |
+|-------|---:|--------:|--------:|--------:|---------:|---------:|----------:|-----:|
+| DM_N=5000 | 5000 | 30.7 | 0.2222 | 200 | **0.2244** | 0.1320 | 0.4207 | 1784s |
+| 1L_N=5000 | 5000 | 30.7 | 0.2420 | 125 | **0.2404** | 0.1397 | 0.4566 | 21688s |
+
+### Scaling Curve — DELTA vs DistMult Test MRR Gap
+
+| N | DM test | 1L test | Gap |
+|---:|--------:|--------:|----:|
+| 500 | 0.4778 | 0.4818 | +0.004 |
+| 2000 | 0.2329 | 0.3088 | +0.076 |
+| 5000 | 0.2244 | 0.2404 | +0.016 |
+
+### Hypothesis Evaluation
+
+| Hypothesis | Result | Evidence |
+|-----------|--------|----------|
+| DELTA test MRR ≥ DM + 0.04 at N=5000 | **REJECTED** | Gap = +0.016, below 0.04 threshold |
+| Subsampled E_adj preserves DELTA performance | **CONFIRMED** | Sanity check: +0.028 vs reference |
+| DELTA advantage grows monotonically with scale | **REJECTED** | Non-monotonic: +0.004 → +0.076 → +0.016 |

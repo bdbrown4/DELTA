@@ -1,7 +1,7 @@
 {
   "last_updated": "2026-04-15",
-  "last_completed_phase": "61b",
-  "next_phase": 62,
+  "last_completed_phase": 62,
+  "next_phase": 63,
   "current_phase": null,
 
   "best_results": {
@@ -220,6 +220,8 @@
     }
   ],
 
+  "rejected_phase_62": "moved to failed_hypotheses",
+
   "failed_hypotheses": [
     {
       "phase": 41,
@@ -360,6 +362,12 @@
       "significance": "landmark"
     },
     {
+      "phase": 62,
+      "hypothesis": "At N=5000, DELTA 1L test MRR exceeds DistMult by >= 0.04",
+      "evidence": "DELTA test MRR=0.2404, DM test MRR=0.2244, gap=+0.016 — below 0.04 threshold. N=2000 gap (+0.076) was inflated by DM catastrophic overfitting that doesn't recur at N=5000. Subsampling to 23.8% of full E_adj may also suppress DELTA's advantage.",
+      "significance": "high"
+    },
+    {
       "phase": 60,
       "hypothesis": "Multi-layer DELTA with gating outperforms 1-layer at N=2000",
       "evidence": "3L+gate test MRR=0.3138, 2L+gate=0.3065, 1L=0.3093. All within noise — no clear multi-layer advantage. Depth doesn't help at N=2000 even with gating; the 1-layer model achieves highest val peak (0.3338) and best H@10 (0.5939).",
@@ -497,7 +505,13 @@
     "Edge adjacency explosion: N=500 has ~256K E_adj pairs (DELTA works), N=2000 has 15.2M pairs (1-layer works, 3-layer collapses). Each layer multiplies the homogenization effect.",
     "1-layer DELTA has a long warmup plateau: MRR near-random until ep40, then climbs sharply: 0.07 (ep50) → 0.16 (ep75) → 0.27 (ep100) → 0.33 (ep150).",
     "spspmm replaces Python for-loop in build_edge_adjacency: 0.2s vs ~3s for 62K edges. torch_sparse.spspmm computes incidence^T @ incidence in sparse domain.",
-    "1-layer DELTA matches DistMult on H@10 (0.594 vs 0.582) while slightly trailing test MRR (0.309 vs 0.319) — edge-to-edge attention boosts top-10 recall at N=2000, consistent with brain_hybrid H@10 pattern at N=500"
+    "1-layer DELTA matches DistMult on H@10 (0.594 vs 0.582) while slightly trailing test MRR (0.309 vs 0.319) — edge-to-edge attention boosts top-10 recall at N=2000, consistent with brain_hybrid H@10 pattern at N=500",
+    "DELTA vs DistMult test MRR gap is NON-MONOTONIC with scale: +0.004 (N=500) → +0.076 (N=2000) → +0.016 (N=5000). The N=2000 spike was caused by DistMult's catastrophic val-test gap (0.3185→0.2329), not a genuine DELTA scaling advantage.",
+    "DistMult overfitting behavior changes with scale: N=2000 val-test gap=27% (catastrophic), N=5000 val-test gap≈0% (test MRR 0.2244 matches val peak 0.2222). Larger graphs may regularize DistMult via more negative samples per batch.",
+    "Edge adjacency subsampling is a major confound at N=5000: only 23.8% retention (15M of 63M pairs) vs 98.6% at N=2000. The sanity check validated 98.6%, not 23.8%. DELTA's advantage may be suppressed by aggressive subsampling.",
+    "Triples/entity ratio is nearly flat from N=2000 (31.5) to N=5000 (30.7), so reduced DELTA advantage is likely computational (subsampling limit) not structural (graph sparsity).",
+    "DELTA at N=5000 peaks at ep125 then declines — overfitting onset earlier than N=2000 (ep175), possibly due to aggressive E_adj subsampling reducing available structural signal.",
+    "DELTA 1L at N=5000 costs 107s/epoch (21,688s total) vs DistMult 0.87s/epoch (1,784s total) — 12.2× wall-clock premium for +0.016 MRR."
   ],
 
   "phase_history": {
@@ -521,7 +535,8 @@
     "56": { "title": "Constructor Density Ablation — Precision vs Recall Trade-off", "result": "PARTIAL -- density=0.01 (C) outperforms density=0.02 (D): MRR 0.4794 vs 0.4678 (+0.012), H@10 0.8076 vs 0.7500 (+0.058), with half the edges (2435 vs 4870). Misses 0.480 MRR target by 0.0006. C matches delta_full MRR while preserving +4.7% H@10 advantage. Both conditions overfit after ep 150. Only C,D run (A,B deferred). Ran on RTX PRO 6000 Blackwell via Colab SSH + tmux." },
     "57": { "title": "Brain Temperature Annealing — Closing the 0.480 MRR Gap", "result": "PARTIAL -- brain_hybrid @ d=0.01 crosses 0.480 MRR: A (baseline) MRR=0.4808, B (K-anneal) MRR=0.4818. Improvement from shorter training (200 vs 300ep), not annealing. B's K-style anneal adds marginal MRR (+0.001) but drops H@10 severely (0.7613 vs 0.8076, −0.046). C (Q-anneal, edge=7.0) WORST at MRR=0.4769. Edge=7.0 hurts brain_hybrid unlike delta_full. Temperature annealing NOT recommended for brain_hybrid — baseline is optimal. Brain temp investigation CLOSED." },
     "58": { "title": "Multi-seed Brain Density Validation", "result": "PARTIAL -- d=0.01 mean MRR=0.4844±0.0097 CONFIRMS robustness (exceeds 0.480). Seed=456 achieves new brain_hybrid MRR record: 0.4956. d=0.005 mean MRR=0.4673 is BELOW d=0.01 (−0.017) — density improvement trend STOPS at 0.01. d=0.005 has higher H@10 variance (0.026 vs 0.006), sparser is less stable. Density optimization path EXHAUSTED: d=0.01 (2435 edges) is the sweet spot." },
-    "59": { "title": "Medium-Scale Evaluation: DELTA at N=2000", "result": "PARTIAL -- 3-layer DELTA MRR=0.0018 at N=2000 (REJECTED, catastrophic over-smoothing from 15.2M E_adj pairs). 1-layer DELTA val_MRR=0.3338 SURPASSES DistMult (0.3185) — edge-to-edge attention mechanism works at scale, depth is the bottleneck. brain_hybrid OOM at N=2000. spspmm optimization reduces edge_adj build from 3s to 0.2s." }
+    "59": { "title": "Medium-Scale Evaluation: DELTA at N=2000", "result": "PARTIAL -- 3-layer DELTA MRR=0.0018 at N=2000 (REJECTED, catastrophic over-smoothing from 15.2M E_adj pairs). 1-layer DELTA val_MRR=0.3338 SURPASSES DistMult (0.3185) — edge-to-edge attention mechanism works at scale, depth is the bottleneck. brain_hybrid OOM at N=2000. spspmm optimization reduces edge_adj build from 3s to 0.2s." },
+    "62": { "title": "Scaling DELTA to N=5000 — Test MRR Generalization", "result": "REJECTED -- DELTA 1L test MRR=0.2404, DM test MRR=0.2244, gap=+0.016 (below 0.04 threshold). Sanity check PASSED (subsampled E_adj MRR=0.3371 vs ref 0.3088). Scaling curve non-monotonic: N=500 gap=+0.004, N=2000 gap=+0.076, N=5000 gap=+0.016. N=2000 spike was DM overfitting pathology. Subsampling at 23.8% is a major confound." }
 
   },
 

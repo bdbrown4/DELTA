@@ -1,6 +1,6 @@
 # Key Findings
 
-42 key findings from 61 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
+43 key findings from 62 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
 
 ---
 
@@ -155,6 +155,9 @@ Phase 60: Per-layer learnable gates (sigmoid(α) × layer_output + (1−sigmoid(
 
 ### 42. DELTA provides genuine but modest inductive bias over DistMult at N=2000 (CONFIRMED)
 Phase 61 + 61b: DistMult at N=2000 with 2000 epochs (10× Phase 61) peaks at val MRR=0.3185 at ep100 (12s wall time), then overfits catastrophically to ~0.23 by ep300 and never recovers. DELTA peaks at val MRR=0.3357 — a genuine +0.017 advantage. More importantly, DELTA resists overfitting: final-epoch test MRR=0.3088 vs DM's 0.2329, because GNN parameter sharing acts as implicit regularization. The original Phase 61 +0.079 test gap was inflated by under-training DM (caught mid-climb at ep200), but the core advantage is real: DELTA achieves higher peak quality AND sustains it. Neither advantage justifies the 98× wall-clock cost, but both reflect real inductive bias, not compute artifacts.
+
+### 43. DELTA's test MRR advantage over DistMult is non-monotonic — N=2000 gap was inflated
+Phase 62: Scaling to N=5000 (4977 entities, 152K train triples) shows DELTA test MRR=**0.2404** vs DistMult **0.2244**, a gap of only **+0.016** — below the hypothesized ≥0.04 threshold. The full scaling curve is non-monotonic: N=500 gap=+0.004, N=2000 gap=+0.076, N=5000 gap=+0.016. The N=2000 spike was driven by DistMult's catastrophic val-test gap (0.3185→0.2329, −27%) which does not recur at N=5000 (0.2222→0.2244, ≈0%). Edge adjacency subsampling (23.8% retention at N=5000 vs 98.6% at N=2000) is a confound that may suppress DELTA's structural advantage.
 
 ---
 

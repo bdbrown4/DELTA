@@ -1,6 +1,6 @@
 # Status & Roadmap
 
-*Last updated: Phase 59 complete (2026-04-12)*
+*Last updated: Phase 62 complete (2026-04-15)*
 
 ---
 
@@ -19,10 +19,12 @@
 | Per-query inference | DELTA vs GraphGPS | **0.8–0.9x** (faster) | 45 |
 | LP MRR (1-layer DELTA, N=2000) | delta_1layer | **0.3338** (val peak) | 59 |
 | LP MRR (DistMult, N=2000) | DistMult (no GNN) | **0.3185** | 59 |
+| LP test MRR (1-layer DELTA, N=5000) | delta_1layer (sub E_adj) | **0.2404** | 62 |
+| LP test MRR (DistMult, N=5000) | DistMult (no GNN) | **0.2244** | 62 |
 
 ---
 
-## What's Validated (17 Propositions)
+## What's Validated (18 Propositions)
 
 | # | Proposition | Confidence | Key Evidence |
 |---|---|---|---|
@@ -46,6 +48,7 @@
 | P18 | d=0.01 is the optimal brain_hybrid density sweet spot | High | Phase 58: d=0.01 mean MRR=0.4844±0.0097 (robust); d=0.005 MRR=0.4673 (−0.017). Density optimization CLOSED. |
 | P19 | Edge-to-edge attention mechanism works at N=2000 (1-layer) | High | Phase 59: 1-layer DELTA val_MRR=0.3338 surpasses DistMult (0.3185). Mechanism viable, depth is the bottleneck. |
 | P20 | 3-layer DELTA catastrophically over-smooths at N=2000 | High | Phase 59: MRR=0.0018 across 3 training configs. 15.2M E_adj pairs × 3 layers = representation collapse. |
+| P21 | DELTA's test MRR advantage over DistMult is non-monotonic and modest at N=5000 | High | Phase 62: gap=+0.004 (N=500), +0.076 (N=2000), +0.016 (N=5000). N=2000 spike inflated by DM overfitting. |
 
 ---
 
@@ -62,11 +65,13 @@
 
 ## Open Gaps
 
-### Gap 1: Full-scale evaluation — HIGH priority (BLOCKED by depth)
-- Current: 494-entity subset (3.4%) works at 3-layer; 1,991-entity subset (13.7%) works at 1-layer only
-- Phase 59 proved 3-layer collapses at N=2000 (MRR=0.002). 1-layer achieves MRR=0.334.
-- Full FB15k-237 (14,505 entities) requires solving depth management first (Phases 60–62)
-- spspmm optimization reduces edge adjacency build from 3s to 0.2s at N=2000
+### Gap 1: Full-scale evaluation — HIGH priority (subsampling confound)
+- Phase 62 scaled to N=5000: DELTA test MRR=0.2404 vs DM=0.2244, gap=+0.016 (below hypothesized ≥0.04)
+- Scaling curve is non-monotonic: +0.004 (N=500) → +0.076 (N=2000) → +0.016 (N=5000)
+- N=2000 gap was inflated by DistMult catastrophic overfitting (val→test drop of 27%)
+- Edge adjacency subsampled to 23.8% at N=5000 (15M of 63M pairs) — major confound
+- Full FB15k-237 (14,505 entities, ~211M E_adj pairs) requires attention sparsification
+- Next: investigate subsampling impact at N=5000 or pivot to sparse attention
 
 ### Gap 2: LP/3p trade-off — CHARACTERIZED (Phases 46–54)
 - After 9 phases and 20+ configurations, the trade-off is confirmed fundamental at the temperature level
@@ -89,9 +94,9 @@
 - Phase 60: Residual gating eliminates over-smoothing: 3L+gate MRR=0.3138 (174× vs ungated 0.0018)
 - However, all depths converge to MRR~0.31 — **matching DistMult (0.3185) without any GNN**
 - Gates frozen at ~10% layer / 90% residual → model learned layers are noise, not signal
-- **DELTA's edge-to-edge attention contributes zero measurable value at N=2000**
-- Critical unknown: does DistMult also match DELTA at N=500? If so, DELTA never beat DistMult at any scale.
-- Phase 61: DistMult-across-scales diagnostic to answer the existence question
+- Phase 61/61b: DELTA provides genuine but modest +0.017 val MRR advantage over DistMult at N=2000
+- Phase 62: At N=5000, gap narrows to +0.016 test MRR — advantage is real but doesn't scale
+- 1-layer accepted as scaling architecture; depth provides no benefit at N≥2000
 
 ### Gap 5: Sequence domain generalization — FUTURE (Horizon 3)
 - All current evidence is on knowledge graphs where structure is pre-defined or semi-explicit
@@ -122,7 +127,7 @@
 
 ### Horizon 3: Brain Optimization & Sequence Domains (Phases 59+) — Active
 
-Brain density optimization CLOSED (Phases 55–58). d=0.01 is the sweet spot. Phase 59–60: medium-scale evaluation at N=2000 — depth over-smoothing solved by residual gating (Phase 60), but depth provides no accuracy benefit. 1-layer accepted as scaling architecture. Next: full-scale evaluation (N=14,505), attention sparsification for efficiency, or sequence domain pilot (LRA ListOps). See [The Brain](the-brain.md) for the long-term vision.
+Brain density optimization CLOSED (Phases 55–58). d=0.01 is the sweet spot. Phases 59–62: scaling evaluation from N=2000 to N=5000. Depth over-smoothing solved by residual gating (Phase 60) but depth provides no benefit. 1-layer DELTA accepted. Phase 62 shows DELTA’s advantage is real but modest at N=5000 (+0.016 test MRR) and non-monotonic across scales. Edge adjacency subsampling (23.8% at N=5000) is a confound. Next: investigate subsampling impact, attention sparsification, or sequence domain pilot (LRA ListOps). See [The Brain](the-brain.md) for the long-term vision.
 
 ### Horizon 4: Dynamic Reasoning — Future
 

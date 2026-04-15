@@ -600,9 +600,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#whats-validated-17-propositions" class="md-nav__link">
+  <a href="#whats-validated-18-propositions" class="md-nav__link">
     <span class="md-ellipsis">
-      What's Validated (17 Propositions)
+      What's Validated (18 Propositions)
     </span>
   </a>
   
@@ -628,9 +628,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#gap-1-full-scale-evaluation-high-priority-blocked-by-depth" class="md-nav__link">
+  <a href="#gap-1-full-scale-evaluation-high-priority-subsampling-confound" class="md-nav__link">
     <span class="md-ellipsis">
-      Gap 1: Full-scale evaluation — HIGH priority (BLOCKED by depth)
+      Gap 1: Full-scale evaluation — HIGH priority (subsampling confound)
     </span>
   </a>
   
@@ -940,9 +940,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#whats-validated-17-propositions" class="md-nav__link">
+  <a href="#whats-validated-18-propositions" class="md-nav__link">
     <span class="md-ellipsis">
-      What's Validated (17 Propositions)
+      What's Validated (18 Propositions)
     </span>
   </a>
   
@@ -968,9 +968,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#gap-1-full-scale-evaluation-high-priority-blocked-by-depth" class="md-nav__link">
+  <a href="#gap-1-full-scale-evaluation-high-priority-subsampling-confound" class="md-nav__link">
     <span class="md-ellipsis">
-      Gap 1: Full-scale evaluation — HIGH priority (BLOCKED by depth)
+      Gap 1: Full-scale evaluation — HIGH priority (subsampling confound)
     </span>
   </a>
   
@@ -1138,7 +1138,7 @@
 
 
 <h1 id="status-roadmap">Status &amp; Roadmap<a class="headerlink" href="#status-roadmap" title="Permanent link">&para;</a></h1>
-<p><em>Last updated: Phase 59 complete (2026-04-12)</em></p>
+<p><em>Last updated: Phase 62 complete (2026-04-15)</em></p>
 <hr />
 <h2 id="current-best-results">Current Best Results<a class="headerlink" href="#current-best-results" title="Permanent link">&para;</a></h2>
 <table>
@@ -1217,10 +1217,22 @@
 <td><strong>0.3185</strong></td>
 <td>59</td>
 </tr>
+<tr>
+<td>LP test MRR (1-layer DELTA, N=5000)</td>
+<td>delta_1layer (sub E_adj)</td>
+<td><strong>0.2404</strong></td>
+<td>62</td>
+</tr>
+<tr>
+<td>LP test MRR (DistMult, N=5000)</td>
+<td>DistMult (no GNN)</td>
+<td><strong>0.2244</strong></td>
+<td>62</td>
+</tr>
 </tbody>
 </table>
 <hr />
-<h2 id="whats-validated-17-propositions">What's Validated (17 Propositions)<a class="headerlink" href="#whats-validated-17-propositions" title="Permanent link">&para;</a></h2>
+<h2 id="whats-validated-18-propositions">What's Validated (18 Propositions)<a class="headerlink" href="#whats-validated-18-propositions" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -1351,6 +1363,12 @@
 <td>High</td>
 <td>Phase 59: MRR=0.0018 across 3 training configs. 15.2M E_adj pairs × 3 layers = representation collapse.</td>
 </tr>
+<tr>
+<td>P21</td>
+<td>DELTA's test MRR advantage over DistMult is non-monotonic and modest at N=5000</td>
+<td>High</td>
+<td>Phase 62: gap=+0.004 (N=500), +0.076 (N=2000), +0.016 (N=5000). N=2000 spike inflated by DM overfitting.</td>
+</tr>
 </tbody>
 </table>
 <hr />
@@ -1365,12 +1383,14 @@
 </ul>
 <hr />
 <h2 id="open-gaps">Open Gaps<a class="headerlink" href="#open-gaps" title="Permanent link">&para;</a></h2>
-<h3 id="gap-1-full-scale-evaluation-high-priority-blocked-by-depth">Gap 1: Full-scale evaluation — HIGH priority (BLOCKED by depth)<a class="headerlink" href="#gap-1-full-scale-evaluation-high-priority-blocked-by-depth" title="Permanent link">&para;</a></h3>
+<h3 id="gap-1-full-scale-evaluation-high-priority-subsampling-confound">Gap 1: Full-scale evaluation — HIGH priority (subsampling confound)<a class="headerlink" href="#gap-1-full-scale-evaluation-high-priority-subsampling-confound" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Current: 494-entity subset (3.4%) works at 3-layer; 1,991-entity subset (13.7%) works at 1-layer only</li>
-<li>Phase 59 proved 3-layer collapses at N=2000 (MRR=0.002). 1-layer achieves MRR=0.334.</li>
-<li>Full FB15k-237 (14,505 entities) requires solving depth management first (Phases 60–62)</li>
-<li>spspmm optimization reduces edge adjacency build from 3s to 0.2s at N=2000</li>
+<li>Phase 62 scaled to N=5000: DELTA test MRR=0.2404 vs DM=0.2244, gap=+0.016 (below hypothesized ≥0.04)</li>
+<li>Scaling curve is non-monotonic: +0.004 (N=500) → +0.076 (N=2000) → +0.016 (N=5000)</li>
+<li>N=2000 gap was inflated by DistMult catastrophic overfitting (val→test drop of 27%)</li>
+<li>Edge adjacency subsampled to 23.8% at N=5000 (15M of 63M pairs) — major confound</li>
+<li>Full FB15k-237 (14,505 entities, ~211M E_adj pairs) requires attention sparsification</li>
+<li>Next: investigate subsampling impact at N=5000 or pivot to sparse attention</li>
 </ul>
 <h3 id="gap-2-lp3p-trade-off-characterized-phases-4654">Gap 2: LP/3p trade-off — CHARACTERIZED (Phases 46–54)<a class="headerlink" href="#gap-2-lp3p-trade-off-characterized-phases-4654" title="Permanent link">&para;</a></h3>
 <ul>
@@ -1397,9 +1417,9 @@
 <li>Phase 60: Residual gating eliminates over-smoothing: 3L+gate MRR=0.3138 (174× vs ungated 0.0018)</li>
 <li>However, all depths converge to MRR~0.31 — <strong>matching DistMult (0.3185) without any GNN</strong></li>
 <li>Gates frozen at ~10% layer / 90% residual → model learned layers are noise, not signal</li>
-<li><strong>DELTA's edge-to-edge attention contributes zero measurable value at N=2000</strong></li>
-<li>Critical unknown: does DistMult also match DELTA at N=500? If so, DELTA never beat DistMult at any scale.</li>
-<li>Phase 61: DistMult-across-scales diagnostic to answer the existence question</li>
+<li>Phase 61/61b: DELTA provides genuine but modest +0.017 val MRR advantage over DistMult at N=2000</li>
+<li>Phase 62: At N=5000, gap narrows to +0.016 test MRR — advantage is real but doesn't scale</li>
+<li>1-layer accepted as scaling architecture; depth provides no benefit at N≥2000</li>
 </ul>
 <h3 id="gap-5-sequence-domain-generalization-future-horizon-3">Gap 5: Sequence domain generalization — FUTURE (Horizon 3)<a class="headerlink" href="#gap-5-sequence-domain-generalization-future-horizon-3" title="Permanent link">&para;</a></h3>
 <ul>
@@ -1487,7 +1507,7 @@
 </tbody>
 </table>
 <h3 id="horizon-3-brain-optimization-sequence-domains-phases-59-active">Horizon 3: Brain Optimization &amp; Sequence Domains (Phases 59+) — Active<a class="headerlink" href="#horizon-3-brain-optimization-sequence-domains-phases-59-active" title="Permanent link">&para;</a></h3>
-<p>Brain density optimization CLOSED (Phases 55–58). d=0.01 is the sweet spot. Phase 59–60: medium-scale evaluation at N=2000 — depth over-smoothing solved by residual gating (Phase 60), but depth provides no accuracy benefit. 1-layer accepted as scaling architecture. Next: full-scale evaluation (N=14,505), attention sparsification for efficiency, or sequence domain pilot (LRA ListOps). See <a href="../the-brain/">The Brain</a> for the long-term vision.</p>
+<p>Brain density optimization CLOSED (Phases 55–58). d=0.01 is the sweet spot. Phases 59–62: scaling evaluation from N=2000 to N=5000. Depth over-smoothing solved by residual gating (Phase 60) but depth provides no benefit. 1-layer DELTA accepted. Phase 62 shows DELTA’s advantage is real but modest at N=5000 (+0.016 test MRR) and non-monotonic across scales. Edge adjacency subsampling (23.8% at N=5000) is a confound. Next: investigate subsampling impact, attention sparsification, or sequence domain pilot (LRA ListOps). See <a href="../the-brain/">The Brain</a> for the long-term vision.</p>
 <h3 id="horizon-4-dynamic-reasoning-future">Horizon 4: Dynamic Reasoning — Future<a class="headerlink" href="#horizon-4-dynamic-reasoning-future" title="Permanent link">&para;</a></h3>
 <p>Iterative graph refinement, temporal reasoning, multi-scale construction. See <a href="../the-brain/">The Brain</a>.</p>
 <h3 id="horizon-5-the-brain">Horizon 5: The Brain<a class="headerlink" href="#horizon-5-the-brain" title="Permanent link">&para;</a></h3>

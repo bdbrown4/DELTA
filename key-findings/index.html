@@ -1019,6 +1019,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#43-deltas-test-mrr-advantage-over-distmult-is-non-monotonic-n2000-gap-was-inflated" class="md-nav__link">
+    <span class="md-ellipsis">
+      43. DELTA's test MRR advantage over DistMult is non-monotonic — N=2000 gap was inflated
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1702,6 +1711,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#43-deltas-test-mrr-advantage-over-distmult-is-non-monotonic-n2000-gap-was-inflated" class="md-nav__link">
+    <span class="md-ellipsis">
+      43. DELTA's test MRR advantage over DistMult is non-monotonic — N=2000 gap was inflated
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1726,7 +1744,7 @@
 
 
 <h1 id="key-findings">Key Findings<a class="headerlink" href="#key-findings" title="Permanent link">&para;</a></h1>
-<p>42 key findings from 61 experiment phases, organized by research stage. See <a href="../validation-phases/">Validation Phases</a> for complete result tables.</p>
+<p>43 key findings from 62 experiment phases, organized by research stage. See <a href="../validation-phases/">Validation Phases</a> for complete result tables.</p>
 <hr />
 <h2 id="core-architecture-phases-1-15">Core Architecture (Phases 1-15)<a class="headerlink" href="#core-architecture-phases-1-15" title="Permanent link">&para;</a></h2>
 <h3 id="1-edge-attention-is-deltas-strongest-signal">1. Edge attention is DELTA's strongest signal<a class="headerlink" href="#1-edge-attention-is-deltas-strongest-signal" title="Permanent link">&para;</a></h3>
@@ -1825,6 +1843,8 @@
 <p>Phase 60: Per-layer learnable gates (sigmoid(α) × layer_output + (1−sigmoid(α)) × input, init α≈0.1) completely eliminate catastrophic over-smoothing. <strong>3-layer+gate test MRR=0.3138</strong> vs ungated 0.0018 — a <strong>174× improvement</strong>. However, gates froze at ~10% layer / 90% residual — the model learned that layer output is mostly noise and should be mostly ignored. All depths converge to MRR~0.31: 2L+gate=0.3065, 3L+gate=0.3138, 1L=0.3093, <strong>which is also where DistMult (0.3185) lands</strong> when given sufficient gradient steps (~24,600). Additional depth beyond 1 layer provides no measurable benefit.</p>
 <h3 id="42-delta-provides-genuine-but-modest-inductive-bias-over-distmult-at-n2000-confirmed">42. DELTA provides genuine but modest inductive bias over DistMult at N=2000 (CONFIRMED)<a class="headerlink" href="#42-delta-provides-genuine-but-modest-inductive-bias-over-distmult-at-n2000-confirmed" title="Permanent link">&para;</a></h3>
 <p>Phase 61 + 61b: DistMult at N=2000 with 2000 epochs (10× Phase 61) peaks at val MRR=0.3185 at ep100 (12s wall time), then overfits catastrophically to ~0.23 by ep300 and never recovers. DELTA peaks at val MRR=0.3357 — a genuine +0.017 advantage. More importantly, DELTA resists overfitting: final-epoch test MRR=0.3088 vs DM's 0.2329, because GNN parameter sharing acts as implicit regularization. The original Phase 61 +0.079 test gap was inflated by under-training DM (caught mid-climb at ep200), but the core advantage is real: DELTA achieves higher peak quality AND sustains it. Neither advantage justifies the 98× wall-clock cost, but both reflect real inductive bias, not compute artifacts.</p>
+<h3 id="43-deltas-test-mrr-advantage-over-distmult-is-non-monotonic-n2000-gap-was-inflated">43. DELTA's test MRR advantage over DistMult is non-monotonic — N=2000 gap was inflated<a class="headerlink" href="#43-deltas-test-mrr-advantage-over-distmult-is-non-monotonic-n2000-gap-was-inflated" title="Permanent link">&para;</a></h3>
+<p>Phase 62: Scaling to N=5000 (4977 entities, 152K train triples) shows DELTA test MRR=<strong>0.2404</strong> vs DistMult <strong>0.2244</strong>, a gap of only <strong>+0.016</strong> — below the hypothesized ≥0.04 threshold. The full scaling curve is non-monotonic: N=500 gap=+0.004, N=2000 gap=+0.076, N=5000 gap=+0.016. The N=2000 spike was driven by DistMult's catastrophic val-test gap (0.3185→0.2329, −27%) which does not recur at N=5000 (0.2222→0.2244, ≈0%). Edge adjacency subsampling (23.8% retention at N=5000 vs 98.6% at N=2000) is a confound that may suppress DELTA's structural advantage.</p>
 <hr />
 <p><em>See <a href="../validation-phases/">Validation Phases</a> for complete result tables. See <a href="../status-and-roadmap/">Status &amp; Roadmap</a> for current priorities.</em></p>
 

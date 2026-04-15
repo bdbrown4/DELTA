@@ -1957,6 +1957,90 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#phase-61b-distmult-extended-training-at-n2000" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 61b — DistMult Extended Training at N=2000
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 61b — DistMult Extended Training at N=2000">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Result
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-62-scaling-delta-to-n5000-test-mrr-generalization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 62 — Scaling DELTA to N=5000: Test MRR Generalization
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 62 — Scaling DELTA to N=5000: Test MRR Generalization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sanity-check-subsampled-e_adj-at-n2000" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sanity Check — Subsampled E_adj at N=2000
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n5000-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      N=5000 Results
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scaling-curve-delta-vs-distmult-test-mrr-gap" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scaling Curve — DELTA vs DistMult Test MRR Gap
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hypothesis-evaluation_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hypothesis Evaluation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3519,6 +3603,90 @@
         
           <li class="md-nav__item">
   <a href="#hypothesis-evaluation_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hypothesis Evaluation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-61b-distmult-extended-training-at-n2000" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 61b — DistMult Extended Training at N=2000
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 61b — DistMult Extended Training at N=2000">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Result
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-62-scaling-delta-to-n5000-test-mrr-generalization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 62 — Scaling DELTA to N=5000: Test MRR Generalization
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 62 — Scaling DELTA to N=5000: Test MRR Generalization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sanity-check-subsampled-e_adj-at-n2000" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sanity Check — Subsampled E_adj at N=2000
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n5000-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      N=5000 Results
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scaling-curve-delta-vs-distmult-test-mrr-gap" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scaling Curve — DELTA vs DistMult Test MRR Gap
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hypothesis-evaluation_16" class="md-nav__link">
     <span class="md-ellipsis">
       Hypothesis Evaluation
     </span>
@@ -8586,6 +8754,156 @@
 <td>3L improves over 1L at N=500</td>
 <td><strong>NOT CONFIRMED</strong></td>
 <td>Test +0.023 but peak val identical</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="phase-61b-distmult-extended-training-at-n2000">Phase 61b — DistMult Extended Training at N=2000<a class="headerlink" href="#phase-61b-distmult-extended-training-at-n2000" title="Permanent link">&para;</a></h2>
+<p><strong>Goal:</strong> Give DistMult 2000 epochs (10× Phase 61) at N=2000 to determine whether DELTA's +0.079 test MRR advantage is genuine or an artifact of under-training DistMult.</p>
+<h3 id="key-result">Key Result<a class="headerlink" href="#key-result" title="Permanent link">&para;</a></h3>
+<p>DistMult with 2000 epochs peaks at val MRR=0.3185 (ep100, 12s wall time) then overfits catastrophically to ~0.23 by ep300 and never recovers. Test@best_val MRR=0.2329. DELTA's test MRR=0.3088 (+0.076 gap) reflects genuine generalization advantage — GNN parameter sharing acts as implicit regularization.</p>
+<hr />
+<h2 id="phase-62-scaling-delta-to-n5000-test-mrr-generalization">Phase 62 — Scaling DELTA to N=5000: Test MRR Generalization<a class="headerlink" href="#phase-62-scaling-delta-to-n5000-test-mrr-generalization" title="Permanent link">&para;</a></h2>
+<p><strong>Goal:</strong> Test whether DELTA's generalization advantage over DistMult (confirmed at N=2000, +0.076 test MRR gap) persists at N=5000.</p>
+<h3 id="configuration_7">Configuration<a class="headerlink" href="#configuration_7" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Dataset: FB15k-237 at N=5000 (4977 entities, 225 relations, 152,809 train / 8,788 val / 10,156 test)</li>
+<li>d_node=64, d_edge=32, num_heads=4, seed=42, Adam, bs=4096, lr=0.003</li>
+<li>DistMult: 2000 epochs, eval every 100</li>
+<li>DELTA 1L: 200 epochs, eval every 25</li>
+<li>Edge adjacency: 63,001,372 full pairs → subsampled to 15,000,000 (23.8%)</li>
+<li>Hardware: RTX PRO 6000 Blackwell 98GB (RunPod), 29,202s (8.1hr)</li>
+</ul>
+<h3 id="sanity-check-subsampled-e_adj-at-n2000">Sanity Check — Subsampled E_adj at N=2000<a class="headerlink" href="#sanity-check-subsampled-e_adj-at-n2000" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th style="text-align: right;">peak_val</th>
+<th style="text-align: right;">best_ep</th>
+<th style="text-align: right;">test_MRR</th>
+<th style="text-align: right;">test_H@1</th>
+<th style="text-align: right;">test_H@10</th>
+<th style="text-align: right;">Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1L (sub E_adj)</td>
+<td style="text-align: right;">0.3362</td>
+<td style="text-align: right;">175</td>
+<td style="text-align: right;"><strong>0.3371</strong></td>
+<td style="text-align: right;">0.2122</td>
+<td style="text-align: right;">0.5996</td>
+<td style="text-align: right;">5726s</td>
+</tr>
+<tr>
+<td>1L (full, P61 ref)</td>
+<td style="text-align: right;">0.3357</td>
+<td style="text-align: right;">175</td>
+<td style="text-align: right;">0.3088</td>
+<td style="text-align: right;">0.1787</td>
+<td style="text-align: right;">0.5963</td>
+<td style="text-align: right;">5896s</td>
+</tr>
+</tbody>
+</table>
+<p>Delta: +0.0283. <strong>PASSED</strong> asymmetric gate (sub ≥ ref − 0.01).</p>
+<h3 id="n5000-results">N=5000 Results<a class="headerlink" href="#n5000-results" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th style="text-align: right;">N</th>
+<th style="text-align: right;">trip/ent</th>
+<th style="text-align: right;">peak_val</th>
+<th style="text-align: right;">best_ep</th>
+<th style="text-align: right;">test_MRR</th>
+<th style="text-align: right;">test_H@1</th>
+<th style="text-align: right;">test_H@10</th>
+<th style="text-align: right;">Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DM_N=5000</td>
+<td style="text-align: right;">5000</td>
+<td style="text-align: right;">30.7</td>
+<td style="text-align: right;">0.2222</td>
+<td style="text-align: right;">200</td>
+<td style="text-align: right;"><strong>0.2244</strong></td>
+<td style="text-align: right;">0.1320</td>
+<td style="text-align: right;">0.4207</td>
+<td style="text-align: right;">1784s</td>
+</tr>
+<tr>
+<td>1L_N=5000</td>
+<td style="text-align: right;">5000</td>
+<td style="text-align: right;">30.7</td>
+<td style="text-align: right;">0.2420</td>
+<td style="text-align: right;">125</td>
+<td style="text-align: right;"><strong>0.2404</strong></td>
+<td style="text-align: right;">0.1397</td>
+<td style="text-align: right;">0.4566</td>
+<td style="text-align: right;">21688s</td>
+</tr>
+</tbody>
+</table>
+<h3 id="scaling-curve-delta-vs-distmult-test-mrr-gap">Scaling Curve — DELTA vs DistMult Test MRR Gap<a class="headerlink" href="#scaling-curve-delta-vs-distmult-test-mrr-gap" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">N</th>
+<th style="text-align: right;">DM test</th>
+<th style="text-align: right;">1L test</th>
+<th style="text-align: right;">Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">0.4778</td>
+<td style="text-align: right;">0.4818</td>
+<td style="text-align: right;">+0.004</td>
+</tr>
+<tr>
+<td style="text-align: right;">2000</td>
+<td style="text-align: right;">0.2329</td>
+<td style="text-align: right;">0.3088</td>
+<td style="text-align: right;">+0.076</td>
+</tr>
+<tr>
+<td style="text-align: right;">5000</td>
+<td style="text-align: right;">0.2244</td>
+<td style="text-align: right;">0.2404</td>
+<td style="text-align: right;">+0.016</td>
+</tr>
+</tbody>
+</table>
+<h3 id="hypothesis-evaluation_16">Hypothesis Evaluation<a class="headerlink" href="#hypothesis-evaluation_16" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Hypothesis</th>
+<th>Result</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DELTA test MRR ≥ DM + 0.04 at N=5000</td>
+<td><strong>REJECTED</strong></td>
+<td>Gap = +0.016, below 0.04 threshold</td>
+</tr>
+<tr>
+<td>Subsampled E_adj preserves DELTA performance</td>
+<td><strong>CONFIRMED</strong></td>
+<td>Sanity check: +0.028 vs reference</td>
+</tr>
+<tr>
+<td>DELTA advantage grows monotonically with scale</td>
+<td><strong>REJECTED</strong></td>
+<td>Non-monotonic: +0.004 → +0.076 → +0.016</td>
 </tr>
 </tbody>
 </table>

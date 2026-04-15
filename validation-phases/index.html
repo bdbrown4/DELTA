@@ -1897,6 +1897,66 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#phase-61-distmult-vs-delta-across-scales" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 61 — DistMult vs DELTA Across Scales
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 61 — DistMult vs DELTA Across Scales">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#summary-results-test-set_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Summary Results (Test Set)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#convergence-speed-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      Convergence Speed Comparison
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-observations_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Observations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hypothesis-evaluation_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hypothesis Evaluation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3399,6 +3459,66 @@
         
           <li class="md-nav__item">
   <a href="#hypothesis-evaluation_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hypothesis Evaluation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-61-distmult-vs-delta-across-scales" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 61 — DistMult vs DELTA Across Scales
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 61 — DistMult vs DELTA Across Scales">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#summary-results-test-set_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Summary Results (Test Set)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#convergence-speed-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      Convergence Speed Comparison
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-observations_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Observations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hypothesis-evaluation_15" class="md-nav__link">
     <span class="md-ellipsis">
       Hypothesis Evaluation
     </span>
@@ -8299,6 +8419,173 @@
 <td>Multi-layer outperforms 1-layer with gating</td>
 <td><strong>NOT CONFIRMED</strong></td>
 <td>3L=0.3138, 2L=0.3065, 1L=0.3093 — within noise.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="phase-61-distmult-vs-delta-across-scales">Phase 61 — DistMult vs DELTA Across Scales<a class="headerlink" href="#phase-61-distmult-vs-delta-across-scales" title="Permanent link">&para;</a></h2>
+<p><strong>Goal:</strong> Determine whether DELTA's edge-to-edge attention provides measurable lift over DistMult at any scale (N=500, 1000, 2000).</p>
+<h3 id="configuration_6">Configuration<a class="headerlink" href="#configuration_6" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Dataset: FB15k-237 at N=500 (494 ent, 9703 train), N=1000 (998 ent, 26761 train), N=2000 (1991 ent, 62733 train)</li>
+<li>Per-scale hyperparameters:</li>
+<li>N=500: bs=512, lr=0.001, 500 epochs (9,500 total steps)</li>
+<li>N=1000: bs=2048, lr=0.002, 300 epochs (4,200 total steps)</li>
+<li>N=2000: bs=4096, lr=0.003, 200 epochs (3,200 total steps)</li>
+<li>d_node=64, d_edge=32, num_heads=4, seed=42, Adam</li>
+<li>Hardware: RTX PRO 6000 Blackwell 98GB (RunPod)</li>
+</ul>
+<h3 id="summary-results-test-set_1">Summary Results (Test Set)<a class="headerlink" href="#summary-results-test-set_1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th style="text-align: right;">N</th>
+<th style="text-align: right;">val_MRR</th>
+<th style="text-align: right;">test_MRR</th>
+<th style="text-align: right;">test_H@1</th>
+<th style="text-align: right;">test_H@10</th>
+<th style="text-align: right;">Δ vs DM</th>
+<th style="text-align: right;">Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DistMult</td>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">0.4736</td>
+<td style="text-align: right;">0.3747</td>
+<td style="text-align: right;">0.2407</td>
+<td style="text-align: right;">0.6698</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">10s</td>
+</tr>
+<tr>
+<td>1L-DELTA</td>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">0.4892</td>
+<td style="text-align: right;">0.3583</td>
+<td style="text-align: right;">0.2150</td>
+<td style="text-align: right;">0.6636</td>
+<td style="text-align: right;">-0.0163</td>
+<td style="text-align: right;">1054s</td>
+</tr>
+<tr>
+<td>3L-DELTA</td>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">0.4882</td>
+<td style="text-align: right;">0.3816</td>
+<td style="text-align: right;">0.2418</td>
+<td style="text-align: right;">0.6862</td>
+<td style="text-align: right;">+0.0069</td>
+<td style="text-align: right;">3124s</td>
+</tr>
+<tr>
+<td>DistMult</td>
+<td style="text-align: right;">1000</td>
+<td style="text-align: right;">0.3288</td>
+<td style="text-align: right;">0.3342</td>
+<td style="text-align: right;">0.2257</td>
+<td style="text-align: right;">0.5503</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">12s</td>
+</tr>
+<tr>
+<td>1L-DELTA</td>
+<td style="text-align: right;">1000</td>
+<td style="text-align: right;">0.4024</td>
+<td style="text-align: right;">0.3604</td>
+<td style="text-align: right;">0.2159</td>
+<td style="text-align: right;">0.6613</td>
+<td style="text-align: right;">+0.0262</td>
+<td style="text-align: right;">1626s</td>
+</tr>
+<tr>
+<td>DistMult</td>
+<td style="text-align: right;">2000</td>
+<td style="text-align: right;">0.2271</td>
+<td style="text-align: right;">0.2297</td>
+<td style="text-align: right;">0.1475</td>
+<td style="text-align: right;">0.3845</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">60s</td>
+</tr>
+<tr>
+<td>1L-DELTA</td>
+<td style="text-align: right;">2000</td>
+<td style="text-align: right;">0.3357</td>
+<td style="text-align: right;">0.3088</td>
+<td style="text-align: right;">0.1787</td>
+<td style="text-align: right;">0.5963</td>
+<td style="text-align: right;">+0.0791</td>
+<td style="text-align: right;">5896s</td>
+</tr>
+</tbody>
+</table>
+<h3 id="convergence-speed-comparison">Convergence Speed Comparison<a class="headerlink" href="#convergence-speed-comparison" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">Scale</th>
+<th style="text-align: right;">DM peak val step</th>
+<th style="text-align: right;">1L peak val step</th>
+<th style="text-align: right;">1L speedup</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">7,068 (ep372)</td>
+<td style="text-align: right;">2,356 (ep124)</td>
+<td style="text-align: right;">3.0×</td>
+</tr>
+<tr>
+<td style="text-align: right;">1000</td>
+<td style="text-align: right;">4,200+ (still rising)</td>
+<td style="text-align: right;">2,072 (ep148)</td>
+<td style="text-align: right;">&gt;2.0×</td>
+</tr>
+<tr>
+<td style="text-align: right;">2000</td>
+<td style="text-align: right;">3,200+ (still rising)</td>
+<td style="text-align: right;">2,800 (ep175)</td>
+<td style="text-align: right;">&gt;1.1×</td>
+</tr>
+</tbody>
+</table>
+<h3 id="key-observations_3">Key Observations<a class="headerlink" href="#key-observations_3" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>DELTA converges 2-3× faster per gradient step</strong> — this is the primary architectural contribution.</li>
+<li><strong>At N=500 (sufficient training)</strong>, DM wins test by -0.016. Both models overfit; DM overfits less.</li>
+<li><strong>At N=1000/2000 (limited training)</strong>, DELTA wins by +0.026 and +0.079 respectively.</li>
+<li><strong>The growing advantage at larger N</strong> reflects DM's sensitivity to step count, not intrinsic DELTA superiority.</li>
+<li><strong>3L ≈ 1L at N=500</strong> — additional depth adds nothing (consistent with Phase 60).</li>
+<li><strong>DELTA is step-count invariant</strong>: reaches MRR~0.31 at N=2000 in 2,800 steps or 24,600 steps. DM needs all 24,600.</li>
+</ol>
+<h3 id="hypothesis-evaluation_15">Hypothesis Evaluation<a class="headerlink" href="#hypothesis-evaluation_15" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Hypothesis</th>
+<th>Result</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DELTA test MRR ≥ DM + 0.01 at some scale</td>
+<td><strong>CONFIRMED</strong></td>
+<td>N=1000: +0.026, N=2000: +0.079</td>
+</tr>
+<tr>
+<td>DELTA test MRR ≥ DM at N=500</td>
+<td><strong>REJECTED</strong></td>
+<td>-0.016 due to harder overfitting</td>
+</tr>
+<tr>
+<td>3L improves over 1L at N=500</td>
+<td><strong>NOT CONFIRMED</strong></td>
+<td>Test +0.023 but peak val identical</td>
 </tr>
 </tbody>
 </table>

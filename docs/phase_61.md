@@ -152,16 +152,39 @@ At ep125 (2,000 steps), 1L@2000 already reached MRR=0.3148 — matching Phase 59
 
 ## Classification
 
-**CONFIRMED** — DELTA's edge-to-edge attention provides genuine value across scales, but the nature of the value is **convergence speed** (sample efficiency), not higher asymptotic performance. 
+**UNRESOLVED** — Phase 61 demonstrates DELTA converges faster per gradient step, but this experiment has a critical uncontrolled confound that prevents any publishable conclusion.
 
-- DELTA converges 2-3× faster per gradient step than DistMult at all tested scales
-- With sufficient training budget (N=500, 9500 steps), both models converge to similar final performance — DistMult actually slightly better on test
-- With limited budget relative to graph complexity (N=1000/2000), DELTA's faster convergence gives it a clear test advantage (+0.026 to +0.079)
-- DELTA's performance is robust to step-count reduction; DistMult's is not
+### The Wall-Clock Confound
+
+At N=2000, DistMult trained for 60 seconds. DELTA trained for 5,896 seconds — **98× more wall-clock compute**. The +0.079 test MRR gap could simply reflect that DELTA got 98× more compute time, not that it has a better inductive bias.
+
+"Sample efficiency" (faster convergence per gradient step) sounds like a DELTA advantage, but flip it: **DistMult reaches MRR=0.23 in 60 seconds; DELTA reaches MRR=0.31 in 5,896 seconds.** Per second of compute, DistMult is vastly more efficient. Per FLOP, DistMult wins by orders of magnitude.
+
+The "convergence speed per step" framing is only meaningful if steps are the bottleneck. In practice, nobody training on FB15k-237 is compute-constrained enough for step-efficiency to matter when each DELTA step takes ~100× longer than a DistMult step.
+
+### What's Actually Known
+
+- DELTA converges in fewer gradient steps than DistMult
+- DELTA takes ~100× more wall-clock time per step
+- At equal epoch count with sufficient epochs (N=500, 500 epochs), DistMult slightly beats DELTA on test
+- At equal epoch count with insufficient epochs (N=2000, 200 epochs), DELTA wins — but DistMult was still climbing
+
+### What's NOT Known (Critical)
+
+**Does DistMult's MRR keep climbing with more epochs at N=2000?**
+
+Phase 59 reference: DM reached val MRR=0.3185 with bs=512, lr=0.001 over 200 epochs (24,600 steps). Phase 61 gave DM only 3,200 steps with bs=4096, lr=0.003 — of course it underperformed.
+
+The decisive experiment: DistMult at N=2000 for 1000–2000 epochs with the Phase 61 hyperparameters. This costs ~5 minutes of wall-clock time.
+
+- **If DM reaches ~0.30+ MRR:** Phase 61's "advantage" is a compute artifact. DELTA is slower, not better.
+- **If DM plateaus well below 0.30:** The GNN provides genuine inductive bias that DistMult cannot replicate regardless of training budget. That would be a real result.
+
+**This experiment is Phase 61b. No conclusions from Phase 61 should be cited until 61b is complete.**
 
 ### Revision of Phase 60 Conclusion
 
-Phase 60 concluded "DELTA contributes zero measurable value at N=2000" based on comparing DELTA depths (1L≈2L≈3L≈DM at 0.31 MRR). Phase 61 reveals this conclusion was **partially wrong**: at N=2000 with the same hyperparameters, 1L-DELTA reaches 0.31 in 2,800 steps while DistMult needs 24,600+ steps. The mechanism contributes **time value** (faster convergence), not **ceiling value** (higher peak).
+Phase 60 concluded "DELTA contributes zero measurable value at N=2000." Phase 61 does NOT refute this — it merely shows DELTA converges faster per step while taking 98× longer per step. Whether this represents genuine value depends on Phase 61b.
 
 ## Runtime
 

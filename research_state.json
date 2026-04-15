@@ -1,7 +1,7 @@
 {
   "last_updated": "2026-04-15",
   "last_completed_phase": 61,
-  "next_phase": 62,
+  "next_phase": "61b (DistMult convergence control at N=2000, 2000 epochs)",
   "current_phase": null,
 
   "best_results": {
@@ -214,9 +214,9 @@
     },
     {
       "phase": 61,
-      "hypothesis": "DELTA's edge-to-edge attention provides sample efficiency advantage over DistMult across scales",
-      "evidence": "1L-DELTA converges 2-3× faster per gradient step. With equal step budgets: N=500 (9500 steps) DM wins test by -0.016 (both overfit); N=1000 (4200 steps) DELTA wins by +0.026; N=2000 (3200 steps) DELTA wins by +0.079. DELTA's performance is robust to step-count reduction; DistMult's is not.",
-      "significance": "landmark"
+      "hypothesis": "DELTA converges in fewer gradient steps than DistMult (UNRESOLVED — wall-clock confound)",
+      "evidence": "1L-DELTA converges in fewer gradient steps, but each step takes ~100× longer. At N=2000: DM trained 60s, DELTA trained 5,896s. The test MRR gaps (N=1000: +0.026, N=2000: +0.079) may be compute artifacts. Phase 61b (DM at 2000 epochs) is required to determine whether DM reaches ~0.30+ with more training. If it does, DELTA's per-step advantage is irrelevant because DistMult achieves the same result in 1/100th the time.",
+      "significance": "unresolved — pending Phase 61b convergence control"
     }
   ],
 

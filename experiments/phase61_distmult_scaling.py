@@ -35,19 +35,29 @@ import torch, numpy as np, time, gc
 device = 'cuda'
 d_node, d_edge = 64, 32
 
+# Per-scale hyperparameters: batch_size scales with dataset size to ensure
+# enough gradient steps. lr scales linearly with bs (linear scaling rule).
+# N=500 gets more epochs since DistMult was still climbing at 500 in Phase 40.
+SCALE_CONFIG = {
+    500:  {'bs': 512,  'lr': 0.001, 'epochs': 500},
+    1000: {'bs': 2048, 'lr': 0.002, 'epochs': 300},
+    2000: {'bs': 4096, 'lr': 0.003, 'epochs': 200},
+}
 
-def run_distmult(data, ei, et, num_epochs=200, label=''):
+
+def run_distmult(data, ei, et, bs, lr, num_epochs, label=''):
     """Run DistMult (no GNN) baseline."""
     model = LinkPredictionModel(None, data['num_entities'],
                                  data['num_relations'], d_node, d_edge).to(device)
     params = sum(p.numel() for p in model.parameters())
-    opt = torch.optim.Adam(model.parameters(), lr=0.003)
+    opt = torch.optim.Adam(model.parameters(), lr=lr)
     t0 = time.time()
     best_val = {'MRR': 0}
+    eval_every = max(25, num_epochs // 8)
 
     for ep in range(1, num_epochs + 1):
-        loss = train_epoch(model, data['train'], ei, et, opt, device, batch_size=4096)
-        if ep % 25 == 0:
+        loss = train_epoch(model, data['train'], ei, et, opt, device, batch_size=bs)
+        if ep % eval_every == 0 or ep == num_epochs:
             val = evaluate_lp(model, data['val'], ei, et,
                               data['hr_to_tails'], data['rt_to_heads'], device)
             elapsed = time.time() - t0
@@ -64,21 +74,22 @@ def run_distmult(data, ei, et, num_epochs=200, label=''):
     return {'val_best': best_val, 'test': test, 'time': elapsed, 'params': params}
 
 
-def run_delta_1layer(data, ei, et, cached_edge_adj, num_epochs=200, label=''):
+def run_delta_1layer(data, ei, et, cached_edge_adj, bs, lr, num_epochs, label=''):
     """Run 1-layer DELTA."""
     enc = DELTAModel(d_node=d_node, d_edge=d_edge,
                       num_layers=1, num_heads=4, init_temp=1.0)
     model = LinkPredictionModel(enc, data['num_entities'],
                                  data['num_relations'], d_node, d_edge).to(device)
     params = sum(p.numel() for p in model.parameters())
-    opt = torch.optim.Adam(model.parameters(), lr=0.003)
+    opt = torch.optim.Adam(model.parameters(), lr=lr)
     t0 = time.time()
     best_val = {'MRR': 0}
+    eval_every = max(25, num_epochs // 8)
 
     for ep in range(1, num_epochs + 1):
         loss = train_epoch(model, data['train'], ei, et, opt, device,
-                           batch_size=4096, cached_edge_adj=cached_edge_adj)
-        if ep % 25 == 0:
+                           batch_size=bs, cached_edge_adj=cached_edge_adj)
+        if ep % eval_every == 0 or ep == num_epochs:
             val = evaluate_lp(model, data['val'], ei, et,
                               data['hr_to_tails'], data['rt_to_heads'], device,
                               cached_edge_adj=cached_edge_adj)
@@ -97,21 +108,22 @@ def run_delta_1layer(data, ei, et, cached_edge_adj, num_epochs=200, label=''):
     return {'val_best': best_val, 'test': test, 'time': elapsed, 'params': params}
 
 
-def run_delta_3layer(data, ei, et, cached_edge_adj, num_epochs=200, label=''):
+def run_delta_3layer(data, ei, et, cached_edge_adj, bs, lr, num_epochs, label=''):
     """Run 3-layer DELTA (standard config from Phases 40-58)."""
     enc = DELTAModel(d_node=d_node, d_edge=d_edge,
                       num_layers=3, num_heads=4, init_temp=1.0)
     model = LinkPredictionModel(enc, data['num_entities'],
                                  data['num_relations'], d_node, d_edge).to(device)
     params = sum(p.numel() for p in model.parameters())
-    opt = torch.optim.Adam(model.parameters(), lr=0.003)
+    opt = torch.optim.Adam(model.parameters(), lr=lr)
     t0 = time.time()
     best_val = {'MRR': 0}
+    eval_every = max(25, num_epochs // 8)
 
     for ep in range(1, num_epochs + 1):
         loss = train_epoch(model, data['train'], ei, et, opt, device,
-                           batch_size=4096, cached_edge_adj=cached_edge_adj)
-        if ep % 25 == 0:
+                           batch_size=bs, cached_edge_adj=cached_edge_adj)
+        if ep % eval_every == 0 or ep == num_epochs:
             val = evaluate_lp(model, data['val'], ei, et,
                               data['hr_to_tails'], data['rt_to_heads'], device,
                               cached_edge_adj=cached_edge_adj)
@@ -133,14 +145,18 @@ def run_delta_3layer(data, ei, et, cached_edge_adj, num_epochs=200, label=''):
 results = {}
 
 for N in [500, 1000, 2000]:
+    cfg = SCALE_CONFIG[N]
+    bs, lr, num_epochs = cfg['bs'], cfg['lr'], cfg['epochs']
     print(f'\n{"="*70}')
-    print(f'  SCALE N={N}')
+    print(f'  SCALE N={N}  (bs={bs}, lr={lr}, epochs={num_epochs})')
     print(f'{"="*70}')
 
     torch.manual_seed(42); np.random.seed(42)
     data = load_lp_data('fb15k-237', max_entities=N)
     print(f'  {data["num_entities"]} ent, {data["num_relations"]} rel, '
           f'{data["train"].shape[1]} train triples')
+    steps_per_epoch = (data['train'].shape[1] + bs - 1) // bs
+    print(f'  {steps_per_epoch} steps/epoch, {steps_per_epoch * num_epochs} total steps')
 
     ei, et = build_train_graph_tensors(data['train'])
 
@@ -162,20 +178,20 @@ for N in [500, 1000, 2000]:
     # DistMult
     print(f'\n  --- DistMult (no GNN) ---')
     torch.manual_seed(42); np.random.seed(42)
-    dm = run_distmult(data, ei, et, num_epochs=200, label=f'DM@{N}')
+    dm = run_distmult(data, ei, et, bs, lr, num_epochs, label=f'DM@{N}')
     results[f'distmult@{N}'] = dm
 
     # 1-layer DELTA
     print(f'\n  --- 1-layer DELTA ---')
     torch.manual_seed(42); np.random.seed(42)
-    d1 = run_delta_1layer(data, ei, et, cached_edge_adj, num_epochs=200, label=f'1L@{N}')
+    d1 = run_delta_1layer(data, ei, et, cached_edge_adj, bs, lr, num_epochs, label=f'1L@{N}')
     results[f'delta_1L@{N}'] = d1
 
     # 3-layer DELTA (only at N=500 where it historically works)
     if N == 500:
         print(f'\n  --- 3-layer DELTA ---')
         torch.manual_seed(42); np.random.seed(42)
-        d3 = run_delta_3layer(data, ei, et, cached_edge_adj, num_epochs=200, label=f'3L@{N}')
+        d3 = run_delta_3layer(data, ei, et, cached_edge_adj, bs, lr, num_epochs, label=f'3L@{N}')
         results[f'delta_3L@{N}'] = d3
 
     gc.collect()

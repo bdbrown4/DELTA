@@ -1,6 +1,6 @@
 # Status & Roadmap
 
-*Last updated: Phase 62 complete (2026-04-15)*
+*Last updated: Phase 63 complete (2026-04-19)*
 
 ---
 
@@ -49,6 +49,7 @@
 | P19 | Edge-to-edge attention mechanism works at N=2000 (1-layer) | High | Phase 59: 1-layer DELTA val_MRR=0.3338 surpasses DistMult (0.3185). Mechanism viable, depth is the bottleneck. |
 | P20 | 3-layer DELTA catastrophically over-smooths at N=2000 | High | Phase 59: MRR=0.0018 across 3 training configs. 15.2M E_adj pairs × 3 layers = representation collapse. |
 | P21 | DELTA's test MRR advantage over DistMult is non-monotonic and modest at N=5000 | High | Phase 62: gap=+0.004 (N=500), +0.076 (N=2000), +0.016 (N=5000). N=2000 spike inflated by DM overfitting. |
+| P22 | E_adj subsampling is a minor confound at N=5000, not the primary bottleneck | High | Phase 63: increasing retention from 23.8%→47.6% gains only +0.007 test MRR. Full retention (100%) gap vs DM=+0.021. Non-monotonic response: 47.6% > 100% > 71.4% > 23.8%. |
 
 ---
 
@@ -65,13 +66,15 @@
 
 ## Open Gaps
 
-### Gap 1: Full-scale evaluation — HIGH priority (subsampling confound)
+### Gap 1: Full-scale evaluation — SUBSAMPLING RESOLVED (Phase 63)
 - Phase 62 scaled to N=5000: DELTA test MRR=0.2404 vs DM=0.2244, gap=+0.016 (below hypothesized ≥0.04)
 - Scaling curve is non-monotonic: +0.004 (N=500) → +0.076 (N=2000) → +0.016 (N=5000)
 - N=2000 gap was inflated by DistMult catastrophic overfitting (val→test drop of 27%)
-- Edge adjacency subsampled to 23.8% at N=5000 (15M of 63M pairs) — major confound
+- **Phase 63 subsampling ablation:** 4 conditions from 23.8% to 100% retention. Best test MRR: B (47.6%) = 0.2471, Δ vs baseline = +0.007. Subsampling is a minor confound.
+- Even at 100% E_adj retention (D), gap vs DM is only +0.021 — still below 0.04 threshold
+- Non-monotonic test MRR: 47.6% > 100% > 71.4% > 23.8% — attention dilution at high retention causes overfitting
 - Full FB15k-237 (14,505 entities, ~211M E_adj pairs) requires attention sparsification
-- Next: investigate subsampling impact at N=5000 or pivot to sparse attention
+- Next: accept modest N=5000 advantage as genuine; investigate sparse attention or multi-head scaling
 
 ### Gap 2: LP/3p trade-off — CHARACTERIZED (Phases 46–54)
 - After 9 phases and 20+ configurations, the trade-off is confirmed fundamental at the temperature level
@@ -127,7 +130,7 @@
 
 ### Horizon 3: Brain Optimization & Sequence Domains (Phases 59+) — Active
 
-Brain density optimization CLOSED (Phases 55–58). d=0.01 is the sweet spot. Phases 59–62: scaling evaluation from N=2000 to N=5000. Depth over-smoothing solved by residual gating (Phase 60) but depth provides no benefit. 1-layer DELTA accepted. Phase 62 shows DELTA’s advantage is real but modest at N=5000 (+0.016 test MRR) and non-monotonic across scales. Edge adjacency subsampling (23.8% at N=5000) is a confound. Next: investigate subsampling impact, attention sparsification, or sequence domain pilot (LRA ListOps). See [The Brain](the-brain.md) for the long-term vision.
+Brain density optimization CLOSED (Phases 55–58). d=0.01 is the sweet spot. Phases 59–63: scaling evaluation from N=2000 to N=5000. Depth over-smoothing solved by residual gating (Phase 60) but depth provides no benefit. 1-layer DELTA accepted. Phase 62 showed DELTA's advantage is real but modest at N=5000 (+0.016 test MRR). Phase 63 subsampling ablation confirms subsampling is a minor confound (+0.007 at best), not the primary bottleneck — even at full E_adj retention, gap vs DistMult is only +0.021. Attention dilution causes non-monotonic response (47.6% > 100%). Next: sparse attention, multi-head scaling, or sequence domain pilot (LRA ListOps). See [The Brain](the-brain.md) for the long-term vision.
 
 ### Horizon 4: Dynamic Reasoning — Future
 

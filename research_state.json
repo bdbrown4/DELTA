@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-04-15",
-  "last_completed_phase": 62,
-  "next_phase": 63,
+  "last_updated": "2026-04-19",
+  "last_completed_phase": 63,
+  "next_phase": 64,
   "current_phase": null,
 
   "best_results": {
@@ -372,6 +372,12 @@
       "hypothesis": "Multi-layer DELTA with gating outperforms 1-layer at N=2000",
       "evidence": "3L+gate test MRR=0.3138, 2L+gate=0.3065, 1L=0.3093. All within noise — no clear multi-layer advantage. Depth doesn't help at N=2000 even with gating; the 1-layer model achieves highest val peak (0.3338) and best H@10 (0.5939).",
       "significance": "high"
+    },
+    {
+      "phase": 63,
+      "hypothesis": "Increasing E_adj retention from 23.8% to ≥47.6% improves DELTA 1L test MRR by ≥0.02 at N=5000",
+      "evidence": "Best improvement: B (30M, 47.6%) test MRR=0.2471 vs A (15M, 23.8%) test MRR=0.2404, Δ=+0.0067 — below 0.02 threshold. Full retention D (63M, 100%) test MRR=0.2457, gap vs DM=+0.0213 (still below 0.04). Test MRR non-monotonic: B > D > C > A. Subsampling is a minor confound, not the primary bottleneck.",
+      "significance": "high"
     }
   ],
 
@@ -508,10 +514,17 @@
     "1-layer DELTA matches DistMult on H@10 (0.594 vs 0.582) while slightly trailing test MRR (0.309 vs 0.319) — edge-to-edge attention boosts top-10 recall at N=2000, consistent with brain_hybrid H@10 pattern at N=500",
     "DELTA vs DistMult test MRR gap is NON-MONOTONIC with scale: +0.004 (N=500) → +0.076 (N=2000) → +0.016 (N=5000). The N=2000 spike was caused by DistMult's catastrophic val-test gap (0.3185→0.2329), not a genuine DELTA scaling advantage.",
     "DistMult overfitting behavior changes with scale: N=2000 val-test gap=27% (catastrophic), N=5000 val-test gap≈0% (test MRR 0.2244 matches val peak 0.2222). Larger graphs may regularize DistMult via more negative samples per batch.",
-    "Edge adjacency subsampling is a major confound at N=5000: only 23.8% retention (15M of 63M pairs) vs 98.6% at N=2000. The sanity check validated 98.6%, not 23.8%. DELTA's advantage may be suppressed by aggressive subsampling.",
+    "Edge adjacency subsampling is a major confound at N=5000: only 23.8% retention (15M of 63M pairs) vs 98.6% at N=2000. The sanity check validated 98.6%, not 23.8%. DELTA's advantage may be suppressed by aggressive subsampling. — ANSWERED Phase 63: subsampling is a MINOR confound (+0.007 test MRR at 2× retention), not the primary bottleneck. Even at 100% retention, gap vs DM is only +0.021.",
     "Triples/entity ratio is nearly flat from N=2000 (31.5) to N=5000 (30.7), so reduced DELTA advantage is likely computational (subsampling limit) not structural (graph sparsity).",
     "DELTA at N=5000 peaks at ep125 then declines — overfitting onset earlier than N=2000 (ep175), possibly due to aggressive E_adj subsampling reducing available structural signal.",
-    "DELTA 1L at N=5000 costs 107s/epoch (21,688s total) vs DistMult 0.87s/epoch (1,784s total) — 12.2× wall-clock premium for +0.016 MRR."
+    "DELTA 1L at N=5000 costs 107s/epoch (21,688s total) vs DistMult 0.87s/epoch (1,784s total) — 12.2× wall-clock premium for +0.016 MRR.",
+    "SUBSAMPLING ABLATION (Phase 63): Increasing E_adj retention from 23.8% to 47.6% improves test MRR by only +0.0067. Full retention (100%) gives +0.0053. Subsampling is a minor confound at N=5000.",
+    "E_adj retention shows NON-MONOTONIC test MRR response: B (47.6%) > D (100%) > C (71.4%) > A (23.8%). Optimal retention is ~47.6%, not 100% — attention dilution causes overfitting at high retention.",
+    "Attention dilution warmup: all conditions above 15M E_adj pairs show near-zero MRR at ep25 (~0.001), recovering by ep50. More neighbors dilute softmax attention weights, requiring ~50 epochs to learn discriminative patterns.",
+    "Val→test gap grows with E_adj retention: A=0.0016, B=0.0028, C=0.0021, D=0.0056. Full E_adj causes largest generalization gap — mild overfitting to adjacency structure.",
+    "H@10 is invariant to E_adj budget (0.4558-0.4578 across 4 conditions). All differentiation occurs in H@1 (0.1397-0.1481) and MRR. E_adj helps fine-grained ranking but not coarse recall.",
+    "Compute cost scales linearly with E_adj budget: 250s/ep (30M), 375s/ep (45M), 525s/ep (63M). Optimal test MRR at 30M costs 48% of full computation.",
+    "Even with full E_adj (100% retention), DELTA 1L gap vs DistMult at N=5000 is only +0.0213 — below Phase 62's 0.04 hypothesis. DELTA's modest advantage at N=5000 is genuine, not an artifact of subsampling."
   ],
 
   "phase_history": {
@@ -536,7 +549,8 @@
     "57": { "title": "Brain Temperature Annealing — Closing the 0.480 MRR Gap", "result": "PARTIAL -- brain_hybrid @ d=0.01 crosses 0.480 MRR: A (baseline) MRR=0.4808, B (K-anneal) MRR=0.4818. Improvement from shorter training (200 vs 300ep), not annealing. B's K-style anneal adds marginal MRR (+0.001) but drops H@10 severely (0.7613 vs 0.8076, −0.046). C (Q-anneal, edge=7.0) WORST at MRR=0.4769. Edge=7.0 hurts brain_hybrid unlike delta_full. Temperature annealing NOT recommended for brain_hybrid — baseline is optimal. Brain temp investigation CLOSED." },
     "58": { "title": "Multi-seed Brain Density Validation", "result": "PARTIAL -- d=0.01 mean MRR=0.4844±0.0097 CONFIRMS robustness (exceeds 0.480). Seed=456 achieves new brain_hybrid MRR record: 0.4956. d=0.005 mean MRR=0.4673 is BELOW d=0.01 (−0.017) — density improvement trend STOPS at 0.01. d=0.005 has higher H@10 variance (0.026 vs 0.006), sparser is less stable. Density optimization path EXHAUSTED: d=0.01 (2435 edges) is the sweet spot." },
     "59": { "title": "Medium-Scale Evaluation: DELTA at N=2000", "result": "PARTIAL -- 3-layer DELTA MRR=0.0018 at N=2000 (REJECTED, catastrophic over-smoothing from 15.2M E_adj pairs). 1-layer DELTA val_MRR=0.3338 SURPASSES DistMult (0.3185) — edge-to-edge attention mechanism works at scale, depth is the bottleneck. brain_hybrid OOM at N=2000. spspmm optimization reduces edge_adj build from 3s to 0.2s." },
-    "62": { "title": "Scaling DELTA to N=5000 — Test MRR Generalization", "result": "REJECTED -- DELTA 1L test MRR=0.2404, DM test MRR=0.2244, gap=+0.016 (below 0.04 threshold). Sanity check PASSED (subsampled E_adj MRR=0.3371 vs ref 0.3088). Scaling curve non-monotonic: N=500 gap=+0.004, N=2000 gap=+0.076, N=5000 gap=+0.016. N=2000 spike was DM overfitting pathology. Subsampling at 23.8% is a major confound." }
+    "62": { "title": "Scaling DELTA to N=5000 — Test MRR Generalization", "result": "REJECTED -- DELTA 1L test MRR=0.2404, DM test MRR=0.2244, gap=+0.016 (below 0.04 threshold). Sanity check PASSED (subsampled E_adj MRR=0.3371 vs ref 0.3088). Scaling curve non-monotonic: N=500 gap=+0.004, N=2000 gap=+0.076, N=5000 gap=+0.016. N=2000 spike was DM overfitting pathology. Subsampling at 23.8% is a major confound." },
+    "63": { "title": "Edge Adjacency Subsampling Ablation at N=5000", "result": "PARTIAL -- Best improvement: B (30M, 47.6%) test MRR=0.2471 vs A (15M, 23.8%)=0.2404, Δ=+0.0067 (below 0.02 threshold). Full retention D (63M, 100%) test MRR=0.2457, gap vs DM=+0.0213. Non-monotonic test MRR: B > D > C > A. Attention dilution causes near-zero MRR at ep25 for all conditions above 15M. H@10 invariant to E_adj budget. Subsampling is a minor confound, not the primary bottleneck. Total compute: 48.0hr on RTX PRO 6000 Blackwell." }
 
   },
 

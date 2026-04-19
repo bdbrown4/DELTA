@@ -159,6 +159,9 @@ Phase 61 + 61b: DistMult at N=2000 with 2000 epochs (10× Phase 61) peaks at val
 ### 43. DELTA's test MRR advantage over DistMult is non-monotonic — N=2000 gap was inflated
 Phase 62: Scaling to N=5000 (4977 entities, 152K train triples) shows DELTA test MRR=**0.2404** vs DistMult **0.2244**, a gap of only **+0.016** — below the hypothesized ≥0.04 threshold. The full scaling curve is non-monotonic: N=500 gap=+0.004, N=2000 gap=+0.076, N=5000 gap=+0.016. The N=2000 spike was driven by DistMult's catastrophic val-test gap (0.3185→0.2329, −27%) which does not recur at N=5000 (0.2222→0.2244, ≈0%). Edge adjacency subsampling (23.8% retention at N=5000 vs 98.6% at N=2000) is a confound that may suppress DELTA's structural advantage.
 
+### 44. Edge adjacency subsampling is a minor confound — attention dilution is the real bottleneck
+Phase 63: Subsampling ablation at N=5000 tested 4 E_adj retention levels (23.8%, 47.6%, 71.4%, 100%). Best test MRR: B (47.6%) = **0.2471** (+0.007 over 23.8% baseline). Full retention D (100%) test MRR = 0.2457, gap vs DM = **+0.021**. Test MRR is non-monotonic: 47.6% > 100% > 71.4% > 23.8%, revealing a tradeoff between information richness and attention dilution. Val→test gap grows with retention (A=0.002, D=0.006), confirming mild overfitting at high retention. H@10 is invariant to E_adj budget (0.456–0.458). All conditions peak at ep125. The near-zero MRR at ep25 for all conditions above 15M pairs (~0.001 vs 0.169 at 15M) demonstrates attention dilution: more E_adj neighbors dilute the softmax, requiring ~50 epochs to learn discriminative patterns. **Subsampling accounts for only ~0.007 of the "missing" gap — DELTA's modest advantage at N=5000 is genuine, not an artifact.**
+
 ---
 
 *See [Validation Phases](validation-phases.md) for complete result tables. See [Status & Roadmap](status-and-roadmap.md) for current priorities.*

@@ -1534,3 +1534,51 @@ Delta: +0.0283. **PASSED** asymmetric gate (sub ≥ ref − 0.01).
 | DELTA test MRR ≥ DM + 0.04 at N=5000 | **REJECTED** | Gap = +0.016, below 0.04 threshold |
 | Subsampled E_adj preserves DELTA performance | **CONFIRMED** | Sanity check: +0.028 vs reference |
 | DELTA advantage grows monotonically with scale | **REJECTED** | Non-monotonic: +0.004 → +0.076 → +0.016 |
+
+## Phase 63 — Edge Adjacency Subsampling Ablation at N=5000
+
+**Goal:** Quantify the impact of edge adjacency subsampling on DELTA's performance at N=5000. Phase 62 used only 23.8% of the full E_adj (15M of 63M pairs) — three independent analyses identified this as a potential confound.
+
+### Configuration
+- Dataset: FB15k-237 at N=5000 (4977 entities, 225 relations)
+- Model: DELTA 1-layer, 4 heads, d_node=64, d_edge=32, init_temp=1.0
+- Epochs: 150 max, eval every 25, early stopping PATIENCE=2
+- bs=4096, lr=0.003, Adam, seed=42
+- Full E_adj: 63,001,372 pairs (built in 0.4s via spspmm)
+- Hardware: RTX PRO 6000 Blackwell 98GB (RunPod), 48.0hr total
+
+### Conditions
+
+| Condition | E_adj Budget | Retention | Source |
+|-----------|-------------|-----------|--------|
+| A (baseline) | 15M | 23.8% | Phase 62 (reused) |
+| B | 30M | 47.6% | New |
+| C | 45M | 71.4% | New |
+| D | 63M | 100.0% | New |
+
+### Results
+
+| Condition | Budget | Retention | peak_val | best_ep | test_MRR | test_H@1 | test_H@10 | gap_vs_DM | Time |
+|-----------|--------|-----------|--------:|--------:|---------:|---------:|----------:|----------:|-----:|
+| A (P62) | 15M | 23.8% | 0.2420 | 125 | 0.2404 | 0.1397 | 0.4566 | +0.0160 | 21688s |
+| **B** | **30M** | **47.6%** | 0.2499 | 125 | **0.2471** | **0.1481** | 0.4562 | **+0.0227** | 37653s |
+| C | 45M | 71.4% | 0.2460 | 125 | 0.2439 | 0.1446 | 0.4578 | +0.0195 | 56365s |
+| D | 63M | 100.0% | **0.2513** | 125 | 0.2457 | 0.1459 | 0.4558 | +0.0213 | 78872s |
+
+DistMult baseline: test_MRR=0.2244 (from Phase 62)
+
+### Key Observations
+
+1. **Non-monotonic test MRR:** B (47.6%) > D (100%) > C (71.4%) > A (23.8%). Optimal retention is ~47.6%, not full retention.
+2. **Val→test gap grows with retention:** A=0.0016, B=0.0028, C=0.0021, D=**0.0056**. Full E_adj causes mild overfitting.
+3. **H@10 invariant to E_adj budget:** 0.4558–0.4578 across all conditions. Differentiation occurs only in H@1 and MRR.
+4. **Attention dilution warmup:** B/C/D show near-zero MRR at ep25 (~0.001 vs A's 0.169). More neighbors dilute softmax weights, requiring ~50 epochs to recover.
+5. **All conditions peak at ep125.** Training duration is invariant to E_adj budget.
+
+### Hypothesis Evaluation
+
+| Hypothesis | Result | Evidence |
+|-----------|--------|----------|
+| E_adj retention ≥47.6% improves test MRR by ≥0.02 | **PARTIAL** | Best Δ = +0.0067 (B vs A), below 0.02 threshold |
+| Full E_adj closes the gap vs DistMult to ≥0.04 | **No** | D gap = +0.0213, still below 0.04 |
+| Subsampling was the primary Phase 62 confound | **No** | Subsampling accounts for only ~0.007 of the "missing" gap |

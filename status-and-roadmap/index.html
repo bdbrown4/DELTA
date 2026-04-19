@@ -628,9 +628,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#gap-1-full-scale-evaluation-high-priority-subsampling-confound" class="md-nav__link">
+  <a href="#gap-1-full-scale-evaluation-subsampling-resolved-phase-63" class="md-nav__link">
     <span class="md-ellipsis">
-      Gap 1: Full-scale evaluation — HIGH priority (subsampling confound)
+      Gap 1: Full-scale evaluation — SUBSAMPLING RESOLVED (Phase 63)
     </span>
   </a>
   
@@ -968,9 +968,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#gap-1-full-scale-evaluation-high-priority-subsampling-confound" class="md-nav__link">
+  <a href="#gap-1-full-scale-evaluation-subsampling-resolved-phase-63" class="md-nav__link">
     <span class="md-ellipsis">
-      Gap 1: Full-scale evaluation — HIGH priority (subsampling confound)
+      Gap 1: Full-scale evaluation — SUBSAMPLING RESOLVED (Phase 63)
     </span>
   </a>
   
@@ -1138,7 +1138,7 @@
 
 
 <h1 id="status-roadmap">Status &amp; Roadmap<a class="headerlink" href="#status-roadmap" title="Permanent link">&para;</a></h1>
-<p><em>Last updated: Phase 62 complete (2026-04-15)</em></p>
+<p><em>Last updated: Phase 63 complete (2026-04-19)</em></p>
 <hr />
 <h2 id="current-best-results">Current Best Results<a class="headerlink" href="#current-best-results" title="Permanent link">&para;</a></h2>
 <table>
@@ -1369,6 +1369,12 @@
 <td>High</td>
 <td>Phase 62: gap=+0.004 (N=500), +0.076 (N=2000), +0.016 (N=5000). N=2000 spike inflated by DM overfitting.</td>
 </tr>
+<tr>
+<td>P22</td>
+<td>E_adj subsampling is a minor confound at N=5000, not the primary bottleneck</td>
+<td>High</td>
+<td>Phase 63: increasing retention from 23.8%→47.6% gains only +0.007 test MRR. Full retention (100%) gap vs DM=+0.021. Non-monotonic response: 47.6% &gt; 100% &gt; 71.4% &gt; 23.8%.</td>
+</tr>
 </tbody>
 </table>
 <hr />
@@ -1383,14 +1389,16 @@
 </ul>
 <hr />
 <h2 id="open-gaps">Open Gaps<a class="headerlink" href="#open-gaps" title="Permanent link">&para;</a></h2>
-<h3 id="gap-1-full-scale-evaluation-high-priority-subsampling-confound">Gap 1: Full-scale evaluation — HIGH priority (subsampling confound)<a class="headerlink" href="#gap-1-full-scale-evaluation-high-priority-subsampling-confound" title="Permanent link">&para;</a></h3>
+<h3 id="gap-1-full-scale-evaluation-subsampling-resolved-phase-63">Gap 1: Full-scale evaluation — SUBSAMPLING RESOLVED (Phase 63)<a class="headerlink" href="#gap-1-full-scale-evaluation-subsampling-resolved-phase-63" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Phase 62 scaled to N=5000: DELTA test MRR=0.2404 vs DM=0.2244, gap=+0.016 (below hypothesized ≥0.04)</li>
 <li>Scaling curve is non-monotonic: +0.004 (N=500) → +0.076 (N=2000) → +0.016 (N=5000)</li>
 <li>N=2000 gap was inflated by DistMult catastrophic overfitting (val→test drop of 27%)</li>
-<li>Edge adjacency subsampled to 23.8% at N=5000 (15M of 63M pairs) — major confound</li>
+<li><strong>Phase 63 subsampling ablation:</strong> 4 conditions from 23.8% to 100% retention. Best test MRR: B (47.6%) = 0.2471, Δ vs baseline = +0.007. Subsampling is a minor confound.</li>
+<li>Even at 100% E_adj retention (D), gap vs DM is only +0.021 — still below 0.04 threshold</li>
+<li>Non-monotonic test MRR: 47.6% &gt; 100% &gt; 71.4% &gt; 23.8% — attention dilution at high retention causes overfitting</li>
 <li>Full FB15k-237 (14,505 entities, ~211M E_adj pairs) requires attention sparsification</li>
-<li>Next: investigate subsampling impact at N=5000 or pivot to sparse attention</li>
+<li>Next: accept modest N=5000 advantage as genuine; investigate sparse attention or multi-head scaling</li>
 </ul>
 <h3 id="gap-2-lp3p-trade-off-characterized-phases-4654">Gap 2: LP/3p trade-off — CHARACTERIZED (Phases 46–54)<a class="headerlink" href="#gap-2-lp3p-trade-off-characterized-phases-4654" title="Permanent link">&para;</a></h3>
 <ul>
@@ -1507,7 +1515,7 @@
 </tbody>
 </table>
 <h3 id="horizon-3-brain-optimization-sequence-domains-phases-59-active">Horizon 3: Brain Optimization &amp; Sequence Domains (Phases 59+) — Active<a class="headerlink" href="#horizon-3-brain-optimization-sequence-domains-phases-59-active" title="Permanent link">&para;</a></h3>
-<p>Brain density optimization CLOSED (Phases 55–58). d=0.01 is the sweet spot. Phases 59–62: scaling evaluation from N=2000 to N=5000. Depth over-smoothing solved by residual gating (Phase 60) but depth provides no benefit. 1-layer DELTA accepted. Phase 62 shows DELTA’s advantage is real but modest at N=5000 (+0.016 test MRR) and non-monotonic across scales. Edge adjacency subsampling (23.8% at N=5000) is a confound. Next: investigate subsampling impact, attention sparsification, or sequence domain pilot (LRA ListOps). See <a href="../the-brain/">The Brain</a> for the long-term vision.</p>
+<p>Brain density optimization CLOSED (Phases 55–58). d=0.01 is the sweet spot. Phases 59–63: scaling evaluation from N=2000 to N=5000. Depth over-smoothing solved by residual gating (Phase 60) but depth provides no benefit. 1-layer DELTA accepted. Phase 62 showed DELTA's advantage is real but modest at N=5000 (+0.016 test MRR). Phase 63 subsampling ablation confirms subsampling is a minor confound (+0.007 at best), not the primary bottleneck — even at full E_adj retention, gap vs DistMult is only +0.021. Attention dilution causes non-monotonic response (47.6% &gt; 100%). Next: sparse attention, multi-head scaling, or sequence domain pilot (LRA ListOps). See <a href="../the-brain/">The Brain</a> for the long-term vision.</p>
 <h3 id="horizon-4-dynamic-reasoning-future">Horizon 4: Dynamic Reasoning — Future<a class="headerlink" href="#horizon-4-dynamic-reasoning-future" title="Permanent link">&para;</a></h3>
 <p>Iterative graph refinement, temporal reasoning, multi-scale construction. See <a href="../the-brain/">The Brain</a>.</p>
 <h3 id="horizon-5-the-brain">Horizon 5: The Brain<a class="headerlink" href="#horizon-5-the-brain" title="Permanent link">&para;</a></h3>

@@ -2041,6 +2041,66 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#phase-63-edge-adjacency-subsampling-ablation-at-n5000" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 63 — Edge Adjacency Subsampling Ablation at N=5000
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 63 — Edge Adjacency Subsampling Ablation at N=5000">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conditions_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conditions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#results_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Results
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-observations_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Observations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hypothesis-evaluation_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hypothesis Evaluation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3687,6 +3747,66 @@
         
           <li class="md-nav__item">
   <a href="#hypothesis-evaluation_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hypothesis Evaluation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-63-edge-adjacency-subsampling-ablation-at-n5000" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 63 — Edge Adjacency Subsampling Ablation at N=5000
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 63 — Edge Adjacency Subsampling Ablation at N=5000">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conditions_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conditions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#results_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Results
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-observations_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Observations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hypothesis-evaluation_17" class="md-nav__link">
     <span class="md-ellipsis">
       Hypothesis Evaluation
     </span>
@@ -8904,6 +9024,157 @@
 <td>DELTA advantage grows monotonically with scale</td>
 <td><strong>REJECTED</strong></td>
 <td>Non-monotonic: +0.004 → +0.076 → +0.016</td>
+</tr>
+</tbody>
+</table>
+<h2 id="phase-63-edge-adjacency-subsampling-ablation-at-n5000">Phase 63 — Edge Adjacency Subsampling Ablation at N=5000<a class="headerlink" href="#phase-63-edge-adjacency-subsampling-ablation-at-n5000" title="Permanent link">&para;</a></h2>
+<p><strong>Goal:</strong> Quantify the impact of edge adjacency subsampling on DELTA's performance at N=5000. Phase 62 used only 23.8% of the full E_adj (15M of 63M pairs) — three independent analyses identified this as a potential confound.</p>
+<h3 id="configuration_8">Configuration<a class="headerlink" href="#configuration_8" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Dataset: FB15k-237 at N=5000 (4977 entities, 225 relations)</li>
+<li>Model: DELTA 1-layer, 4 heads, d_node=64, d_edge=32, init_temp=1.0</li>
+<li>Epochs: 150 max, eval every 25, early stopping PATIENCE=2</li>
+<li>bs=4096, lr=0.003, Adam, seed=42</li>
+<li>Full E_adj: 63,001,372 pairs (built in 0.4s via spspmm)</li>
+<li>Hardware: RTX PRO 6000 Blackwell 98GB (RunPod), 48.0hr total</li>
+</ul>
+<h3 id="conditions_1">Conditions<a class="headerlink" href="#conditions_1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>E_adj Budget</th>
+<th>Retention</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A (baseline)</td>
+<td>15M</td>
+<td>23.8%</td>
+<td>Phase 62 (reused)</td>
+</tr>
+<tr>
+<td>B</td>
+<td>30M</td>
+<td>47.6%</td>
+<td>New</td>
+</tr>
+<tr>
+<td>C</td>
+<td>45M</td>
+<td>71.4%</td>
+<td>New</td>
+</tr>
+<tr>
+<td>D</td>
+<td>63M</td>
+<td>100.0%</td>
+<td>New</td>
+</tr>
+</tbody>
+</table>
+<h3 id="results_3">Results<a class="headerlink" href="#results_3" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Budget</th>
+<th>Retention</th>
+<th style="text-align: right;">peak_val</th>
+<th style="text-align: right;">best_ep</th>
+<th style="text-align: right;">test_MRR</th>
+<th style="text-align: right;">test_H@1</th>
+<th style="text-align: right;">test_H@10</th>
+<th style="text-align: right;">gap_vs_DM</th>
+<th style="text-align: right;">Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A (P62)</td>
+<td>15M</td>
+<td>23.8%</td>
+<td style="text-align: right;">0.2420</td>
+<td style="text-align: right;">125</td>
+<td style="text-align: right;">0.2404</td>
+<td style="text-align: right;">0.1397</td>
+<td style="text-align: right;">0.4566</td>
+<td style="text-align: right;">+0.0160</td>
+<td style="text-align: right;">21688s</td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td><strong>30M</strong></td>
+<td><strong>47.6%</strong></td>
+<td style="text-align: right;">0.2499</td>
+<td style="text-align: right;">125</td>
+<td style="text-align: right;"><strong>0.2471</strong></td>
+<td style="text-align: right;"><strong>0.1481</strong></td>
+<td style="text-align: right;">0.4562</td>
+<td style="text-align: right;"><strong>+0.0227</strong></td>
+<td style="text-align: right;">37653s</td>
+</tr>
+<tr>
+<td>C</td>
+<td>45M</td>
+<td>71.4%</td>
+<td style="text-align: right;">0.2460</td>
+<td style="text-align: right;">125</td>
+<td style="text-align: right;">0.2439</td>
+<td style="text-align: right;">0.1446</td>
+<td style="text-align: right;">0.4578</td>
+<td style="text-align: right;">+0.0195</td>
+<td style="text-align: right;">56365s</td>
+</tr>
+<tr>
+<td>D</td>
+<td>63M</td>
+<td>100.0%</td>
+<td style="text-align: right;"><strong>0.2513</strong></td>
+<td style="text-align: right;">125</td>
+<td style="text-align: right;">0.2457</td>
+<td style="text-align: right;">0.1459</td>
+<td style="text-align: right;">0.4558</td>
+<td style="text-align: right;">+0.0213</td>
+<td style="text-align: right;">78872s</td>
+</tr>
+</tbody>
+</table>
+<p>DistMult baseline: test_MRR=0.2244 (from Phase 62)</p>
+<h3 id="key-observations_4">Key Observations<a class="headerlink" href="#key-observations_4" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Non-monotonic test MRR:</strong> B (47.6%) &gt; D (100%) &gt; C (71.4%) &gt; A (23.8%). Optimal retention is ~47.6%, not full retention.</li>
+<li><strong>Val→test gap grows with retention:</strong> A=0.0016, B=0.0028, C=0.0021, D=<strong>0.0056</strong>. Full E_adj causes mild overfitting.</li>
+<li><strong>H@10 invariant to E_adj budget:</strong> 0.4558–0.4578 across all conditions. Differentiation occurs only in H@1 and MRR.</li>
+<li><strong>Attention dilution warmup:</strong> B/C/D show near-zero MRR at ep25 (~0.001 vs A's 0.169). More neighbors dilute softmax weights, requiring ~50 epochs to recover.</li>
+<li><strong>All conditions peak at ep125.</strong> Training duration is invariant to E_adj budget.</li>
+</ol>
+<h3 id="hypothesis-evaluation_17">Hypothesis Evaluation<a class="headerlink" href="#hypothesis-evaluation_17" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Hypothesis</th>
+<th>Result</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>E_adj retention ≥47.6% improves test MRR by ≥0.02</td>
+<td><strong>PARTIAL</strong></td>
+<td>Best Δ = +0.0067 (B vs A), below 0.02 threshold</td>
+</tr>
+<tr>
+<td>Full E_adj closes the gap vs DistMult to ≥0.04</td>
+<td><strong>No</strong></td>
+<td>D gap = +0.0213, still below 0.04</td>
+</tr>
+<tr>
+<td>Subsampling was the primary Phase 62 confound</td>
+<td><strong>No</strong></td>
+<td>Subsampling accounts for only ~0.007 of the "missing" gap</td>
 </tr>
 </tbody>
 </table>

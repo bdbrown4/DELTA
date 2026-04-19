@@ -811,7 +811,7 @@
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>|   |-- datasets.py           Dataset loading (load_lp_data for FB15k-237)
 <a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>|   +-- utils.py              Helpers, synthetic data, benchmark generators
 <a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>|
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>|-- experiments/              Phase-by-phase validation (57 phases)
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>|-- experiments/              Phase-by-phase validation (63 phases)
 <a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>|   |-- phase1-15             Core architecture validation
 <a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>|   |-- phase16-21            Architectural fix benchmarks
 <a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>|   |-- phase22-25            Scale &amp; integration on GPU
@@ -820,40 +820,47 @@
 <a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>|   |-- phase38-40            Differentiable constructor, self-bootstrap, correct LP
 <a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>|   |-- phase41-45            Multi-hop compositional reasoning + inference timing
 <a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>|   |-- phase46-54            Attention temperature optimization + multi-seed validation
-<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>|   +-- phase55-57            Brain architecture (differentiable graph construction)
-<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>|
-<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>|-- notebooks/                Colab-ready infrastructure
-<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>|   +-- delta_colab_ready.py
-<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>|
-<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>|-- tests/                    Unit tests (44/44 passing)
-<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>|   |-- test_graph.py
-<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>|   |-- test_attention.py
-<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>|   |-- test_router.py
-<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>|   |-- test_memory.py
-<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>|   |-- test_utils.py
-<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>|   +-- test_baselines.py
-<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>|
-<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>|-- docs/                     Phase result documentation
-<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>|   |-- phase_55.md           Brain architecture port results
-<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>|   |-- phase_56.md           Constructor density ablation results
-<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>|   |-- phase_57.md           Brain temperature annealing results
-<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>|   +-- PUBLICATION_ROADMAP.md  NeurIPS/ICLR publication strategy
-<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>|
-<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>|-- mkdocs-src/               Documentation source (this site)
-<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>|   |-- index.md              Home page
-<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>|   |-- architecture.md       Architecture + bootstrap + timeline + compat
-<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>|   |-- ARCHITECTURE_VISUAL.md  Interactive three-paradigm visual
-<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>|   |-- the-brain.md          Vision + capacity paradox + roadmap
-<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>|   |-- key-findings.md       38 key findings by stage
-<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>|   |-- validation-phases.md  Complete phase result tables
-<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>|   |-- status-and-roadmap.md Status + gaps + publication pathway
-<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>|   |-- research-methodology.md  AI assistance disclosure
-<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>|   |-- setup-and-running.md  Setup + commands + cloud GPU
-<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>|   +-- project-structure.md  This page
-<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>|
-<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>|-- requirements.txt
-<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>|-- mkdocs.yml
-<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>+-- README.md
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>|   |-- phase55-58            Brain architecture + multi-seed density validation
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>|   +-- phase59-63            Scaling &amp; depth management (N=2000, N=5000, subsampling ablation)
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>|
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>|-- notebooks/                Colab-ready infrastructure
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>|   +-- delta_colab_ready.py
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>|
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>|-- tests/                    Unit tests (44/44 passing)
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>|   |-- test_graph.py
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>|   |-- test_attention.py
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>|   |-- test_router.py
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>|   |-- test_memory.py
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>|   |-- test_utils.py
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>|   +-- test_baselines.py
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>|
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>|-- docs/                     Phase result documentation
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>|   |-- phase_55.md           Brain architecture port results
+<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>|   |-- phase_56.md           Constructor density ablation results
+<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>|   |-- phase_57.md           Brain temperature annealing results
+<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>|   |-- phase_58.md           Multi-seed density validation results
+<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>|   |-- phase_59.md           Depth scaling at N=2000 results
+<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>|   |-- phase_60.md           Residual gating results
+<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>|   |-- phase_61.md           DELTA vs DistMult controlled comparison
+<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>|   |-- phase_62.md           Scale to N=5000 results
+<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>|   |-- phase_63.md           E_adj subsampling ablation results
+<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>|   +-- PUBLICATION_ROADMAP.md  NeurIPS/ICLR publication strategy
+<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>|
+<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>|-- mkdocs-src/               Documentation source (this site)
+<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>|   |-- index.md              Home page
+<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>|   |-- architecture.md       Architecture + bootstrap + timeline + compat
+<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>|   |-- ARCHITECTURE_VISUAL.md  Interactive three-paradigm visual
+<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>|   |-- the-brain.md          Vision + capacity paradox + roadmap
+<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>|   |-- key-findings.md       44 key findings by stage
+<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>|   |-- validation-phases.md  Complete phase result tables
+<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>|   |-- status-and-roadmap.md Status + gaps + publication pathway
+<a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a>|   |-- research-methodology.md  AI assistance disclosure
+<a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a>|   |-- setup-and-running.md  Setup + commands + cloud GPU
+<a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a>|   +-- project-structure.md  This page
+<a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a>|
+<a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a>|-- requirements.txt
+<a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a>|-- mkdocs.yml
+<a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a>+-- README.md
 </code></pre></div>
 <hr />
 <h2 id="core-library-delta">Core Library (<code>delta/</code>)<a class="headerlink" href="#core-library-delta" title="Permanent link">&para;</a></h2>

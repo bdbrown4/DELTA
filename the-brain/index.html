@@ -521,18 +521,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#horizon-2-adaptive-architecture-phases-4657-complete" class="md-nav__link">
+  <a href="#horizon-2-adaptive-architecture-phases-4658-complete" class="md-nav__link">
     <span class="md-ellipsis">
-      Horizon 2: Adaptive Architecture (Phases 46–57) — Complete
+      Horizon 2: Adaptive Architecture (Phases 46–58) — Complete
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#horizon-3-brain-optimization-sequence-domains-phases-58-active" class="md-nav__link">
+  <a href="#horizon-3-sparse-attention-full-brain-stack-phases-5967-active" class="md-nav__link">
     <span class="md-ellipsis">
-      Horizon 3: Brain Optimization &amp; Sequence Domains (Phases 58+) — Active
+      Horizon 3: Sparse Attention &amp; Full Brain Stack (Phases 59–67+) — Active
     </span>
   </a>
   
@@ -911,18 +911,18 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#horizon-2-adaptive-architecture-phases-4657-complete" class="md-nav__link">
+  <a href="#horizon-2-adaptive-architecture-phases-4658-complete" class="md-nav__link">
     <span class="md-ellipsis">
-      Horizon 2: Adaptive Architecture (Phases 46–57) — Complete
+      Horizon 2: Adaptive Architecture (Phases 46–58) — Complete
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#horizon-3-brain-optimization-sequence-domains-phases-58-active" class="md-nav__link">
+  <a href="#horizon-3-sparse-attention-full-brain-stack-phases-5967-active" class="md-nav__link">
     <span class="md-ellipsis">
-      Horizon 3: Brain Optimization &amp; Sequence Domains (Phases 58+) — Active
+      Horizon 3: Sparse Attention &amp; Full Brain Stack (Phases 59–67+) — Active
     </span>
   </a>
   
@@ -1038,7 +1038,8 @@
 <li><strong>Multi-hop advantage accelerates with depth</strong> — 5p MRR 0.790 vs GraphGPS 0.690; DELTA is the only model that improves with reasoning depth (Phase 44)</li>
 <li><strong>Self-bootstrap removes the transformer scaffold</strong> — DELTA bootstraps DELTA at 157% of FixedChain (Phase 39)</li>
 <li><strong>Temperature reveals edge/node asymmetry</strong> — Edge attention wants sharper, node wants softer; asymmetric init yields LP MRR 0.4905 (Phases 46–52)</li>
-<li><strong>Differentiable graph construction works</strong> — BrainEncoder (Gumbel-sigmoid edge selection) matches delta_full LP MRR while adding +4.7% H@10 recall from constructed edges (Phases 55–57)</li>
+<li><strong>Differentiable graph construction works</strong> — BrainEncoder (Gumbel-sigmoid edge selection) matches delta_full LP MRR while adding +4.7% H@10 recall from constructed edges (Phases 55–58)</li>
+<li><strong>Attention dilution is the real scaling bottleneck</strong> — At N=5000, 1-layer DELTA surpasses DistMult but 3-layer catastrophically over-smooths. E_adj subsampling is a minor confound (+0.007 MRR); the real issue is attention dilution across 15M+ edge-adjacency pairs (Phases 59–63)</li>
 </ul>
 <p>See <a href="../key-findings/">Key Findings</a> for detailed evidence. See <a href="../validation-phases/">Validation Phases</a> for complete results.</p>
 <hr />
@@ -1087,10 +1088,44 @@
 <h2 id="roadmap-to-the-brain">Roadmap to The Brain<a class="headerlink" href="#roadmap-to-the-brain" title="Permanent link">&para;</a></h2>
 <h3 id="horizon-1-core-proven-phases-4145-complete">Horizon 1: Core Proven (Phases 41–45) — Complete<a class="headerlink" href="#horizon-1-core-proven-phases-4145-complete" title="Permanent link">&para;</a></h3>
 <p>Multi-hop compositional advantage validated across depths, seeds, and regularization regimes. Inference cost is deployment-friendly. See <a href="../validation-phases/#phase-42-multi-hop-path-query-evaluation">Validation Phases</a>.</p>
-<h3 id="horizon-2-adaptive-architecture-phases-4657-complete">Horizon 2: Adaptive Architecture (Phases 46–57) — Complete<a class="headerlink" href="#horizon-2-adaptive-architecture-phases-4657-complete" title="Permanent link">&para;</a></h3>
-<p>Learnable temperature revealed the edge/node asymmetry that drives DELTA's behavior (Phases 46–52). Multi-seed validation (Phase 53) and high-power evaluation (Phase 54) confirmed LP improvements are robust but multi-hop temperature claims are not. BrainEncoder validates differentiable graph construction: MRR 0.4818, H@10 0.8076 — matching delta_full precision while adding +4.7% recall from self-constructed edges (Phases 55–57). Constructor density is a critical hyperparameter; temperature annealing is counterproductive on brain_hybrid.</p>
-<h3 id="horizon-3-brain-optimization-sequence-domains-phases-58-active">Horizon 3: Brain Optimization &amp; Sequence Domains (Phases 58+) — Active<a class="headerlink" href="#horizon-3-brain-optimization-sequence-domains-phases-58-active" title="Permanent link">&para;</a></h3>
-<p>Brain architecture validated; next steps are density optimization (d=0.005), multi-seed validation, and extending to sequence domain inputs. The jump from KGs (where structure is given) to sequences (where structure must be discovered) is the critical test. BrainEncoder's Gumbel-sigmoid construction is the mechanism. LRA ListOps is the entry point.</p>
+<h3 id="horizon-2-adaptive-architecture-phases-4658-complete">Horizon 2: Adaptive Architecture (Phases 46–58) — Complete<a class="headerlink" href="#horizon-2-adaptive-architecture-phases-4658-complete" title="Permanent link">&para;</a></h3>
+<p>Learnable temperature revealed the edge/node asymmetry that drives DELTA’s behavior (Phases 46–52). Multi-seed validation (Phase 53) and high-power evaluation (Phase 54) confirmed LP improvements are robust but multi-hop temperature claims are not. BrainEncoder validates differentiable graph construction: MRR 0.4818, H@10 0.8076 — matching delta_full precision while adding +4.7% recall from self-constructed edges (Phases 55–57). Constructor density validated at d=0.01 with 3-seed robustness (Phase 58). Temperature annealing is counterproductive on brain_hybrid.</p>
+<h3 id="horizon-3-sparse-attention-full-brain-stack-phases-5967-active">Horizon 3: Sparse Attention &amp; Full Brain Stack (Phases 59–67+) — Active<a class="headerlink" href="#horizon-3-sparse-attention-full-brain-stack-phases-5967-active" title="Permanent link">&para;</a></h3>
+<p>KG scaling investigation (Phases 59–63) revealed that <strong>attention dilution</strong> — not subsampling — is the real bottleneck at scale. At N=5000 nodes, each edge attends to ~15M adjacency pairs; the signal-to-noise ratio collapses. Subsampling ablation (Phase 63) confirmed this: increasing E_adj retention from 23.8% to 100% gains only +0.007 test MRR.</p>
+<p><strong>The fix: sparse attention.</strong> Rather than attending to all edge neighbors, use top-k or learned sparse patterns so edges attend only to their most informative neighbors. This directly addresses the dilution mechanism.</p>
+<p><strong>Concrete phase sequence:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Goal</th>
+<th>Key Question</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>64</strong></td>
+<td><strong>Top-k sparse edge-to-edge attention</strong></td>
+<td>Does restricting to k most-relevant E_adj neighbors at N=5000 match or exceed Phase 63 Condition B (MRR ≥ 0.2471) at ≤50% wall time?</td>
+</tr>
+<tr>
+<td><strong>65</strong></td>
+<td><strong>Full Brain stack activation</strong></td>
+<td>With sparse attention solving dilution, does enabling PostAttentionPruner + LearnedAttentionDropout + TieredMemory (currently bypassed in Brain mode) improve brain_hybrid MRR?</td>
+</tr>
+<tr>
+<td><strong>66</strong></td>
+<td><strong>LRA ListOps sequence pilot</strong></td>
+<td>Can BrainEncoder construct useful relational structure from flat sequential input? This is the critical KG→sequence domain crossing.</td>
+</tr>
+<tr>
+<td><strong>67+</strong></td>
+<td><strong>Iterative refinement &amp; domain expansion</strong></td>
+<td>Multi-pass graph construction, temporal reasoning, multi-scale hierarchical graphs</td>
+</tr>
+</tbody>
+</table>
+<p>Phase 64 is the linchpin: if sparse attention works, it unblocks both further KG scaling AND the transition to sequence domains (where constructed graphs will also be large).</p>
 <h3 id="horizon-4-dynamic-reasoning-future">Horizon 4: Dynamic Reasoning — Future<a class="headerlink" href="#horizon-4-dynamic-reasoning-future" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Iterative graph refinement</strong> — multi-pass construction where each DELTA pass restructures the graph for the next</li>
@@ -1113,11 +1148,11 @@
 <hr />
 <h2 id="open-questions">Open Questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>Can DELTA scale to millions of entities?</strong> Current experiments use &lt;=15K entities. The Brain requires orders of magnitude more.</li>
-<li><strong>Can DELTA discover its own optimal capacity?</strong> Phase 42/44 show smaller beats larger on composition — can the router's importance signals automate this?</li>
-<li><strong>Where does explicit structure win vs lose?</strong> The hypothesis: relational tasks benefit from explicit graphs, but sequential/generative tasks may not. Where's the crossover?</li>
-<li><strong>Can the constructor learn useful graph structure for sequence domains?</strong> The SelfBootstrap result (Phase 39) shows DELTA can learn structure from scratch. Can this extend to non-relational inputs?</li>
-<li><strong>Can temperature optimization close the LP/3p trade-off?</strong> Edge and node attention want opposite sharpness. L0 temperature (Phase 49) may be the missing piece.</li>
+<li><strong>Can sparse attention solve the dilution bottleneck?</strong> Phase 63 proved subsampling isn’t the issue; attention dilution across 15M+ pairs is. Top-k or learned sparsity is the proposed fix (Phase 64).</li>
+<li><strong>Do the bypassed Brain components (pruner, memory, learned dropout) help when dilution is controlled?</strong> These were designed for adaptive capacity but have never been tested with sparse attention (Phase 65).</li>
+<li><strong>Can the constructor learn useful graph structure for sequence domains?</strong> The SelfBootstrap result (Phase 39) shows DELTA can learn structure from scratch. Can BrainEncoder extend this to non-relational inputs like LRA ListOps? (Phase 66)</li>
+<li><strong>Where does explicit structure win vs lose?</strong> The hypothesis: relational tasks benefit from explicit graphs, but sequential/generative tasks may not. Where’s the crossover?</li>
+<li><strong>Can DELTA scale to millions of entities?</strong> Current experiments use ≤15K entities. Sparse attention is a prerequisite.</li>
 </ol>
 <hr />
 <p><em>See <a href="../architecture/">Architecture Overview</a> for technical details. See <a href="../status-and-roadmap/">Status &amp; Roadmap</a> for current progress.</em></p>

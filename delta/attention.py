@@ -140,11 +140,12 @@ class EdgeAttention(nn.Module):
     """
 
     def __init__(self, d_edge: int, d_node: int, num_heads: int = 4, dropout: float = 0.1,
-                 init_temp: float = 1.0):
+                 init_temp: float = 1.0, topk_edges: Optional[int] = None):
         super().__init__()
         self.d_edge = d_edge
         self.num_heads = num_heads
         self.d_head = d_edge // num_heads
+        self.topk_edges = topk_edges
         assert d_edge % num_heads == 0
 
         self.W_q = nn.Linear(d_edge, d_edge)
@@ -207,6 +208,13 @@ class EdgeAttention(nn.Module):
         temp = self._log_temp.exp()  # [H], always positive
         attn_scores = attn_scores * temp  # [E_adj, H]
 
+        # Top-k sparse filtering: keep only k highest-scoring neighbors per target edge
+        if self.topk_edges is not None:
+            attn_scores, mask = self._sparse_topk_filter(attn_scores, tgt_edges, E)
+            src_edges = src_edges[mask]
+            tgt_edges = tgt_edges[mask]
+            attn_scores = attn_scores[mask]
+
         # Softmax over neighbor edges per target edge
         attn_weights = self._scatter_softmax(attn_scores, tgt_edges, E)
         attn_weights = self.dropout(attn_weights)
@@ -238,6 +246,50 @@ class EdgeAttention(nn.Module):
         denom = sum_exp.gather(0, idx_expanded)
         return exp_scores / (denom + 1e-10)
 
+    def _sparse_topk_filter(self, scores: torch.Tensor, tgt_edges: torch.Tensor,
+                            E: int) -> tuple:
+        """Keep only top-k scoring source edges per target edge (across all heads).
+
+        Uses mean score across heads to decide which pairs to keep.
+        Returns (filtered_scores, boolean_mask) where mask indexes into the
+        original E_adj dimension.
+
+        Fully vectorized — no Python loops over edges.
+        """
+        k = self.topk_edges
+        mean_scores = scores.mean(dim=-1)  # [E_adj]
+
+        # Count neighbors per target edge
+        neighbor_count = torch.zeros(E, dtype=torch.long, device=scores.device)
+        neighbor_count.scatter_add_(0, tgt_edges, torch.ones_like(tgt_edges))
+
+        max_neighbors = neighbor_count.max().item()
+        if max_neighbors <= k:
+            return scores, torch.ones(scores.shape[0], dtype=torch.bool, device=scores.device)
+
+        # Sort by (tgt_edge, -score) to get highest scores first within each group
+        # Primary key: tgt_edge (ascending), secondary key: -score (so highest first)
+        sort_keys = tgt_edges.float() * 1e10 - mean_scores
+        sort_idx = torch.argsort(sort_keys, stable=True)
+        sorted_tgt = tgt_edges[sort_idx]
+
+        # Compute within-group rank (0-indexed): for consecutive same-target entries,
+        # rank = position - group_start
+        group_starts = torch.zeros(E + 1, dtype=torch.long, device=scores.device)
+        group_starts[1:] = neighbor_count.cumsum(0)
+        # Each entry's rank = its position minus the start of its group
+        positions = torch.arange(sorted_tgt.shape[0], device=scores.device)
+        ranks = positions - group_starts[sorted_tgt]
+
+        # Keep entries with rank < k (i.e., top-k within each group)
+        keep_sorted = ranks < k
+
+        # Map back to original order
+        mask = torch.zeros(scores.shape[0], dtype=torch.bool, device=scores.device)
+        mask[sort_idx[keep_sorted]] = True
+
+        return scores, mask
+
 
 class DualParallelAttention(nn.Module):
     """Runs node and edge attention in parallel, then reconciles.
@@ -248,10 +300,11 @@ class DualParallelAttention(nn.Module):
     """
 
     def __init__(self, d_node: int, d_edge: int, num_heads: int = 4, dropout: float = 0.1,
-                 init_temp: float = 1.0):
+                 init_temp: float = 1.0, topk_edges: Optional[int] = None):
         super().__init__()
         self.node_attn = NodeAttention(d_node, d_edge, num_heads, dropout, init_temp=init_temp)
-        self.edge_attn = EdgeAttention(d_edge, d_node, num_heads, dropout, init_temp=init_temp)
+        self.edge_attn = EdgeAttention(d_edge, d_node, num_heads, dropout, init_temp=init_temp,
+                                       topk_edges=topk_edges)
         self.reconciliation = ReconciliationBridge(d_node, d_edge)
 
     def forward(self, graph: DeltaGraph,

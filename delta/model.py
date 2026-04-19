@@ -34,12 +34,14 @@ class DELTALayer(nn.Module):
 
     def __init__(self, d_node: int, d_edge: int, num_heads: int = 4,
                  max_partition_size: int = 32, dropout: float = 0.1,
-                 sparse_ratio: float = 0.7, init_temp: float = 1.0):
+                 sparse_ratio: float = 0.7, init_temp: float = 1.0,
+                 topk_edges: Optional[int] = None):
         super().__init__()
         self.pruner = PostAttentionPruner(d_node, d_edge)
         self.attn_dropout = LearnedAttentionDropout(d_edge)
         self.partitioner = GraphPartitioner(max_partition_size)
-        self.dual_attn = DualParallelAttention(d_node, d_edge, num_heads, dropout, init_temp=init_temp)
+        self.dual_attn = DualParallelAttention(d_node, d_edge, num_heads, dropout,
+                                               init_temp=init_temp, topk_edges=topk_edges)
         self.memory = TieredMemory(d_node, d_edge)
         self.sparse_ratio = sparse_ratio
 
@@ -157,6 +159,7 @@ class DELTAModel(nn.Module):
                  max_partition_size: int = 32, dropout: float = 0.1,
                  sparse_ratio: float = 0.7,
                  init_temp: float = 1.0,
+                 topk_edges: Optional[int] = None,
                  # Phase 60: residual gating for depth scaling
                  residual_gate: bool = False,
                  residual_gate_init: float = 0.1,
@@ -181,7 +184,8 @@ class DELTAModel(nn.Module):
 
         self.layers = nn.ModuleList([
             DELTALayer(d_node, d_edge, num_heads, max_partition_size,
-                       dropout, sparse_ratio, init_temp=init_temp)
+                       dropout, sparse_ratio, init_temp=init_temp,
+                       topk_edges=topk_edges)
             for _ in range(num_layers)
         ])
 

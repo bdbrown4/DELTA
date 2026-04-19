@@ -85,26 +85,28 @@
 - WN18RR (transfer): 0.961 probe accuracy (Phase 35) — but frozen encoder, not trained LP
 - YAGO3-10: untested. Would demonstrate generalization beyond Freebase
 
-### Gap 4: Brain architecture optimization — PAUSED (blocked by Gap 5)
+### Gap 4: Brain architecture optimization — REDIRECTED to sparse attention (Phase 64+)
 - BrainEncoder validated (Phases 55–58) with MRR gains over delta_full marginal (+0.002 single-seed) but multi-seed mean 0.4844±0.0097 is robust
 - H@10 advantage (+4.7%) is substantial — constructed edges genuinely add recall
 - Density optimization CLOSED: d=0.01 (2,435 edges) is the sweet spot. d=0.02 too noisy, d=0.005 too sparse.
-- brain_hybrid OOMs at N=2000 (102K edges). Scaling brain architecture requires solving depth management first.
-- Next: resume after Gap 5 resolved
+- brain_hybrid OOMs at N=2000 (102K edges). Scaling brain architecture requires solving attention dilution first.
+- **New direction:** sparse attention (Phase 64) to control dilution, then re-enable full Brain stack (Phase 65)
 
-### Gap 5: Depth management at scale — RESOLVED but exposed deeper issue (Phase 60)
+### Gap 5: Depth management at scale — CLOSED (Phases 59–63)
 - Phase 59: 3-layer over-smooths catastrophically at N=2000 (MRR=0.002); 1-layer works (MRR=0.334)
 - Phase 60: Residual gating eliminates over-smoothing: 3L+gate MRR=0.3138 (174× vs ungated 0.0018)
 - However, all depths converge to MRR~0.31 — **matching DistMult (0.3185) without any GNN**
 - Gates frozen at ~10% layer / 90% residual → model learned layers are noise, not signal
 - Phase 61/61b: DELTA provides genuine but modest +0.017 val MRR advantage over DistMult at N=2000
 - Phase 62: At N=5000, gap narrows to +0.016 test MRR — advantage is real but doesn't scale
+- Phase 63: E_adj subsampling ablation confirms attention dilution, not subsampling, is the bottleneck
 - 1-layer accepted as scaling architecture; depth provides no benefit at N≥2000
+- **Resolution: sparse attention (Phase 64) addresses the root cause — dilution across 15M+ E_adj pairs**
 
-### Gap 5: Sequence domain generalization — FUTURE (Horizon 3)
+### Gap 6: Sequence domain generalization — FUTURE (Phase 66+)
 - All current evidence is on knowledge graphs where structure is pre-defined or semi-explicit
-- BrainEncoder's Gumbel-sigmoid construction (Phases 55–57) is the mechanism for sequence domains
-- Prerequisites: Brain architecture optimization; then LRA pilot on ListOps
+- BrainEncoder's Gumbel-sigmoid construction (Phases 55–58) is the mechanism for sequence domains
+- Prerequisites: sparse attention (Phase 64), full Brain stack (Phase 65); then LRA ListOps pilot (Phase 66)
 
 ---
 
@@ -128,9 +130,23 @@
 | 57 | Brain temperature annealing | Done — baseline (no annealing) optimal; MRR 0.4808–0.4818 |
 | 58 | Multi-seed density validation | Done — d=0.01 robust (mean MRR 0.4844±0.0097); d=0.005 fails (−0.017). Density CLOSED. |
 
-### Horizon 3: Brain Optimization & Sequence Domains (Phases 59+) — Active
+### Horizon 3: Sparse Attention & Full Brain Stack (Phases 59–67+) — Active
 
-Brain density optimization CLOSED (Phases 55–58). d=0.01 is the sweet spot. Phases 59–63: scaling evaluation from N=2000 to N=5000. Depth over-smoothing solved by residual gating (Phase 60) but depth provides no benefit. 1-layer DELTA accepted. Phase 62 showed DELTA's advantage is real but modest at N=5000 (+0.016 test MRR). Phase 63 subsampling ablation confirms subsampling is a minor confound (+0.007 at best), not the primary bottleneck — even at full E_adj retention, gap vs DistMult is only +0.021. Attention dilution causes non-monotonic response (47.6% > 100%). Next: sparse attention, multi-head scaling, or sequence domain pilot (LRA ListOps). See [The Brain](the-brain.md) for the long-term vision.
+KG scaling investigation (Phases 59–63) CLOSED. Key finding: **attention dilution** — not subsampling — is the real scaling bottleneck. At N=5000, each edge attends to ~15M adjacency pairs; signal-to-noise collapses. Phase 63 subsampling ablation confirmed subsampling is a minor confound (+0.007 at best). Non-monotonic response (47.6% > 100% > 71.4% > 23.8%) proves dilution causes the performance ceiling.
+
+**Strategic direction:** Path C — sparse attention bridges KG completion and Brain activation.
+
+| Phase | Goal | Status |
+|-------|------|--------|
+| 59 | Depth scaling at N=2000 | Done — 1-layer surpasses DistMult; 3-layer catastrophically over-smooths |
+| 60 | Residual gating for depth | Done — eliminates over-smoothing but layers contribute nothing |
+| 61/61b | DELTA vs DistMult controlled comparison (N=2000) | Done — genuine +0.017 val MRR advantage confirmed |
+| 62 | Scale to N=5000 | Done — advantage real but modest (+0.016 test MRR) |
+| 63 | E_adj subsampling ablation (N=5000) | Done — attention dilution confirmed as bottleneck, not subsampling |
+| **64** | **Top-k sparse edge-to-edge attention** | **Next** — restrict to k most-relevant E_adj neighbors |
+| **65** | **Full Brain stack activation** | Planned — enable pruner + memory + learned dropout with sparse attention |
+| **66** | **LRA ListOps sequence pilot** | Planned — BrainEncoder constructs graph from flat sequential input |
+| **67+** | **Iterative refinement & domain expansion** | Planned — multi-pass construction, temporal reasoning |
 
 ### Horizon 4: Dynamic Reasoning — Future
 
@@ -149,7 +165,7 @@ Multi-modal construction, associative memory, compositional generalization. See 
 ### What We Have
 
 - [x] Novel architecture with theoretical motivation
-- [x] 57 experiment phases with honest failure documentation
+- [x] 63 experiment phases with honest failure documentation
 - [x] Multi-seed statistical validation (Phases 29, 45, 53)
 - [x] Competitive LP on real FB15k-237 (Phases 40, 48, 52)
 - [x] Multi-hop compositional dominance (Phases 42–44)
@@ -161,8 +177,9 @@ Multi-modal construction, associative memory, compositional generalization. See 
 
 ### What We Still Need
 
-- [ ] Full-scale dataset evaluation (14.5K+ entities) — Gap 1
+- [ ] Sparse attention mechanism to address scaling bottleneck — Gap 4/5
 - [ ] Cross-family benchmark (YAGO3-10 or WN18RR LP) — Gap 3
+- [ ] Sequence domain evaluation (LRA ListOps) — Gap 6
 - [ ] Interpretability figure (attention heatmap on known reasoning chain)
 - [ ] Multi-seed brain_hybrid validation for statistical confidence
 

@@ -20,7 +20,7 @@ GNN edges are passive scalar wires. DELTA edges are **first-class computational 
 | Multi-hop 5p MRR | **0.790** vs GraphGPS 0.690 | 44 |
 | Cross-domain transfer (frozen encoder, 100 samples) | **0.961** on WN18RR | 35 |
 | Noise robustness at 80% corruption | **+24%** over vanilla GNN | 28 |
-| Experiment phases | 57 complete (Phases 1–57) | — |
+| Experiment phases | 63 complete (Phases 1–63) | — |
 | Unit tests | 44/44 passing | — |
 
 ## Architecture
@@ -57,8 +57,8 @@ Full documentation is hosted at **[bdbrown4.github.io/DELTA](https://bdbrown4.gi
 
 - **[Architecture Overview](https://bdbrown4.github.io/DELTA/architecture/)** — Core thesis, components, and how DELTA differs from Transformers and GNNs
 - **[The Brain: End Goal](https://bdbrown4.github.io/DELTA/the-brain/)** — Long-term vision, capacity paradox, roadmap horizons
-- **[Validation Phases](https://bdbrown4.github.io/DELTA/validation-phases/)** — All 57 phase result tables
-- **[Key Findings](https://bdbrown4.github.io/DELTA/key-findings/)** — 35 key findings from experiments
+- **[Validation Phases](https://bdbrown4.github.io/DELTA/validation-phases/)** — All 63 phase result tables
+- **[Key Findings](https://bdbrown4.github.io/DELTA/key-findings/)** — 44 key findings from experiments
 - **[Status & Roadmap](https://bdbrown4.github.io/DELTA/status-and-roadmap/)** — What's validated, open gaps, next steps
 - **[Getting Started](https://bdbrown4.github.io/DELTA/setup-and-running/)** — Installation, experiment commands, cloud GPU setup
 - **[Research Methodology](https://bdbrown4.github.io/DELTA/research-methodology/)** — AI assistance disclosure
@@ -75,4 +75,4 @@ This project was developed by a solo software engineer using LLMs and AI agents 
 
 ---
 
-*DELTA architecture — conceived March 25, 2026. 57 experiment phases, 6 architectural fixes, 44 unit tests. Target: NeurIPS/ICLR.*
+*DELTA architecture — conceived March 25, 2026. 63 experiment phases, 6 architectural fixes, 44 unit tests. KG scaling complete (Phases 59–63). Pivoting to sparse attention and sequence domains.*

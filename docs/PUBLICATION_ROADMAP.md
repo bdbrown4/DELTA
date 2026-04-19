@@ -2,9 +2,9 @@
 
 **Target:** NeurIPS / ICLR (top-tier ML venue)
 **Title placeholder:** *"DELTA: Edge-Centric Dual Attention for Relational Reasoning on Knowledge Graphs"*
-**Status:** 57 experiment phases complete. Brain architecture validated (Phases 55–57). Publication gaps: full-scale evaluation, cross-family benchmark.
+**Status:** 63 experiment phases complete. Brain architecture validated (Phases 55–58). KG scaling evaluated (Phases 59–63). Pivoting to sparse attention and sequence domains.
 
-**Current evidence base:** 57 experiment phases, 44 unit tests, real FB15k-237 results (97.4% ± 0.1% over 5 seeds, LP MRR 0.4905), multi-hop dominance (5p MRR 0.790), differentiable graph construction (brain_hybrid MRR 0.4818 with H@10 0.8076). Cross-domain transfer: 0.961 on WN18RR with 100 samples (frozen encoder).
+**Current evidence base:** 63 experiment phases, 44 unit tests, real FB15k-237 results (97.4% ± 0.1% over 5 seeds, LP MRR 0.4905), multi-hop dominance (5p MRR 0.790), differentiable graph construction (brain_hybrid MRR 0.4818 with H@10 0.8076), scaling evaluation at N=2000/5000 (Phases 59–63). Cross-domain transfer: 0.961 on WN18RR with 100 samples (frozen encoder).
 
 ---
 
@@ -335,4 +335,4 @@ All publication-grade results: **5 seeds, mean ± std reported.**
 
 ---
 
-*Last updated: 2026-04-10. 57 experiment phases complete. Brain architecture validated (Phases 55–57). Primary remaining gaps: full-scale evaluation, cross-family benchmark, interpretability figures.*
+*Last updated: 2026-04-15. 63 experiment phases complete. Brain architecture validated (Phases 55–58). KG scaling evaluated (Phases 59–63). Primary remaining gaps: sparse attention mechanism, sequence domain evaluation, cross-family benchmark, interpretability figures.*

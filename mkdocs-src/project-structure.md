@@ -16,7 +16,7 @@ DELTA/
 |   |-- datasets.py           Dataset loading (load_lp_data for FB15k-237)
 |   +-- utils.py              Helpers, synthetic data, benchmark generators
 |
-|-- experiments/              Phase-by-phase validation (57 phases)
+|-- experiments/              Phase-by-phase validation (63 phases)
 |   |-- phase1-15             Core architecture validation
 |   |-- phase16-21            Architectural fix benchmarks
 |   |-- phase22-25            Scale & integration on GPU
@@ -25,7 +25,8 @@ DELTA/
 |   |-- phase38-40            Differentiable constructor, self-bootstrap, correct LP
 |   |-- phase41-45            Multi-hop compositional reasoning + inference timing
 |   |-- phase46-54            Attention temperature optimization + multi-seed validation
-|   +-- phase55-57            Brain architecture (differentiable graph construction)
+|   |-- phase55-58            Brain architecture + multi-seed density validation
+|   +-- phase59-63            Scaling & depth management (N=2000, N=5000, subsampling ablation)
 |
 |-- notebooks/                Colab-ready infrastructure
 |   +-- delta_colab_ready.py
@@ -42,6 +43,12 @@ DELTA/
 |   |-- phase_55.md           Brain architecture port results
 |   |-- phase_56.md           Constructor density ablation results
 |   |-- phase_57.md           Brain temperature annealing results
+|   |-- phase_58.md           Multi-seed density validation results
+|   |-- phase_59.md           Depth scaling at N=2000 results
+|   |-- phase_60.md           Residual gating results
+|   |-- phase_61.md           DELTA vs DistMult controlled comparison
+|   |-- phase_62.md           Scale to N=5000 results
+|   |-- phase_63.md           E_adj subsampling ablation results
 |   +-- PUBLICATION_ROADMAP.md  NeurIPS/ICLR publication strategy
 |
 |-- mkdocs-src/               Documentation source (this site)
@@ -49,7 +56,7 @@ DELTA/
 |   |-- architecture.md       Architecture + bootstrap + timeline + compat
 |   |-- ARCHITECTURE_VISUAL.md  Interactive three-paradigm visual
 |   |-- the-brain.md          Vision + capacity paradox + roadmap
-|   |-- key-findings.md       38 key findings by stage
+|   |-- key-findings.md       44 key findings by stage
 |   |-- validation-phases.md  Complete phase result tables
 |   |-- status-and-roadmap.md Status + gaps + publication pathway
 |   |-- research-methodology.md  AI assistance disclosure

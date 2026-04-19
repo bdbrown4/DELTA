@@ -1,6 +1,6 @@
 # Key Findings
 
-43 key findings from 62 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
+44 key findings from 63 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
 
 ---
 

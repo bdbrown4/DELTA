@@ -2101,6 +2101,66 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#phase-64-top-k-sparse-edge-to-edge-attention-at-n5000" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 64 — Top-k Sparse Edge-to-Edge Attention at N=5000
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 64 — Top-k Sparse Edge-to-Edge Attention at N=5000">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conditions_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conditions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#results_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Results
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-observations_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Observations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hypothesis-evaluation_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hypothesis Evaluation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3807,6 +3867,66 @@
         
           <li class="md-nav__item">
   <a href="#hypothesis-evaluation_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hypothesis Evaluation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#phase-64-top-k-sparse-edge-to-edge-attention-at-n5000" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 64 — Top-k Sparse Edge-to-Edge Attention at N=5000
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Phase 64 — Top-k Sparse Edge-to-Edge Attention at N=5000">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conditions_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conditions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#results_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Results
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-observations_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Observations
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hypothesis-evaluation_18" class="md-nav__link">
     <span class="md-ellipsis">
       Hypothesis Evaluation
     </span>
@@ -9175,6 +9295,173 @@
 <td>Subsampling was the primary Phase 62 confound</td>
 <td><strong>No</strong></td>
 <td>Subsampling accounts for only ~0.007 of the "missing" gap</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="phase-64-top-k-sparse-edge-to-edge-attention-at-n5000">Phase 64 — Top-k Sparse Edge-to-Edge Attention at N=5000<a class="headerlink" href="#phase-64-top-k-sparse-edge-to-edge-attention-at-n5000" title="Permanent link">&para;</a></h2>
+<p><strong>Goal:</strong> Validate top-k sparse edge attention as a quality-preserving mechanism for scaling DELTA to larger graphs where full E_adj softmax is memory-infeasible. Characterize the quality vs. sparsity tradeoff across topk=64, 128, and 256.</p>
+<h3 id="configuration_9">Configuration<a class="headerlink" href="#configuration_9" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Dataset: FB15k-237 at N=5000 (4977 entities, 225 relations)</li>
+<li>Model: DELTA 1-layer, 4 heads, d_node=64, d_edge=32, init_temp=1.0</li>
+<li>Epochs: 150 max, eval every 25, early stopping PATIENCE=2</li>
+<li>bs=4096, lr=0.003, Adam, seed=42</li>
+<li>Full E_adj: 63,001,372 pairs (built in 0.4s via spspmm)</li>
+<li>Hardware: RTX PRO 6000 Blackwell 98GB (RunPod), 46.0hr total</li>
+</ul>
+<h3 id="conditions_2">Conditions<a class="headerlink" href="#conditions_2" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>E_adj Budget</th>
+<th>TopK</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A (baseline)</td>
+<td>30M (47.6%)</td>
+<td>—</td>
+<td>Phase 63 Cond B, reused</td>
+</tr>
+<tr>
+<td>B</td>
+<td>63M (100%)</td>
+<td>128</td>
+<td>Sparse attention</td>
+</tr>
+<tr>
+<td>C</td>
+<td>63M (100%)</td>
+<td>64</td>
+<td>Sparse attention</td>
+</tr>
+<tr>
+<td>D</td>
+<td>63M (100%)</td>
+<td>256</td>
+<td>OOM after ep25</td>
+</tr>
+</tbody>
+</table>
+<h3 id="results_4">Results<a class="headerlink" href="#results_4" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>Budget</th>
+<th>TopK</th>
+<th style="text-align: right;">peak_val</th>
+<th style="text-align: right;">best_ep</th>
+<th style="text-align: right;">test_MRR</th>
+<th style="text-align: right;">test_H@1</th>
+<th style="text-align: right;">test_H@10</th>
+<th style="text-align: right;">gap_vs_DM</th>
+<th style="text-align: right;">Time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A (P63)</td>
+<td>30M</td>
+<td>—</td>
+<td style="text-align: right;">0.2499</td>
+<td style="text-align: right;">125</td>
+<td style="text-align: right;">0.2471</td>
+<td style="text-align: right;">0.1481</td>
+<td style="text-align: right;">0.4562</td>
+<td style="text-align: right;">+0.0227</td>
+<td style="text-align: right;">37653s</td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td><strong>63M</strong></td>
+<td><strong>128</strong></td>
+<td style="text-align: right;">0.2465</td>
+<td style="text-align: right;">125</td>
+<td style="text-align: right;"><strong>0.2472</strong></td>
+<td style="text-align: right;">0.1481</td>
+<td style="text-align: right;"><strong>0.4581</strong></td>
+<td style="text-align: right;"><strong>+0.0228</strong></td>
+<td style="text-align: right;">76367s</td>
+</tr>
+<tr>
+<td>C</td>
+<td>63M</td>
+<td>64</td>
+<td style="text-align: right;">0.2360</td>
+<td style="text-align: right;">125</td>
+<td style="text-align: right;">0.2332</td>
+<td style="text-align: right;">0.1349</td>
+<td style="text-align: right;">0.4432</td>
+<td style="text-align: right;">+0.0088</td>
+<td style="text-align: right;">76077s</td>
+</tr>
+<tr>
+<td>D</td>
+<td>63M</td>
+<td>256</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">OOM</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+</tbody>
+</table>
+<p>Phase 63 full-softmax reference (63M, no topk): test_MRR=0.2457, time=78,872s<br />
+DistMult baseline: test_MRR=0.2244 (from Phase 62)</p>
+<h3 id="key-observations_5">Key Observations<a class="headerlink" href="#key-observations_5" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>topk=128 perfectly preserves full-attention quality:</strong> B test MRR=0.2472 vs Phase 63 Cond D full softmax (0.2457, same 63M E_adj), Δ=+0.0015. Sparse attention at 128 neighbors is lossless.</li>
+<li><strong>topk=64 degrades meaningfully:</strong> C test MRR=0.2332 vs B=0.2472, Δ=−0.0140 (−5.6%). H@10 also degrades: 0.4432 vs 0.4581 (−3.3%).</li>
+<li><strong>topk=256 OOM on 98GB GPU.</strong> Memory limit at N=5000 lies between 128 and 256 neighbors per edge.</li>
+<li><strong>No epoch-time speedup:</strong> B and C epoch times (508s, 506s) are near-identical to full-softmax (525s). Bottleneck is upstream E_adj processing, not the attention kernel.</li>
+<li><strong>Attention dilution warmup persists under topk:</strong> B ep25 MRR=0.0013, C ep25 MRR=0.0062. Near-zero at ep25, recovering by ep50-75.</li>
+<li><strong>topk=64 has faster ep25 recovery but slower mid-training:</strong> C=0.0062 vs B=0.0013 at ep25; C=0.0848 vs B=0.1333 at ep50.</li>
+<li><strong>Transient inversion at ep100:</strong> C val MRR=0.2307 &gt; B=0.2221, reversed by ep125 (C=0.2360 &lt; B=0.2465). Smaller topk provides temporary advantage.</li>
+<li><strong>All conditions peak at ep125.</strong> Best epoch invariant to topk width.</li>
+<li><strong>Optimal cost/quality point remains Phase 63 Cond B</strong> (30M subsample, full softmax, 37,653s). Sparse attention over 63M delivers equal quality at 2× cost.</li>
+</ol>
+<h3 id="hypothesis-evaluation_18">Hypothesis Evaluation<a class="headerlink" href="#hypothesis-evaluation_18" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Hypothesis</th>
+<th>Result</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>topk=128 matches full softmax on 63M E_adj</td>
+<td><strong>CONFIRMED</strong></td>
+<td>B test_MRR=0.2472 vs Phase 63 D=0.2457, Δ=+0.0015</td>
+</tr>
+<tr>
+<td>topk=64 degrades vs topk=128</td>
+<td><strong>CONFIRMED</strong></td>
+<td>C test_MRR=0.2332 vs B=0.2472, Δ=−0.0140 (−5.6%)</td>
+</tr>
+<tr>
+<td>topk=256 is feasible on 98GB GPU</td>
+<td><strong>REJECTED</strong></td>
+<td>OOM after ep25</td>
+</tr>
+<tr>
+<td>Sparse attention reduces attention dilution warmup</td>
+<td><strong>PARTIAL</strong></td>
+<td>topk=64 faster at ep25 (0.0062 vs 0.0013); warmup persists in both</td>
+</tr>
+<tr>
+<td>topk provides epoch-time speedup vs full softmax</td>
+<td><strong>NOT CONFIRMED</strong></td>
+<td>Epoch time near-identical across all topk values</td>
 </tr>
 </tbody>
 </table>

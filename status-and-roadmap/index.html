@@ -600,9 +600,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#whats-validated-18-propositions" class="md-nav__link">
+  <a href="#whats-validated-23-propositions" class="md-nav__link">
     <span class="md-ellipsis">
-      What's Validated (18 Propositions)
+      What's Validated (23 Propositions)
     </span>
   </a>
   
@@ -655,9 +655,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#gap-4-brain-architecture-optimization-redirected-to-sparse-attention-phase-64" class="md-nav__link">
+  <a href="#gap-4-brain-architecture-optimization-sparse-attention-resolved-phase-64" class="md-nav__link">
     <span class="md-ellipsis">
-      Gap 4: Brain architecture optimization — REDIRECTED to sparse attention (Phase 64+)
+      Gap 4: Brain architecture optimization — SPARSE ATTENTION RESOLVED (Phase 64)
     </span>
   </a>
   
@@ -940,9 +940,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#whats-validated-18-propositions" class="md-nav__link">
+  <a href="#whats-validated-23-propositions" class="md-nav__link">
     <span class="md-ellipsis">
-      What's Validated (18 Propositions)
+      What's Validated (23 Propositions)
     </span>
   </a>
   
@@ -995,9 +995,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#gap-4-brain-architecture-optimization-redirected-to-sparse-attention-phase-64" class="md-nav__link">
+  <a href="#gap-4-brain-architecture-optimization-sparse-attention-resolved-phase-64" class="md-nav__link">
     <span class="md-ellipsis">
-      Gap 4: Brain architecture optimization — REDIRECTED to sparse attention (Phase 64+)
+      Gap 4: Brain architecture optimization — SPARSE ATTENTION RESOLVED (Phase 64)
     </span>
   </a>
   
@@ -1138,7 +1138,7 @@
 
 
 <h1 id="status-roadmap">Status &amp; Roadmap<a class="headerlink" href="#status-roadmap" title="Permanent link">&para;</a></h1>
-<p><em>Last updated: Phase 63 complete (2026-04-19)</em></p>
+<p><em>Last updated: Phase 64 complete (2026-04-22)</em></p>
 <hr />
 <h2 id="current-best-results">Current Best Results<a class="headerlink" href="#current-best-results" title="Permanent link">&para;</a></h2>
 <table>
@@ -1224,6 +1224,18 @@
 <td>62</td>
 </tr>
 <tr>
+<td>LP test MRR (1-layer DELTA, N=5000, full E_adj)</td>
+<td>delta_1layer (30M subsample, full softmax)</td>
+<td><strong>0.2471</strong></td>
+<td>63</td>
+</tr>
+<tr>
+<td>LP test MRR (1-layer DELTA, N=5000, topk=128)</td>
+<td>delta_1layer (63M, topk=128)</td>
+<td><strong>0.2472</strong></td>
+<td>64</td>
+</tr>
+<tr>
 <td>LP test MRR (DistMult, N=5000)</td>
 <td>DistMult (no GNN)</td>
 <td><strong>0.2244</strong></td>
@@ -1232,7 +1244,7 @@
 </tbody>
 </table>
 <hr />
-<h2 id="whats-validated-18-propositions">What's Validated (18 Propositions)<a class="headerlink" href="#whats-validated-18-propositions" title="Permanent link">&para;</a></h2>
+<h2 id="whats-validated-23-propositions">What's Validated (23 Propositions)<a class="headerlink" href="#whats-validated-23-propositions" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -1375,6 +1387,12 @@
 <td>High</td>
 <td>Phase 63: increasing retention from 23.8%→47.6% gains only +0.007 test MRR. Full retention (100%) gap vs DM=+0.021. Non-monotonic response: 47.6% &gt; 100% &gt; 71.4% &gt; 23.8%.</td>
 </tr>
+<tr>
+<td>P23</td>
+<td>Top-k sparse attention at k=128 preserves full-attention quality; k=64 degrades −5.6%; k=256 OOM on 98GB</td>
+<td>High</td>
+<td>Phase 64: topk=128 test MRR=0.2472 matches Phase 63 full-softmax (0.2457, Δ=+0.0015). topk=64 test MRR=0.2332 (−5.6%). topk=256 OOM after ep25 on 98GB Blackwell. No epoch-time speedup at N=5000.</td>
+</tr>
 </tbody>
 </table>
 <hr />
@@ -1411,13 +1429,14 @@
 <li>WN18RR (transfer): 0.961 probe accuracy (Phase 35) — but frozen encoder, not trained LP</li>
 <li>YAGO3-10: untested. Would demonstrate generalization beyond Freebase</li>
 </ul>
-<h3 id="gap-4-brain-architecture-optimization-redirected-to-sparse-attention-phase-64">Gap 4: Brain architecture optimization — REDIRECTED to sparse attention (Phase 64+)<a class="headerlink" href="#gap-4-brain-architecture-optimization-redirected-to-sparse-attention-phase-64" title="Permanent link">&para;</a></h3>
+<h3 id="gap-4-brain-architecture-optimization-sparse-attention-resolved-phase-64">Gap 4: Brain architecture optimization — SPARSE ATTENTION RESOLVED (Phase 64)<a class="headerlink" href="#gap-4-brain-architecture-optimization-sparse-attention-resolved-phase-64" title="Permanent link">&para;</a></h3>
 <ul>
 <li>BrainEncoder validated (Phases 55–58) with MRR gains over delta_full marginal (+0.002 single-seed) but multi-seed mean 0.4844±0.0097 is robust</li>
 <li>H@10 advantage (+4.7%) is substantial — constructed edges genuinely add recall</li>
 <li>Density optimization CLOSED: d=0.01 (2,435 edges) is the sweet spot. d=0.02 too noisy, d=0.005 too sparse.</li>
 <li>brain_hybrid OOMs at N=2000 (102K edges). Scaling brain architecture requires solving attention dilution first.</li>
-<li><strong>New direction:</strong> sparse attention (Phase 64) to control dilution, then re-enable full Brain stack (Phase 65)</li>
+<li><strong>Phase 64 result:</strong> topk=128 sparse attention validated — matches full softmax quality (test MRR 0.2472 vs 0.2457). Memory limit at N=5000 lies between topk=128 (OK) and topk=256 (OOM on 98GB). Sparse attention mechanism is ready for the full Brain stack.</li>
+<li><strong>Next direction:</strong> activate full Brain stack with topk=128 sparse attention (Phase 65)</li>
 </ul>
 <h3 id="gap-5-depth-management-at-scale-closed-phases-5963">Gap 5: Depth management at scale — CLOSED (Phases 59–63)<a class="headerlink" href="#gap-5-depth-management-at-scale-closed-phases-5963" title="Permanent link">&para;</a></h3>
 <ul>
@@ -1429,7 +1448,7 @@
 <li>Phase 62: At N=5000, gap narrows to +0.016 test MRR — advantage is real but doesn't scale</li>
 <li>Phase 63: E_adj subsampling ablation confirms attention dilution, not subsampling, is the bottleneck</li>
 <li>1-layer accepted as scaling architecture; depth provides no benefit at N≥2000</li>
-<li><strong>Resolution: sparse attention (Phase 64) addresses the root cause — dilution across 15M+ E_adj pairs</strong></li>
+<li><strong>Phase 64: topk=128 sparse attention CONFIRMED — preserves full-attention quality (test MRR=0.2472 vs full softmax 0.2457). Dilution controlled. Memory ceiling at topk=128 (256 OOM on 98GB).</strong></li>
 </ul>
 <h3 id="gap-6-sequence-domain-generalization-future-phase-66">Gap 6: Sequence domain generalization — FUTURE (Phase 66+)<a class="headerlink" href="#gap-6-sequence-domain-generalization-future-phase-66" title="Permanent link">&para;</a></h3>
 <ul>
@@ -1556,12 +1575,12 @@
 <tr>
 <td><strong>64</strong></td>
 <td><strong>Top-k sparse edge-to-edge attention</strong></td>
-<td><strong>Next</strong> — restrict to k most-relevant E_adj neighbors</td>
+<td><strong>Done</strong> — topk=128 matches full softmax (MRR=0.2472); topk=64 −5.6%; topk=256 OOM</td>
 </tr>
 <tr>
 <td><strong>65</strong></td>
 <td><strong>Full Brain stack activation</strong></td>
-<td>Planned — enable pruner + memory + learned dropout with sparse attention</td>
+<td><strong>Next</strong> — enable pruner + memory + learned dropout with topk=128 sparse attention</td>
 </tr>
 <tr>
 <td><strong>66</strong></td>

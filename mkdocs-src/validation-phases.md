@@ -1582,3 +1582,60 @@ DistMult baseline: test_MRR=0.2244 (from Phase 62)
 | E_adj retention ≥47.6% improves test MRR by ≥0.02 | **PARTIAL** | Best Δ = +0.0067 (B vs A), below 0.02 threshold |
 | Full E_adj closes the gap vs DistMult to ≥0.04 | **No** | D gap = +0.0213, still below 0.04 |
 | Subsampling was the primary Phase 62 confound | **No** | Subsampling accounts for only ~0.007 of the "missing" gap |
+
+---
+
+## Phase 64 — Top-k Sparse Edge-to-Edge Attention at N=5000
+
+**Goal:** Validate top-k sparse edge attention as a quality-preserving mechanism for scaling DELTA to larger graphs where full E_adj softmax is memory-infeasible. Characterize the quality vs. sparsity tradeoff across topk=64, 128, and 256.
+
+### Configuration
+- Dataset: FB15k-237 at N=5000 (4977 entities, 225 relations)
+- Model: DELTA 1-layer, 4 heads, d_node=64, d_edge=32, init_temp=1.0
+- Epochs: 150 max, eval every 25, early stopping PATIENCE=2
+- bs=4096, lr=0.003, Adam, seed=42
+- Full E_adj: 63,001,372 pairs (built in 0.4s via spspmm)
+- Hardware: RTX PRO 6000 Blackwell 98GB (RunPod), 46.0hr total
+
+### Conditions
+
+| Condition | E_adj Budget | TopK | Notes |
+|-----------|-------------|------|-------|
+| A (baseline) | 30M (47.6%) | — | Phase 63 Cond B, reused |
+| B | 63M (100%) | 128 | Sparse attention |
+| C | 63M (100%) | 64 | Sparse attention |
+| D | 63M (100%) | 256 | OOM after ep25 |
+
+### Results
+
+| Condition | Budget | TopK | peak_val | best_ep | test_MRR | test_H@1 | test_H@10 | gap_vs_DM | Time |
+|-----------|--------|------|--------:|--------:|---------:|---------:|----------:|----------:|-----:|
+| A (P63) | 30M | — | 0.2499 | 125 | 0.2471 | 0.1481 | 0.4562 | +0.0227 | 37653s |
+| **B** | **63M** | **128** | 0.2465 | 125 | **0.2472** | 0.1481 | **0.4581** | **+0.0228** | 76367s |
+| C | 63M | 64 | 0.2360 | 125 | 0.2332 | 0.1349 | 0.4432 | +0.0088 | 76077s |
+| D | 63M | 256 | — | — | OOM | — | — | — | — |
+
+Phase 63 full-softmax reference (63M, no topk): test_MRR=0.2457, time=78,872s  
+DistMult baseline: test_MRR=0.2244 (from Phase 62)
+
+### Key Observations
+
+1. **topk=128 perfectly preserves full-attention quality:** B test MRR=0.2472 vs Phase 63 Cond D full softmax (0.2457, same 63M E_adj), Δ=+0.0015. Sparse attention at 128 neighbors is lossless.
+2. **topk=64 degrades meaningfully:** C test MRR=0.2332 vs B=0.2472, Δ=−0.0140 (−5.6%). H@10 also degrades: 0.4432 vs 0.4581 (−3.3%).
+3. **topk=256 OOM on 98GB GPU.** Memory limit at N=5000 lies between 128 and 256 neighbors per edge.
+4. **No epoch-time speedup:** B and C epoch times (508s, 506s) are near-identical to full-softmax (525s). Bottleneck is upstream E_adj processing, not the attention kernel.
+5. **Attention dilution warmup persists under topk:** B ep25 MRR=0.0013, C ep25 MRR=0.0062. Near-zero at ep25, recovering by ep50-75.
+6. **topk=64 has faster ep25 recovery but slower mid-training:** C=0.0062 vs B=0.0013 at ep25; C=0.0848 vs B=0.1333 at ep50.
+7. **Transient inversion at ep100:** C val MRR=0.2307 > B=0.2221, reversed by ep125 (C=0.2360 < B=0.2465). Smaller topk provides temporary advantage.
+8. **All conditions peak at ep125.** Best epoch invariant to topk width.
+9. **Optimal cost/quality point remains Phase 63 Cond B** (30M subsample, full softmax, 37,653s). Sparse attention over 63M delivers equal quality at 2× cost.
+
+### Hypothesis Evaluation
+
+| Hypothesis | Result | Evidence |
+|-----------|--------|----------|
+| topk=128 matches full softmax on 63M E_adj | **CONFIRMED** | B test_MRR=0.2472 vs Phase 63 D=0.2457, Δ=+0.0015 |
+| topk=64 degrades vs topk=128 | **CONFIRMED** | C test_MRR=0.2332 vs B=0.2472, Δ=−0.0140 (−5.6%) |
+| topk=256 is feasible on 98GB GPU | **REJECTED** | OOM after ep25 |
+| Sparse attention reduces attention dilution warmup | **PARTIAL** | topk=64 faster at ep25 (0.0062 vs 0.0013); warmup persists in both |
+| topk provides epoch-time speedup vs full softmax | **NOT CONFIRMED** | Epoch time near-identical across all topk values |

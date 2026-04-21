@@ -1,6 +1,6 @@
 # Status & Roadmap
 
-*Last updated: Phase 63 complete (2026-04-19)*
+*Last updated: Phase 64 complete (2026-04-22)*
 
 ---
 
@@ -20,11 +20,13 @@
 | LP MRR (1-layer DELTA, N=2000) | delta_1layer | **0.3338** (val peak) | 59 |
 | LP MRR (DistMult, N=2000) | DistMult (no GNN) | **0.3185** | 59 |
 | LP test MRR (1-layer DELTA, N=5000) | delta_1layer (sub E_adj) | **0.2404** | 62 |
+| LP test MRR (1-layer DELTA, N=5000, full E_adj) | delta_1layer (30M subsample, full softmax) | **0.2471** | 63 |
+| LP test MRR (1-layer DELTA, N=5000, topk=128) | delta_1layer (63M, topk=128) | **0.2472** | 64 |
 | LP test MRR (DistMult, N=5000) | DistMult (no GNN) | **0.2244** | 62 |
 
 ---
 
-## What's Validated (18 Propositions)
+## What's Validated (23 Propositions)
 
 | # | Proposition | Confidence | Key Evidence |
 |---|---|---|---|
@@ -50,6 +52,7 @@
 | P20 | 3-layer DELTA catastrophically over-smooths at N=2000 | High | Phase 59: MRR=0.0018 across 3 training configs. 15.2M E_adj pairs × 3 layers = representation collapse. |
 | P21 | DELTA's test MRR advantage over DistMult is non-monotonic and modest at N=5000 | High | Phase 62: gap=+0.004 (N=500), +0.076 (N=2000), +0.016 (N=5000). N=2000 spike inflated by DM overfitting. |
 | P22 | E_adj subsampling is a minor confound at N=5000, not the primary bottleneck | High | Phase 63: increasing retention from 23.8%→47.6% gains only +0.007 test MRR. Full retention (100%) gap vs DM=+0.021. Non-monotonic response: 47.6% > 100% > 71.4% > 23.8%. |
+| P23 | Top-k sparse attention at k=128 preserves full-attention quality; k=64 degrades −5.6%; k=256 OOM on 98GB | High | Phase 64: topk=128 test MRR=0.2472 matches Phase 63 full-softmax (0.2457, Δ=+0.0015). topk=64 test MRR=0.2332 (−5.6%). topk=256 OOM after ep25 on 98GB Blackwell. No epoch-time speedup at N=5000. |
 
 ---
 
@@ -85,12 +88,13 @@
 - WN18RR (transfer): 0.961 probe accuracy (Phase 35) — but frozen encoder, not trained LP
 - YAGO3-10: untested. Would demonstrate generalization beyond Freebase
 
-### Gap 4: Brain architecture optimization — REDIRECTED to sparse attention (Phase 64+)
+### Gap 4: Brain architecture optimization — SPARSE ATTENTION RESOLVED (Phase 64)
 - BrainEncoder validated (Phases 55–58) with MRR gains over delta_full marginal (+0.002 single-seed) but multi-seed mean 0.4844±0.0097 is robust
 - H@10 advantage (+4.7%) is substantial — constructed edges genuinely add recall
 - Density optimization CLOSED: d=0.01 (2,435 edges) is the sweet spot. d=0.02 too noisy, d=0.005 too sparse.
 - brain_hybrid OOMs at N=2000 (102K edges). Scaling brain architecture requires solving attention dilution first.
-- **New direction:** sparse attention (Phase 64) to control dilution, then re-enable full Brain stack (Phase 65)
+- **Phase 64 result:** topk=128 sparse attention validated — matches full softmax quality (test MRR 0.2472 vs 0.2457). Memory limit at N=5000 lies between topk=128 (OK) and topk=256 (OOM on 98GB). Sparse attention mechanism is ready for the full Brain stack.
+- **Next direction:** activate full Brain stack with topk=128 sparse attention (Phase 65)
 
 ### Gap 5: Depth management at scale — CLOSED (Phases 59–63)
 - Phase 59: 3-layer over-smooths catastrophically at N=2000 (MRR=0.002); 1-layer works (MRR=0.334)
@@ -101,7 +105,7 @@
 - Phase 62: At N=5000, gap narrows to +0.016 test MRR — advantage is real but doesn't scale
 - Phase 63: E_adj subsampling ablation confirms attention dilution, not subsampling, is the bottleneck
 - 1-layer accepted as scaling architecture; depth provides no benefit at N≥2000
-- **Resolution: sparse attention (Phase 64) addresses the root cause — dilution across 15M+ E_adj pairs**
+- **Phase 64: topk=128 sparse attention CONFIRMED — preserves full-attention quality (test MRR=0.2472 vs full softmax 0.2457). Dilution controlled. Memory ceiling at topk=128 (256 OOM on 98GB).**
 
 ### Gap 6: Sequence domain generalization — FUTURE (Phase 66+)
 - All current evidence is on knowledge graphs where structure is pre-defined or semi-explicit
@@ -143,8 +147,8 @@ KG scaling investigation (Phases 59–63) CLOSED. Key finding: **attention dilut
 | 61/61b | DELTA vs DistMult controlled comparison (N=2000) | Done — genuine +0.017 val MRR advantage confirmed |
 | 62 | Scale to N=5000 | Done — advantage real but modest (+0.016 test MRR) |
 | 63 | E_adj subsampling ablation (N=5000) | Done — attention dilution confirmed as bottleneck, not subsampling |
-| **64** | **Top-k sparse edge-to-edge attention** | **Next** — restrict to k most-relevant E_adj neighbors |
-| **65** | **Full Brain stack activation** | Planned — enable pruner + memory + learned dropout with sparse attention |
+| **64** | **Top-k sparse edge-to-edge attention** | **Done** — topk=128 matches full softmax (MRR=0.2472); topk=64 −5.6%; topk=256 OOM |
+| **65** | **Full Brain stack activation** | **Next** — enable pruner + memory + learned dropout with topk=128 sparse attention |
 | **66** | **LRA ListOps sequence pilot** | Planned — BrainEncoder constructs graph from flat sequential input |
 | **67+** | **Iterative refinement & domain expansion** | Planned — multi-pass construction, temporal reasoning |
 

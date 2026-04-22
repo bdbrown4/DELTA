@@ -272,10 +272,19 @@ class BrainEncoder(nn.Module):
             edge_index=aug_ei,
         )
 
-        # Stage 3: Full DELTA on augmented graph (full E_adj — no subsampling)
+        # Stage 3: Full DELTA on augmented graph
         if not self.use_router_in_delta:
             # Router OFF: edge_index unchanged across layers → cache E_adj once
             aug_edge_adj = augmented_graph.build_edge_adjacency()
+            # Subsample augmented E_adj if budget set (reuse bootstrap_edge_budget).
+            # Augmented graph adds ~25K constructed edges → E_adj grows from ~63M
+            # to ~82M. A single DELTALayer on 82M needs ~97GB, which already
+            # exceeds 94.97GB. Subsample to 30M: Stage1_saved(22GB) + Stage3_L2
+            # forward(36GB) + Stage3_L1_saved(22GB) = 80GB peak → fits.
+            stage3_budget = getattr(self, 'bootstrap_edge_budget', None)
+            if stage3_budget is not None and aug_edge_adj.shape[1] > stage3_budget:
+                perm3 = torch.randperm(aug_edge_adj.shape[1], device=aug_edge_adj.device)
+                aug_edge_adj = aug_edge_adj[:, perm3[:stage3_budget]]
             # Free E_adj build temps before Stage 3 forward
             torch.cuda.empty_cache()
             for layer in self.delta_layers:
@@ -285,8 +294,13 @@ class BrainEncoder(nn.Module):
                 augmented_graph._edge_adj_cache = (1, aug_edge_adj)
         else:
             # Router ON: pruning changes edge_index each layer → rebuild E_adj per layer
+            stage3_budget = getattr(self, 'bootstrap_edge_budget', None)
             for layer in self.delta_layers:
-                augmented_graph.build_edge_adjacency()
+                aug_edge_adj = augmented_graph.build_edge_adjacency()
+                if stage3_budget is not None and aug_edge_adj.shape[1] > stage3_budget:
+                    perm3 = torch.randperm(aug_edge_adj.shape[1], device=aug_edge_adj.device)
+                    aug_edge_adj = aug_edge_adj[:, perm3[:stage3_budget]]
+                    augmented_graph._edge_adj_cache = (1, aug_edge_adj)
                 torch.cuda.empty_cache()
                 augmented_graph = layer(augmented_graph, use_router=True,
                                        use_partitioning=False, use_memory=False)

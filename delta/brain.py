@@ -285,6 +285,8 @@ class BrainEncoder(nn.Module):
             if stage3_budget is not None and aug_edge_adj.shape[1] > stage3_budget:
                 perm3 = torch.randperm(aug_edge_adj.shape[1], device=aug_edge_adj.device)
                 aug_edge_adj = aug_edge_adj[:, perm3[:stage3_budget]]
+                # Update the graph's cache so the layer sees the subsampled adj
+                augmented_graph._edge_adj_cache = (1, aug_edge_adj)
             # Free E_adj build temps before Stage 3 forward
             torch.cuda.empty_cache()
             for layer in self.delta_layers:

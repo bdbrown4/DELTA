@@ -165,7 +165,6 @@ def evaluate_lp_fast(model, triples, edge_index, edge_types,
     et = edge_types.to(device_)
 
     with torch.no_grad():
-        torch.cuda.empty_cache()
         node_feats = model.encode(ei, et, cached_edge_adj=cached_edge_adj)
         N_e = node_feats.shape[0]
 

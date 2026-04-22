@@ -287,8 +287,9 @@ class BrainEncoder(nn.Module):
                 aug_edge_adj = aug_edge_adj[:, perm3[:stage3_budget]]
                 # Update the graph's cache so the layer sees the subsampled adj
                 augmented_graph._edge_adj_cache = (1, aug_edge_adj)
-            # Free E_adj build temps before Stage 3 forward
-            torch.cuda.empty_cache()
+            # Note: no empty_cache() here — it's called in the hot path every batch
+            # and with a large GPU memory pool takes minutes under memory pressure.
+            # The pool reuses freed aug E_adj build tensors for Stage 3 ctx allocs.
             for layer in self.delta_layers:
                 augmented_graph = layer(augmented_graph, use_router=False,
                                        use_partitioning=False, use_memory=False)
@@ -303,7 +304,7 @@ class BrainEncoder(nn.Module):
                     perm3 = torch.randperm(aug_edge_adj.shape[1], device=aug_edge_adj.device)
                     aug_edge_adj = aug_edge_adj[:, perm3[:stage3_budget]]
                     augmented_graph._edge_adj_cache = (1, aug_edge_adj)
-                torch.cuda.empty_cache()
+                # Note: no empty_cache() — see router=OFF path comment above
                 augmented_graph = layer(augmented_graph, use_router=True,
                                        use_partitioning=False, use_memory=False)
 

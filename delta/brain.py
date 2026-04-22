@@ -248,6 +248,10 @@ class BrainEncoder(nn.Module):
         if not self.use_router_in_delta:
             # Router OFF: edge_index unchanged across layers → cache E_adj once
             aug_edge_adj = augmented_graph.build_edge_adjacency()
+            # Free cached allocator blocks from E_adj construction before
+            # Stage 3 forward — those temps leave ~8GB reserved-but-unallocated
+            # that fragments the allocator and prevents large Stage 3 tensor allocs.
+            torch.cuda.empty_cache()
             for layer in self.delta_layers:
                 augmented_graph = layer(augmented_graph, use_router=False,
                                        use_partitioning=False, use_memory=False)
@@ -256,6 +260,8 @@ class BrainEncoder(nn.Module):
         else:
             # Router ON: pruning changes edge_index each layer → rebuild E_adj per layer
             for layer in self.delta_layers:
+                augmented_graph.build_edge_adjacency()
+                torch.cuda.empty_cache()
                 augmented_graph = layer(augmented_graph, use_router=True,
                                        use_partitioning=False, use_memory=False)
             augmented_graph._edge_adj_cache = (1, aug_edge_adj)

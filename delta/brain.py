@@ -209,17 +209,36 @@ class BrainEncoder(nn.Module):
 
         Returns:
             DeltaGraph with enriched features (on augmented graph)
-        """
-        original_edge_index = graph.edge_index
 
-        # Stage 1: Bootstrap pass on original graph
-        for layer in self.bootstrap_layers:
-            graph = layer(graph, use_router=False,
-                         use_partitioning=False, use_memory=False)
+        Memory note (N=5000):
+            Without checkpointing, Stage 1 saves ~75GB of activations for
+            backward. Stage 3 forward then needs another ~75GB → OOM on 98GB.
+            Gradient checkpointing frees Stage 1 activations after forward
+            and recomputes them during backward. Peak = max(75, 75) = 75GB.
+        """
+        from torch.utils.checkpoint import checkpoint as _ckpt
+        original_edge_index = graph.edge_index
+        orig_adj = graph._edge_adj_cache[1] if graph._edge_adj_cache is not None else None
+
+        # Stage 1: Bootstrap with gradient checkpointing.
+        # Activations are freed after this forward, then recomputed during backward.
+        def _run_bootstrap(nf, ef, ei):
+            g = DeltaGraph(node_features=nf, edge_features=ef, edge_index=ei)
+            if orig_adj is not None:
+                g._edge_adj_cache = (1, orig_adj)  # inject cached E_adj (captured)
+            for layer in self.bootstrap_layers:
+                g = layer(g, use_router=False, use_partitioning=False, use_memory=False)
+            return g.node_features, g.edge_features
+
+        boot_nf, boot_ef = _ckpt(
+            _run_bootstrap,
+            graph.node_features, graph.edge_features, graph.edge_index,
+            use_reentrant=False,
+        )
 
         # Bridge: transform features between stages
-        bridged_nf = self.node_bridge(graph.node_features)
-        bridged_ef = self.edge_bridge(graph.edge_features)
+        bridged_nf = self.node_bridge(boot_nf)
+        bridged_ef = self.edge_bridge(boot_ef)
 
         # Stage 2: Construct new edges from enriched features
         tau = getattr(self, '_constructor_tau', 1.0)
@@ -248,9 +267,7 @@ class BrainEncoder(nn.Module):
         if not self.use_router_in_delta:
             # Router OFF: edge_index unchanged across layers → cache E_adj once
             aug_edge_adj = augmented_graph.build_edge_adjacency()
-            # Free cached allocator blocks from E_adj construction before
-            # Stage 3 forward — those temps leave ~8GB reserved-but-unallocated
-            # that fragments the allocator and prevents large Stage 3 tensor allocs.
+            # Free E_adj build temps from allocator pool before Stage 3 forward
             torch.cuda.empty_cache()
             for layer in self.delta_layers:
                 augmented_graph = layer(augmented_graph, use_router=False,
@@ -264,6 +281,5 @@ class BrainEncoder(nn.Module):
                 torch.cuda.empty_cache()
                 augmented_graph = layer(augmented_graph, use_router=True,
                                        use_partitioning=False, use_memory=False)
-            augmented_graph._edge_adj_cache = (1, aug_edge_adj)
 
         return augmented_graph

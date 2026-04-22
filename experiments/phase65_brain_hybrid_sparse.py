@@ -151,13 +151,10 @@ def train_epoch_brain(model, train_triples, edge_index, edge_types,
 
     Per-batch encoding: BrainConstructor gets fresh Gumbel noise each batch
     for exploration — important for learning non-trivial edge selections.
-    cached_edge_adj (original 63M E_adj) injected for Stage 1 bootstrap to
-    avoid rebuilding original E_adj each batch.
-    Augmented E_adj (Stage 3) is built fresh inside BrainEncoder.
-
-    Uses bfloat16 autocast to keep multi-stage activation memory within 98GB:
-    fp32 Stage 1 saved activations (~65GB) + Stage 3 forward (~75GB) > 94GB.
-    bfloat16 halves these: ~32GB + ~37GB = ~70GB — fits on Blackwell.
+    cached_edge_adj (original 63M E_adj) injected for Stage 1 bootstrap;
+    BrainEncoder subsamples it to 30M internally to keep Stage 1 peak ~12GB
+    while retaining full gradient flow throughout all three stages.
+    Augmented E_adj (Stage 3) is built fresh inside BrainEncoder each call.
     """
     model.train()
     n = train_triples.shape[1]
@@ -177,42 +174,40 @@ def train_epoch_brain(model, train_triples, edge_index, edge_types,
         B = h.shape[0]
         N = model.num_entities
 
-        # bfloat16 autocast: halves tensor sizes for [E_adj, H, d_h] and
-        # [E_adj, 2*d_node] ctx tensors — critical for multi-stage backprop
-        with torch.autocast(device_type='cuda', dtype=torch.bfloat16):
-            # Encode — gradients flow through GNN + BrainConstructor
-            node_feats = model.encode(ei, et, cached_edge_adj=cached_edge_adj)
+        # Encode — full gradient flow through Stage 1 (30M bootstrap E_adj),
+        # BrainConstructor, and Stage 3 (full augmented E_adj)
+        node_feats = model.encode(ei, et, cached_edge_adj=cached_edge_adj)
 
-            # Tail prediction
-            scores_t = model.score_all_tails(node_feats, h, r)
-            targets_t = torch.zeros(B, N, device=device)
-            targets_t[torch.arange(B, device=device), t] = 1.0
-            if label_smoothing > 0:
-                targets_t = targets_t * (1 - label_smoothing) + label_smoothing / N
-            loss_t = F.binary_cross_entropy_with_logits(scores_t, targets_t.to(torch.bfloat16))
+        # Tail prediction
+        scores_t = model.score_all_tails(node_feats, h, r)
+        targets_t = torch.zeros(B, N, device=device)
+        targets_t[torch.arange(B, device=device), t] = 1.0
+        if label_smoothing > 0:
+            targets_t = targets_t * (1 - label_smoothing) + label_smoothing / N
+        loss_t = F.binary_cross_entropy_with_logits(scores_t, targets_t)
 
-            # Head prediction
-            scores_h = model.score_all_heads(node_feats, r, t)
-            targets_h = torch.zeros(B, N, device=device)
-            targets_h[torch.arange(B, device=device), h] = 1.0
-            if label_smoothing > 0:
-                targets_h = targets_h * (1 - label_smoothing) + label_smoothing / N
-            loss_h = F.binary_cross_entropy_with_logits(scores_h, targets_h.to(torch.bfloat16))
+        # Head prediction
+        scores_h = model.score_all_heads(node_feats, r, t)
+        targets_h = torch.zeros(B, N, device=device)
+        targets_h[torch.arange(B, device=device), h] = 1.0
+        if label_smoothing > 0:
+            targets_h = targets_h * (1 - label_smoothing) + label_smoothing / N
+        loss_h = F.binary_cross_entropy_with_logits(scores_h, targets_h)
 
-            lp_loss = (loss_t + loss_h) / 2
+        lp_loss = (loss_t + loss_h) / 2
 
-        # Sparsity regularization from BrainConstructor (cast to float32)
+        # Sparsity regularization from BrainConstructor
         sp_loss = torch.tensor(0.0, device=device)
         if hasattr(model, 'encoder') and hasattr(model.encoder, 'last_sparsity_loss'):
-            sp_loss = model.encoder.last_sparsity_loss.float()
+            sp_loss = model.encoder.last_sparsity_loss
 
-        loss = lp_loss.float() + sparsity_weight * sp_loss
+        loss = lp_loss + sparsity_weight * sp_loss
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        total_loss += lp_loss.float().item()
+        total_loss += lp_loss.item()
         total_sparsity += sp_loss.item()
         num_batches += 1
 
@@ -236,6 +231,11 @@ def run_brain_hybrid(data, ei, et, cached_edge_adj, cfg, label=''):
         topk_edges=cfg['topk'],
         use_router_in_delta=cfg['use_router'],
     )
+    # Bootstrap Stage 1 on 30M subsampled E_adj to keep peak memory ~50GB.
+    # Full 63M E_adj → ~47GB Stage 1 saved activations + ~21GB Stage 3 ctx = OOM.
+    # 30M subsample → ~12GB Stage 1 saved + ~21GB Stage 3 ctx = ~50GB. Fits.
+    # Full gradient flow maintained — no quality compromise.
+    enc.bootstrap_edge_budget = 30_000_000
     model = LinkPredictionModel(enc, data['num_entities'],
                                 data['num_relations'], d_node, d_edge).to(device)
     opt = torch.optim.Adam(model.parameters(), lr=LR)

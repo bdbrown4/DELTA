@@ -161,17 +161,19 @@ class BrainEncoder(nn.Module):
 
     def __init__(self, d_node, d_edge, bootstrap_layers=1, delta_layers=2,
                  num_heads=4, dropout=0.1, target_density=0.005,
-                 hybrid=True, init_temp=1.0):
+                 hybrid=True, init_temp=1.0, topk_edges=None,
+                 use_router_in_delta=False):
         super().__init__()
 
         self.hybrid = hybrid
+        self.use_router_in_delta = use_router_in_delta
         self.last_sparsity_loss = torch.tensor(0.0)
         self.last_num_constructed_edges = 0
 
-        # Stage 1: Bootstrap DELTA layers
+        # Stage 1: Bootstrap DELTA layers (router always OFF — enrichment only)
         self.bootstrap_layers = nn.ModuleList([
             DELTALayer(d_node, d_edge, num_heads, dropout=dropout,
-                       init_temp=init_temp)
+                       init_temp=init_temp, topk_edges=topk_edges)
             for _ in range(bootstrap_layers)
         ])
 
@@ -192,9 +194,10 @@ class BrainEncoder(nn.Module):
         self.constructor = BrainConstructor(d_node, d_edge, target_density)
 
         # Stage 3: Full DELTA layers on augmented graph
+        # topk_edges applies to Stage 3 attention over augmented E_adj
         self.delta_layers = nn.ModuleList([
             DELTALayer(d_node, d_edge, num_heads, dropout=dropout,
-                       init_temp=init_temp)
+                       init_temp=init_temp, topk_edges=topk_edges)
             for _ in range(delta_layers)
         ])
 
@@ -242,12 +245,19 @@ class BrainEncoder(nn.Module):
         )
 
         # Stage 3: Full DELTA on augmented graph
-        # Pre-compute edge adjacency once for all layers (edge_index unchanged)
-        aug_edge_adj = augmented_graph.build_edge_adjacency()
-        for layer in self.delta_layers:
-            augmented_graph = layer(augmented_graph, use_router=False,
-                                   use_partitioning=False, use_memory=False)
-            # Restore cache on new graph object (same edge_index)
+        if not self.use_router_in_delta:
+            # Router OFF: edge_index unchanged across layers → cache E_adj once
+            aug_edge_adj = augmented_graph.build_edge_adjacency()
+            for layer in self.delta_layers:
+                augmented_graph = layer(augmented_graph, use_router=False,
+                                       use_partitioning=False, use_memory=False)
+                # Restore cache on new graph object (same edge_index)
+                augmented_graph._edge_adj_cache = (1, aug_edge_adj)
+        else:
+            # Router ON: pruning changes edge_index each layer → rebuild E_adj per layer
+            for layer in self.delta_layers:
+                augmented_graph = layer(augmented_graph, use_router=True,
+                                       use_partitioning=False, use_memory=False)
             augmented_graph._edge_adj_cache = (1, aug_edge_adj)
 
         return augmented_graph

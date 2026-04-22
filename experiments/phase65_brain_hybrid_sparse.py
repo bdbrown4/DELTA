@@ -271,9 +271,11 @@ def run_brain_hybrid(data, ei, et, cached_edge_adj, cfg, label=''):
                                     'last_num_constructed_edges', 0)
             constructed_edges_log.append((ep, n_constructed))
 
-            val = evaluate_lp(model, data['val'], ei, et,
-                              data['hr_to_tails'], data['rt_to_heads'], device,
-                              cached_edge_adj=None)   # val always uses fresh encode
+            torch.cuda.empty_cache()  # release pool before eval
+            with torch.no_grad():
+                val = evaluate_lp(model, data['val'], ei, et,
+                                  data['hr_to_tails'], data['rt_to_heads'], device,
+                                  cached_edge_adj=None)   # val always uses fresh encode
             elapsed = time.time() - t0
             print(f'  [{label}] Ep {ep:4d}  loss={loss:.4f}  sp={sp_loss:.4f}  '
                   f'MRR={val["MRR"]:.4f}  H@1={val["Hits@1"]:.4f}  '
@@ -299,9 +301,11 @@ def run_brain_hybrid(data, ei, et, cached_edge_adj, cfg, label=''):
     # Test on best validation checkpoint
     if best_state is not None:
         model.load_state_dict(best_state)
-    test = evaluate_lp(model, data['test'], ei, et,
-                       data['hr_to_tails'], data['rt_to_heads'], device,
-                       cached_edge_adj=None)
+    torch.cuda.empty_cache()  # release pool before test eval
+    with torch.no_grad():
+        test = evaluate_lp(model, data['test'], ei, et,
+                           data['hr_to_tails'], data['rt_to_heads'], device,
+                           cached_edge_adj=None)
     elapsed = time.time() - t0
     del model, opt, best_state
     gc.collect(); torch.cuda.empty_cache()

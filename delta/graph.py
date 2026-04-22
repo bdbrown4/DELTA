@@ -136,29 +136,87 @@ class DeltaGraph:
             adj_1hop = co.nonzero(as_tuple=False).T.long()  # [2, num_pairs]
         else:
             # Sparse matmul approach for large graphs (vectorized, no Python loop)
-            # Uses torch_sparse.spspmm for efficient sparse × sparse → sparse
-            from torch_sparse import spspmm as _spspmm
+            # Try torch_sparse first; fall back to pure PyTorch if unavailable
+            try:
+                from torch_sparse import spspmm as _spspmm
+                all_nodes = torch.cat([src_nodes, tgt_nodes])
+                all_edge_ids = torch.arange(E, device=self.device).repeat(2)
+                N = all_nodes.max().item() + 1
+                inc_idx = torch.stack([all_nodes, all_edge_ids])
+                inc_val = torch.ones(inc_idx.shape[1], device=self.device)
+                inc_sparse = torch.sparse_coo_tensor(inc_idx, inc_val, (N, E)).coalesce()
+                c_idx = inc_sparse.indices()
+                c_val = inc_sparse.values()
+                inc_t_idx = torch.stack([c_idx[1], c_idx[0]])
+                co_idx, co_val = _spspmm(inc_t_idx, c_val, c_idx, c_val, E, N, E)
+                mask = co_idx[0] != co_idx[1]
+                adj_1hop = co_idx[:, mask].long()
+            except ImportError:
+                # Pure PyTorch fallback: vectorized node-grouping approach
+                # For each node, create all pairs of edges touching it (co-incidence)
+                all_nodes = torch.cat([src_nodes, tgt_nodes])
+                all_edge_ids = torch.arange(E, device=self.device).repeat(2)
+                N = all_nodes.max().item() + 1
 
-            all_nodes = torch.cat([src_nodes, tgt_nodes])
-            all_edge_ids = torch.arange(E, device=self.device).repeat(2)
-            N = all_nodes.max().item() + 1
+                # Sort by node to group edges per node
+                order = all_nodes.argsort(stable=True)
+                sn = all_nodes[order]        # sorted node ids [2E]
+                se = all_edge_ids[order]     # sorted edge ids [2E]
 
-            # Incidence matrix I [N, E]: I[node, edge] = 1
-            inc_idx = torch.stack([all_nodes, all_edge_ids])
-            inc_val = torch.ones(inc_idx.shape[1], device=self.device)
+                # Degree of each node
+                node_deg = torch.zeros(N, dtype=torch.long, device=self.device)
+                node_deg.scatter_add_(0, sn, torch.ones(len(sn), dtype=torch.long,
+                                                        device=self.device))
 
-            # Coalesce to handle multi-edges (self-loops have both endpoints same)
-            inc_sparse = torch.sparse_coo_tensor(inc_idx, inc_val, (N, E)).coalesce()
-            c_idx = inc_sparse.indices()
-            c_val = inc_sparse.values()
+                # Nodes with degree < 2 contribute no pairs
+                pair_counts = node_deg * (node_deg - 1)  # ordered pairs per node
+                total_pairs = pair_counts.sum().item()
 
-            # I^T [E, N] @ I [N, E] → co-incidence [E, E] (sparse)
-            inc_t_idx = torch.stack([c_idx[1], c_idx[0]])  # swap for transpose
-            co_idx, co_val = _spspmm(inc_t_idx, c_val, c_idx, c_val, E, N, E)
+                if total_pairs == 0:
+                    adj_1hop = torch.zeros(2, 0, dtype=torch.long, device=self.device)
+                else:
+                    # Start index of each node's block in the sorted arrays
+                    blk_starts = torch.zeros(N, dtype=torch.long, device=self.device)
+                    blk_starts[1:] = node_deg[:-1].cumsum(0)
 
-            # Remove self-loops (diagonal)
-            mask = co_idx[0] != co_idx[1]
-            adj_1hop = co_idx[:, mask].long()
+                    # For each ordered pair, which node it belongs to
+                    node_ids_for_pairs = torch.repeat_interleave(
+                        torch.arange(N, device=self.device), pair_counts
+                    )  # [total_pairs]
+
+                    # Cumulative pair counts to compute within-node pair index
+                    cum_pairs = torch.zeros(N + 1, dtype=torch.long, device=self.device)
+                    cum_pairs[1:] = pair_counts.cumsum(0)
+                    pair_within_local = (
+                        torch.arange(total_pairs, dtype=torch.long, device=self.device)
+                        - cum_pairs[node_ids_for_pairs]
+                    )  # 0-indexed within each node's block
+
+                    # Convert (node, local_pair_idx) → (within_row, within_col)
+                    # Enumerate all d*(d-1) ordered pairs skipping diagonal:
+                    #   row_w = local_pair // (d-1)
+                    #   col_w_raw = local_pair % (d-1)
+                    #   col_w = col_w_raw + (col_w_raw >= row_w)  # skip self
+                    d = node_deg[node_ids_for_pairs]      # [total_pairs]
+                    row_w = pair_within_local // (d - 1)
+                    col_w_raw = pair_within_local % (d - 1)
+                    col_w = col_w_raw + (col_w_raw >= row_w).long()
+
+                    # Map within-node indices back to global sorted positions
+                    node_start = blk_starts[node_ids_for_pairs]
+                    row_g = node_start + row_w
+                    col_g = node_start + col_w
+
+                    edge_i = se[row_g]
+                    edge_j = se[col_g]
+
+                    # Two edges may share 2 nodes (multi-edge) → deduplicate
+                    raw = torch.stack([edge_i, edge_j])  # [2, total_pairs]
+                    flat = edge_i * E + edge_j
+                    uniq_flat = torch.unique(flat)
+                    edge_i_u = uniq_flat // E
+                    edge_j_u = uniq_flat % E
+                    adj_1hop = torch.stack([edge_i_u, edge_j_u])
 
         if hops <= 1 or adj_1hop.shape[1] == 0:
             self._edge_adj_cache = (hops, adj_1hop)

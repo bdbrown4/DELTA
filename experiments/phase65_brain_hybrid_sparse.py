@@ -154,6 +154,10 @@ def train_epoch_brain(model, train_triples, edge_index, edge_types,
     cached_edge_adj (original 63M E_adj) injected for Stage 1 bootstrap to
     avoid rebuilding original E_adj each batch.
     Augmented E_adj (Stage 3) is built fresh inside BrainEncoder.
+
+    Uses bfloat16 autocast to keep multi-stage activation memory within 98GB:
+    fp32 Stage 1 saved activations (~65GB) + Stage 3 forward (~75GB) > 94GB.
+    bfloat16 halves these: ~32GB + ~37GB = ~70GB — fits on Blackwell.
     """
     model.train()
     n = train_triples.shape[1]
@@ -173,40 +177,42 @@ def train_epoch_brain(model, train_triples, edge_index, edge_types,
         B = h.shape[0]
         N = model.num_entities
 
-        # Encode — gradients flow through GNN + BrainConstructor
-        # Stage 1 uses cached_edge_adj; Stage 3 rebuilds augmented E_adj
-        node_feats = model.encode(ei, et, cached_edge_adj=cached_edge_adj)
+        # bfloat16 autocast: halves tensor sizes for [E_adj, H, d_h] and
+        # [E_adj, 2*d_node] ctx tensors — critical for multi-stage backprop
+        with torch.autocast(device_type='cuda', dtype=torch.bfloat16):
+            # Encode — gradients flow through GNN + BrainConstructor
+            node_feats = model.encode(ei, et, cached_edge_adj=cached_edge_adj)
 
-        # Tail prediction
-        scores_t = model.score_all_tails(node_feats, h, r)
-        targets_t = torch.zeros(B, N, device=device)
-        targets_t[torch.arange(B, device=device), t] = 1.0
-        if label_smoothing > 0:
-            targets_t = targets_t * (1 - label_smoothing) + label_smoothing / N
-        loss_t = F.binary_cross_entropy_with_logits(scores_t, targets_t)
+            # Tail prediction
+            scores_t = model.score_all_tails(node_feats, h, r)
+            targets_t = torch.zeros(B, N, device=device)
+            targets_t[torch.arange(B, device=device), t] = 1.0
+            if label_smoothing > 0:
+                targets_t = targets_t * (1 - label_smoothing) + label_smoothing / N
+            loss_t = F.binary_cross_entropy_with_logits(scores_t, targets_t.to(torch.bfloat16))
 
-        # Head prediction
-        scores_h = model.score_all_heads(node_feats, r, t)
-        targets_h = torch.zeros(B, N, device=device)
-        targets_h[torch.arange(B, device=device), h] = 1.0
-        if label_smoothing > 0:
-            targets_h = targets_h * (1 - label_smoothing) + label_smoothing / N
-        loss_h = F.binary_cross_entropy_with_logits(scores_h, targets_h)
+            # Head prediction
+            scores_h = model.score_all_heads(node_feats, r, t)
+            targets_h = torch.zeros(B, N, device=device)
+            targets_h[torch.arange(B, device=device), h] = 1.0
+            if label_smoothing > 0:
+                targets_h = targets_h * (1 - label_smoothing) + label_smoothing / N
+            loss_h = F.binary_cross_entropy_with_logits(scores_h, targets_h.to(torch.bfloat16))
 
-        lp_loss = (loss_t + loss_h) / 2
+            lp_loss = (loss_t + loss_h) / 2
 
-        # Sparsity regularization from BrainConstructor
+        # Sparsity regularization from BrainConstructor (cast to float32)
         sp_loss = torch.tensor(0.0, device=device)
         if hasattr(model, 'encoder') and hasattr(model.encoder, 'last_sparsity_loss'):
-            sp_loss = model.encoder.last_sparsity_loss
+            sp_loss = model.encoder.last_sparsity_loss.float()
 
-        loss = lp_loss + sparsity_weight * sp_loss
+        loss = lp_loss.float() + sparsity_weight * sp_loss
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        total_loss += lp_loss.item()
+        total_loss += lp_loss.float().item()
         total_sparsity += sp_loss.item()
         num_batches += 1
 

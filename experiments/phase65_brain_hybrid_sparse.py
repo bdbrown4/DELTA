@@ -139,6 +139,92 @@ def build_edge_adj(N, E_train, ei):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# Fast vectorized LP evaluation (replaces phase46c evaluate_lp for BrainEncoder)
+#
+# The original evaluate_lp has a Python for-loop with B×4 GPU-CPU .item()
+# calls per batch.  Under 90GB+ GPU memory pressure each sync takes ~50-100ms,
+# making a single eval take 60-90 minutes for 8788 val triples.
+#
+# This version reduces syncs from ~70K to ~6 per eval call by:
+#   1. torch.no_grad() throughout
+#   2. Vectorised rank computation — ranks = (scores >= target).sum(1)
+#   3. Single .cpu() transfer per batch instead of B individual .item() calls
+#   4. EVAL_BS=4096 → only 3 batches for 8788 val triples
+# ═══════════════════════════════════════════════════════════════════════════
+
+def evaluate_lp_fast(model, triples, edge_index, edge_types,
+                     hr_to_tails, rt_to_heads, device_,
+                     cached_edge_adj=None, eval_bs=4096):
+    """Vectorised filtered MRR / Hits@K — fast replacement for evaluate_lp."""
+    model.eval()
+    n = triples.shape[1]
+    if n == 0:
+        return {'MRR': 0.0, 'Hits@1': 0.0, 'Hits@3': 0.0, 'Hits@10': 0.0}
+
+    ei = edge_index.to(device_)
+    et = edge_types.to(device_)
+
+    with torch.no_grad():
+        torch.cuda.empty_cache()
+        node_feats = model.encode(ei, et, cached_edge_adj=cached_edge_adj)
+        N_e = node_feats.shape[0]
+
+        h_all = triples[0]   # stay on CPU for fast .tolist()
+        r_all = triples[1]
+        t_all = triples[2]
+
+        all_ranks = []
+
+        for start in range(0, n, eval_bs):
+            end = min(start + eval_bs, n)
+            # Python ints from CPU tensor — no GPU-CPU sync
+            h_cpu = h_all[start:end].tolist()
+            r_cpu = r_all[start:end].tolist()
+            t_cpu = t_all[start:end].tolist()
+            B = len(h_cpu)
+
+            h_dev = torch.tensor(h_cpu, dtype=torch.long, device=device_)
+            r_dev = torch.tensor(r_cpu, dtype=torch.long, device=device_)
+            t_dev = torch.tensor(t_cpu, dtype=torch.long, device=device_)
+
+            # ── Tail prediction ──────────────────────────────────────────
+            scores_t = model.score_all_tails(node_feats, h_dev, r_dev)  # [B, N_e]
+            # Build filter indices in Python (CPU-side), then bulk-mask GPU tensor
+            f_ii, f_jj = [], []
+            for i, (hi, ri, ti) in enumerate(zip(h_cpu, r_cpu, t_cpu)):
+                for tt in hr_to_tails.get((hi, ri), set()):
+                    if tt != ti:
+                        f_ii.append(i); f_jj.append(tt)
+            if f_ii:
+                scores_t[f_ii, f_jj] = float('-inf')
+            # Vectorised rank: count entities scoring >= query entity — 1 sync
+            tgt_t = scores_t[torch.arange(B, device=device_), t_dev]   # [B]
+            ranks_t = (scores_t >= tgt_t.unsqueeze(1)).sum(dim=1)       # [B] GPU
+            all_ranks.extend(ranks_t.cpu().numpy().tolist())            # 1 transfer
+
+            # ── Head prediction ──────────────────────────────────────────
+            scores_h = model.score_all_heads(node_feats, r_dev, t_dev)  # [B, N_e]
+            f_ii, f_jj = [], []
+            for i, (hi, ri, ti) in enumerate(zip(h_cpu, r_cpu, t_cpu)):
+                for th in rt_to_heads.get((ri, ti), set()):
+                    if th != hi:
+                        f_ii.append(i); f_jj.append(th)
+            if f_ii:
+                scores_h[f_ii, f_jj] = float('-inf')
+            tgt_h = scores_h[torch.arange(B, device=device_), h_dev]
+            ranks_h = (scores_h >= tgt_h.unsqueeze(1)).sum(dim=1)
+            all_ranks.extend(ranks_h.cpu().numpy().tolist())
+
+    ranks = np.maximum(np.array(all_ranks, dtype=np.float64), 1.0)
+    return {
+        'MRR':    float(np.mean(1.0 / ranks)),
+        'Hits@1': float(np.mean(ranks <= 1)),
+        'Hits@3': float(np.mean(ranks <= 3)),
+        'Hits@10':float(np.mean(ranks <= 10)),
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # Training — brain hybrid per-batch encoding with sparsity loss
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -271,11 +357,9 @@ def run_brain_hybrid(data, ei, et, cached_edge_adj, cfg, label=''):
                                     'last_num_constructed_edges', 0)
             constructed_edges_log.append((ep, n_constructed))
 
-            torch.cuda.empty_cache()  # release pool before eval
-            with torch.no_grad():
-                val = evaluate_lp(model, data['val'], ei, et,
-                                  data['hr_to_tails'], data['rt_to_heads'], device,
-                                  cached_edge_adj=None)   # val always uses fresh encode
+            val = evaluate_lp_fast(model, data['val'], ei, et,
+                                   data['hr_to_tails'], data['rt_to_heads'], device,
+                                   cached_edge_adj=None)
             elapsed = time.time() - t0
             print(f'  [{label}] Ep {ep:4d}  loss={loss:.4f}  sp={sp_loss:.4f}  '
                   f'MRR={val["MRR"]:.4f}  H@1={val["Hits@1"]:.4f}  '
@@ -301,11 +385,9 @@ def run_brain_hybrid(data, ei, et, cached_edge_adj, cfg, label=''):
     # Test on best validation checkpoint
     if best_state is not None:
         model.load_state_dict(best_state)
-    torch.cuda.empty_cache()  # release pool before test eval
-    with torch.no_grad():
-        test = evaluate_lp(model, data['test'], ei, et,
-                           data['hr_to_tails'], data['rt_to_heads'], device,
-                           cached_edge_adj=None)
+    test = evaluate_lp_fast(model, data['test'], ei, et,
+                             data['hr_to_tails'], data['rt_to_heads'], device,
+                             cached_edge_adj=None)
     elapsed = time.time() - t0
     del model, opt, best_state
     gc.collect(); torch.cuda.empty_cache()

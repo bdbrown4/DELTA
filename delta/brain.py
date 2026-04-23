@@ -234,8 +234,20 @@ class BrainEncoder(nn.Module):
         # Stage 1: Bootstrap pass on original graph (optionally subsampled E_adj)
         # Subsampled E_adj halves peak activation memory while retaining full
         # gradient flow — no quality compromise vs no_grad on full E_adj.
-        if bootstrap_budget is not None and graph._edge_adj_cache is not None:
-            _, orig_adj = graph._edge_adj_cache
+        #
+        # Handle both cases:
+        #   - Training: cached_edge_adj is pre-built and injected into
+        #     graph._edge_adj_cache before calling forward(). Just subsample it.
+        #   - Eval (cached_edge_adj=None): _edge_adj_cache is None → build the
+        #     full orig adj first, then subsample. Avoids DELTALayer building
+        #     the unsubsampled 63M adj which would allocate [63M, 128] = 30.7GB
+        #     and cause CUDA memory compaction under pool pressure.
+        if bootstrap_budget is not None:
+            if graph._edge_adj_cache is None:
+                # Eval path: build original adj then subsample
+                orig_adj = graph.build_edge_adjacency()
+            else:
+                _, orig_adj = graph._edge_adj_cache
             if orig_adj.shape[1] > bootstrap_budget:
                 perm = torch.randperm(orig_adj.shape[1], device=orig_adj.device)
                 sub_adj = orig_adj[:, perm[:bootstrap_budget]]

@@ -35,7 +35,7 @@ Training:
   - cached_edge_adj (original 63M) injected for Stage 1 bootstrap speedup
   - Augmented E_adj built from scratch inside BrainEncoder (no external cache)
   - sparsity_weight=0.01 regularizes constructor toward sparse edge selection
-  - Same early stopping: PATIENCE=2, EVAL_EVERY=25, MAX_EPOCHS=150, BS=4096, LR=0.003
+  - Same early stopping: PATIENCE=3, EVAL_EVERY=25, MAX_EPOCHS=75, BS=4096, LR=0.003
 
 Cost estimate (per condition):
   - 3-stage BrainEncoder forward: ~3x Phase 64 per-batch encode (~24s/batch)
@@ -104,9 +104,9 @@ CONDITIONS = {
 }
 
 # ── Training config ──
-MAX_EPOCHS   = 150
+MAX_EPOCHS   = 75
 EVAL_EVERY   = 25
-PATIENCE     = 2
+PATIENCE     = 3
 BS           = 4096
 LR           = 0.003
 SEED         = 42

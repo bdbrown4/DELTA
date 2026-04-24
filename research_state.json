@@ -1,8 +1,9 @@
 {
-  "last_updated": "2026-04-22",
-  "last_completed_phase": 64,
-  "next_phase": 65,
+  "last_updated": "2026-04-23",
+  "last_completed_phase": 65,
+  "next_phase": 66,
   "current_phase": null,
+  "phase_65_note": "DEFERRED — compute-prohibitive (816s/epoch × 75ep × 2 cond ≈ 34hr). Epoch 1 successful (sp_loss=0.0407, 24765 edges). 5 infra bugs fixed. Brain at N=5000 deferred to post-paper.",
 
   "best_results": {
     "best_overall_lp": {

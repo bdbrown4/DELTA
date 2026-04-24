@@ -1,6 +1,6 @@
 # Status & Roadmap
 
-*Last updated: Phase 64 complete (2026-04-22)*
+*Last updated: Phase 65 deferred (2026-04-23)*
 
 ---
 
@@ -94,7 +94,7 @@
 - Density optimization CLOSED: d=0.01 (2,435 edges) is the sweet spot. d=0.02 too noisy, d=0.005 too sparse.
 - brain_hybrid OOMs at N=2000 (102K edges). Scaling brain architecture requires solving attention dilution first.
 - **Phase 64 result:** topk=128 sparse attention validated — matches full softmax quality (test MRR 0.2472 vs 0.2457). Memory limit at N=5000 lies between topk=128 (OK) and topk=256 (OOM on 98GB). Sparse attention mechanism is ready for the full Brain stack.
-- **Next direction:** activate full Brain stack with topk=128 sparse attention (Phase 65)
+- **Phase 65 (deferred):** Brain hybrid at N=5000 ran 1 epoch (816.7s, healthy signals) but was aborted due to compute cost (~$64/34hr). Brain is architecturally sound. Deferred to future work post-paper submission.
 
 ### Gap 5: Depth management at scale — CLOSED (Phases 59–63)
 - Phase 59: 3-layer over-smooths catastrophically at N=2000 (MRR=0.002); 1-layer works (MRR=0.334)
@@ -148,8 +148,8 @@ KG scaling investigation (Phases 59–63) CLOSED. Key finding: **attention dilut
 | 62 | Scale to N=5000 | Done — advantage real but modest (+0.016 test MRR) |
 | 63 | E_adj subsampling ablation (N=5000) | Done — attention dilution confirmed as bottleneck, not subsampling |
 | **64** | **Top-k sparse edge-to-edge attention** | **Done** — topk=128 matches full softmax (MRR=0.2472); topk=64 −5.6%; topk=256 OOM |
-| **65** | **Full Brain stack activation** | **Next** — enable pruner + memory + learned dropout with topk=128 sparse attention |
-| **66** | **LRA ListOps sequence pilot** | Planned — BrainEncoder constructs graph from flat sequential input |
+| **65** | **Full Brain stack activation** | **Deferred** — 1 epoch ran (816.7s, healthy), aborted at ~$64/34hr compute cost. Engineering fixes committed. |
+| **66** | **LRA ListOps sequence pilot or Brain N=5000 retry** | Planned |
 | **67+** | **Iterative refinement & domain expansion** | Planned — multi-pass construction, temporal reasoning |
 
 ### Horizon 4: Dynamic Reasoning — Future

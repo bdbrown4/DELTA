@@ -1138,7 +1138,7 @@
 
 
 <h1 id="status-roadmap">Status &amp; Roadmap<a class="headerlink" href="#status-roadmap" title="Permanent link">&para;</a></h1>
-<p><em>Last updated: Phase 64 complete (2026-04-22)</em></p>
+<p><em>Last updated: Phase 65 deferred (2026-04-23)</em></p>
 <hr />
 <h2 id="current-best-results">Current Best Results<a class="headerlink" href="#current-best-results" title="Permanent link">&para;</a></h2>
 <table>
@@ -1436,7 +1436,7 @@
 <li>Density optimization CLOSED: d=0.01 (2,435 edges) is the sweet spot. d=0.02 too noisy, d=0.005 too sparse.</li>
 <li>brain_hybrid OOMs at N=2000 (102K edges). Scaling brain architecture requires solving attention dilution first.</li>
 <li><strong>Phase 64 result:</strong> topk=128 sparse attention validated — matches full softmax quality (test MRR 0.2472 vs 0.2457). Memory limit at N=5000 lies between topk=128 (OK) and topk=256 (OOM on 98GB). Sparse attention mechanism is ready for the full Brain stack.</li>
-<li><strong>Next direction:</strong> activate full Brain stack with topk=128 sparse attention (Phase 65)</li>
+<li><strong>Phase 65 (deferred):</strong> Brain hybrid at N=5000 ran 1 epoch (816.7s, healthy signals) but was aborted due to compute cost (~$64/34hr). Brain is architecturally sound. Deferred to future work post-paper submission.</li>
 </ul>
 <h3 id="gap-5-depth-management-at-scale-closed-phases-5963">Gap 5: Depth management at scale — CLOSED (Phases 59–63)<a class="headerlink" href="#gap-5-depth-management-at-scale-closed-phases-5963" title="Permanent link">&para;</a></h3>
 <ul>
@@ -1580,12 +1580,12 @@
 <tr>
 <td><strong>65</strong></td>
 <td><strong>Full Brain stack activation</strong></td>
-<td><strong>Next</strong> — enable pruner + memory + learned dropout with topk=128 sparse attention</td>
+<td><strong>Deferred</strong> — 1 epoch ran (816.7s, healthy), aborted at ~$64/34hr compute cost. Engineering fixes committed.</td>
 </tr>
 <tr>
 <td><strong>66</strong></td>
-<td><strong>LRA ListOps sequence pilot</strong></td>
-<td>Planned — BrainEncoder constructs graph from flat sequential input</td>
+<td><strong>LRA ListOps sequence pilot or Brain N=5000 retry</strong></td>
+<td>Planned</td>
 </tr>
 <tr>
 <td><strong>67+</strong></td>

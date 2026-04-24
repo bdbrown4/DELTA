@@ -1698,3 +1698,55 @@ Five infrastructure bugs found and fixed (commits 4def6d4, af8d292):
 4. **Remove empty_cache() from hot path** — was causing ~25min stalls per call under 92.5GB memory pool
 5. **Stage 1 eval path subsample** — fixed skipped subsample when `_edge_adj_cache=None` (was causing 30.7GB allocation → CUDA compaction)
 
+---
+
+## Phase 66 — 1-Hop vs 2-Hop Edge Adjacency Ablation (NeurIPS Reviewer Response)
+
+### Setup
+
+| Parameter | Value |
+|-----------|-------|
+| Dataset | FB15k-237 top-500 subgraph (494 entities, 160 relations, 9703/390/486 train/val/test) |
+| Architecture | DELTA-Matched (d_node=48, d_edge=24, 2 layers, 4 heads, 157,720 params) |
+| Config | MAX_EPOCHS=500, EVAL_EVERY=25, PATIENCE=10, BS=4096, LR=0.003, label_smoothing=0.1 |
+| Multi-hop eval | 1p=486, 2p=5764, 3p=10000 (leakage audit PASSED) |
+| max_adj_pairs | 1,500,000 (caps hops=2 from 28.2M to same scale as hops=1) |
+| Hardware | NVIDIA RTX 3080 Ti (12.9GB VRAM), CUDA |
+| Seeds | [42, 123, 456] |
+| Total runtime | 1879s |
+
+### Conditions
+
+| Condition | Description | adj_pairs |
+|-----------|-------------|-----------|
+| node_only | Edge attention stream disabled (empty adj matrix) | 0 |
+| hops=1 | Default: edges sharing an endpoint (B^T B - diag) | 1,535,500 |
+| hops=2 | 2-hop: (B^T B)^2 - diag, subsampled to 1.5M | 1,500,000 |
+
+### Results
+
+| Condition | LP MRR (mean±std) | 2p MRR (mean±std) | 3p MRR (mean±std) | Time(s) |
+|-----------|-------------------|-------------------|-------------------|---------|
+| node_only | 0.505 ± 0.006 | 0.728 ± 0.011 | 0.742 ± 0.012 | 115 |
+| hops=1 | 0.498 ± 0.008 | 0.721 ± 0.007 | 0.729 ± 0.007 | 849 |
+| hops=2 | 0.496 ± 0.003 | 0.726 ± 0.014 | 0.731 ± 0.006 | 744 |
+
+All pairwise gaps are within 1σ of each condition's cross-seed standard deviation.
+
+### Hypothesis Evaluation
+
+| Hypothesis | Result | Evidence |
+|-----------|--------|----------|
+| hops=2 multi-hop MRR > hops=1 by ≥0.010 (2p and 3p) | **REJECTED** | hops=2 vs hops=1: 2p gap=+0.005, 3p gap=+0.002 (both within 1σ) |
+| Edge attention provides measurable benefit over node_only | **REJECTED** | node_only outperforms both on all metrics (within noise but consistently) |
+| hops=2 is the driver of DELTA's multi-hop compositional advantage | **NOT CONFIRMED** | Multi-hop dominated by entity embedding quality at this density (mean degree 19.7) |
+
+### Key Insight
+
+The N=500 dense subgraph (mean degree ≈19.7) saturates the 1-hop neighborhood — every node is reachable via 1 or 2 hops with high probability. In this regime, the 1-hop edge adjacency matrix already captures all structurally relevant edge relationships; extending to 2-hop produces a near-complete edge graph where structural locality information is diluted. Entity embeddings learned during LP training carry all the useful signal. The critical test is Phase 67 on the full sparse graph (14.5K entities, mean degree ≈4.1) where 1-hop genuinely bottlenecks the information available.
+
+### Paper Impact
+
+Table `tab:ablation_hop` in `delta_neurips2026.tex` was populated with these results. Caption and discussion paragraph added to §5.3 (Ablation) with honest framing: "all differences within 1σ; the dense subgraph saturates 1-hop coverage; Phase 67 tests the sparse regime."
+
+

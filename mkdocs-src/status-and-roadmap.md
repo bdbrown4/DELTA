@@ -1,6 +1,6 @@
 # Status & Roadmap
 
-*Last updated: Phase 65 deferred (2026-04-23)*
+*Last updated: Phase 66 completed (2026-04-23)*
 
 ---
 
@@ -107,10 +107,20 @@
 - 1-layer accepted as scaling architecture; depth provides no benefit at N≥2000
 - **Phase 64: topk=128 sparse attention CONFIRMED — preserves full-attention quality (test MRR=0.2472 vs full softmax 0.2457). Dilution controlled. Memory ceiling at topk=128 (256 OOM on 98GB).**
 
-### Gap 6: Sequence domain generalization — FUTURE (Phase 66+)
+### Gap 6: Hop-depth ablation — ADDRESSED BUT OPEN (Phase 66 → Phase 67)
+- Phase 66 (3 seeds × 500 epochs, RTX 3080 Ti): hops=2 vs hops=1 gap on N=500 dense subgraph is within 1σ (2p=+0.005, 3p=+0.002). node_only outperforms both. REJECTED on dense subgraph (mean degree ≈19.7).
+- Dense subgraph result does not answer the question for the sparse full graph: at mean degree ≈4.1, 1-hop edge adjacency covers only ~16 pairs per edge — leaving far more room for 2-hop to add signal.
+- Phase 67 (PLANNED): repeat on full sparse FB15k-237 (14.5K entities) with topk=128 sparse attention + NBFNet/A*Net baselines. Requires RunPod H100.
+
+### Gap 7: Standard benchmark comparison — FUTURE (Phase 68)
+- All multi-hop results use custom chain query generator — not directly comparable to published BetaE/GQE results
+- Phase 68 (PLANNED): BetaE 9-query-type evaluation (1p/2p/3p/2i/3i/ip/pi/2u/up) on standard BetaE splits
+- Dataset: https://snap.stanford.edu/betae/KG_data.zip
+
+### Gap 8: Sequence domain generalization — FUTURE
 - All current evidence is on knowledge graphs where structure is pre-defined or semi-explicit
 - BrainEncoder's Gumbel-sigmoid construction (Phases 55–58) is the mechanism for sequence domains
-- Prerequisites: sparse attention (Phase 64), full Brain stack (Phase 65); then LRA ListOps pilot (Phase 66)
+- Prerequisites: Phase 67 (full graph), Phase 68 (BetaE benchmark), then LRA ListOps pilot
 
 ---
 
@@ -149,8 +159,10 @@ KG scaling investigation (Phases 59–63) CLOSED. Key finding: **attention dilut
 | 63 | E_adj subsampling ablation (N=5000) | Done — attention dilution confirmed as bottleneck, not subsampling |
 | **64** | **Top-k sparse edge-to-edge attention** | **Done** — topk=128 matches full softmax (MRR=0.2472); topk=64 −5.6%; topk=256 OOM |
 | **65** | **Full Brain stack activation** | **Deferred** — 1 epoch ran (816.7s, healthy), aborted at ~$64/34hr compute cost. Engineering fixes committed. |
-| **66** | **LRA ListOps sequence pilot or Brain N=5000 retry** | Planned |
-| **67+** | **Iterative refinement & domain expansion** | Planned — multi-pass construction, temporal reasoning |
+| **66** | **1-hop vs 2-hop edge adjacency ablation** | **Done** — REJECTED on dense N=500 subgraph (hops=2 vs hops=1 within 1σ). Paper table updated with actual numbers. |
+| **67** | **Full sparse FB15k-237 hop-depth ablation + NBFNet baselines** | Planned — RunPod H100, topk=128 sparse attention, 3 seeds |
+| **68** | **BetaE 9-query-type benchmark** | Planned — standard comparison to published BetaE/GQE results |
+| **69+** | **Brain N=5000 retry + iterative refinement** | Planned — post-paper-submission |
 
 ### Horizon 4: Dynamic Reasoning — Future
 

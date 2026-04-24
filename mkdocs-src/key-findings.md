@@ -1,6 +1,6 @@
 # Key Findings
 
-44 key findings from 63 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
+44 key findings from 66 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
 
 ---
 
@@ -167,6 +167,11 @@ Phase 64: Top-k sparse edge attention tested at 3 budgets on full 63M E_adj at N
 
 ### 46. BrainEncoder is architecturally sound at N=5000 but compute-prohibitive without dedicated hardware
 Phase 65: Brain hybrid (1 bootstrap layer + BrainConstructor + 2 Stage-3 layers) at N=5000 ran successfully for 1 epoch (816.7s/epoch, 1.6× Phase 64 cost) with healthy signals — sp_loss=0.0407, constructed_edges=24,765 (matching target_density=0.001). No OOM, no numerical issues. However, 816.7s/epoch × 75 epochs × 2 conditions ≈ 34hr = ~$64 on RunPod, and the pod became unreachable mid-run. Experiment deferred. **Key engineering contributions**: (1) pure PyTorch fallback for `build_edge_adjacency()` (no `torch_sparse`); (2) `evaluate_lp_fast` reducing 70,656 GPU-CPU syncs to ~6; (3) removal of `torch.cuda.empty_cache()` from the training hot path (was causing ~25min stalls per call under 92.5GB pool); (4) Stage 1 eval path fix (subsample skipped when cache=None → 30.7GB allocation → compaction). Brain at N=5000 is feasible in principle; Phase 64's topk=128 provides the memory headroom. Cost-effectiveness requires a dedicated instance or reduced N.
+
+---
+
+### 47. 2-hop edge adjacency provides no measurable advantage on dense subgraph — entity embedding quality dominates (REJECTED)
+Phase 66: 3-condition × 3-seed × 500-epoch ablation (RTX 3080 Ti, 1879s). **hops=2 vs hops=1: 2p gap=+0.005, 3p gap=+0.002 — both within 1σ.** Surprisingly, node_only outperforms both on every metric (LP MRR=0.505, 2p=0.728, 3p=0.742 vs hops=1: 0.498/0.721/0.729 and hops=2: 0.496/0.726/0.731). On the dense N=500 subgraph (mean degree ≈19.7), 1-hop adjacency already reaches all structurally relevant edge pairs; 2-hop provides a near-complete graph that adds noise rather than signal. The synthetic transitive benchmark result (2-hop 100% vs 1-hop 61.1%) does not generalize to FB15k-237 chain queries at this density. The edge attention stream does not hurt — all conditions are competitive — but the 2-hop hypothesis is not supported. The critical test is Phase 67 on the sparse full FB15k-237 graph (mean degree ≈4.1), where 1-hop genuinely bottlenecks the information available to the attention mechanism.
 
 ---
 

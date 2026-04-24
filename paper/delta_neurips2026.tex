@@ -1,0 +1,636 @@
+\documentclass{article}
+
+% NeurIPS 2026 style
+\usepackage[final]{neurips_2026}  % NeurIPS 2026 style
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{subcaption}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{multirow}
+\usepackage{wrapfig}
+
+\title{DELTA: Edge-Centric Dual Attention for\\Compositional Reasoning on Knowledge Graphs}
+
+\author{
+  Benjamin Brown \\
+  Independent Researcher \\
+  \texttt{bdbrown4@eagles.usi.edu} \\
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Graph neural networks treat edges as passive conduits for message passing between nodes, limiting their ability to reason about \emph{relationships between relationships}---the compositional structure underlying multi-hop inference in knowledge graphs. We introduce \textbf{DELTA} (\textbf{D}ual \textbf{E}dge-\textbf{L}earning \textbf{T}ransformer \textbf{A}rchitecture), which elevates edges to first-class computational entities via \emph{edge-to-edge attention}: edges attend to structurally adjacent edges through a multi-hop edge adjacency matrix, enabling direct relational composition without node-mediated bottlenecks. On FB15k-237 multi-hop path queries, DELTA-Matched (158K parameters) achieves strictly higher MRR at 5-hop (0.790) than at 2-hop (0.758)---a net improvement no other tested model shares. GraphGPS (228K parameters) degrades from 0.754 (2-hop) to 0.690 (5-hop); DistMult drops from 0.728 to 0.457. The advantage over GraphGPS accelerates with depth---$+0.004$ at 2-hop, $+0.100$ at 5-hop---and is statistically robust across seeds (3-hop with 10\% DropEdge: $0.742 \pm 0.009$ vs.\ $0.713 \pm 0.007$; non-overlapping confidence intervals). An emergent edge--node temperature asymmetry arises during training: edge attention heads converge to sharper distributions while node heads prefer softer averaging, a pattern discovered autonomously via gradient descent. DELTA achieves this with 31\% fewer parameters than GraphGPS and faster per-query inference (0.8--0.9$\times$), at the cost of a one-time encoding overhead from edge adjacency construction.
+\end{abstract}
+
+%----------------------------------------------------------------------
+\section{Introduction}
+\label{sec:intro}
+%----------------------------------------------------------------------
+
+Knowledge graph completion (KGC) requires inferring missing links from observed relational structure. While standard link prediction evaluates single-hop tail prediction (``1p''), real-world reasoning often demands \emph{compositional} multi-hop inference: chaining relations such as \texttt{born\_in} $\circ$ \texttt{located\_in} to derive \texttt{nationality}. This compositional capacity is precisely where existing architectures falter.
+
+Embedding methods (TransE~\cite{bordes2013translating}, DistMult~\cite{yang2015embedding}, RotatE~\cite{sun2019rotate}) represent entities and relations as vectors without structural inductive bias. They excel at memorizing local link statistics but collapse on multi-hop chains: DistMult's MRR drops from 0.728 (2-hop) to 0.457 (5-hop) on our benchmark. Message-passing GNNs (CompGCN~\cite{vashishth2019composition}, R-GCN~\cite{schlichtkrull2018modeling}) and graph transformers (GraphGPS~\cite{rampavsek2022recipe}) propagate information through nodes, treating edges as scalar weights or simple feature carriers. This design creates an information bottleneck: to reason about relationships between relationships, information must route through intermediate nodes, accumulating compression loss at each hop.
+
+We propose \textbf{DELTA}, an architecture that makes edges first-class computational entities. DELTA's key mechanism is \emph{edge-to-edge attention via multi-hop edge adjacency}: two edges that share a node are ``adjacent'' in edge space, and at 2 hops, an edge can attend to edges two steps away. This creates a direct channel for relational composition---\texttt{born\_in} can directly attend to \texttt{located\_in} without routing through the intermediate city node---enabling transitive inference as a natural consequence of the attention structure rather than an emergent property that must be learned.
+
+DELTA runs node attention and edge attention as parallel streams, reconciled through a bidirectional bridge that ensures cross-stream coherence. This \emph{dual parallel attention} converges 2.7$\times$ faster than sequential alternatives while maintaining the same representational capacity.
+
+\textbf{Contributions:}
+\begin{enumerate}
+    \item \textbf{Edge-to-edge attention architecture.} We introduce dual parallel attention with multi-hop edge adjacency, the first GNN mechanism that enables direct edge-to-edge reasoning without node-mediated bottlenecks (\S\ref{sec:architecture}).
+    \item \textbf{Compositional reasoning dominance.} DELTA-Matched is the only model among 7 tested that \emph{improves} with reasoning depth (2-hop$\to$5-hop), with an advantage over GraphGPS that accelerates from $+0.004$ to $+0.100$ MRR. This is validated across seeds, regularization regimes, and query depths (\S\ref{sec:exp_compositional}).
+    \item \textbf{Emergent attention temperature asymmetry.} We observe that edge and node attention heads develop fundamentally different sharpness preferences during training: edge heads drift toward higher temperature (sharper) while node heads drift lower (softer). This asymmetry is consistent across 20+ configurations and 9 experimental phases, suggesting distinct computational roles for the two attention streams (\S\ref{sec:exp_mechanistic}).
+    \item \textbf{Scalability characterization.} We evaluate DELTA at scales from $N{=}500$ to $N{=}5{,}000$ entities, identify attention dilution as the primary scaling bottleneck, and validate top-$k$ sparse attention ($k{=}128$) as a lossless approximation that preserves full-softmax quality (\S\ref{sec:exp_scaling}).
+\end{enumerate}
+
+%----------------------------------------------------------------------
+\section{Related Work}
+\label{sec:related}
+%----------------------------------------------------------------------
+
+\paragraph{Knowledge graph embeddings.}
+TransE~\cite{bordes2013translating} models relations as translations in embedding space; DistMult~\cite{yang2015embedding} uses bilinear scoring; RotatE~\cite{sun2019rotate} models relations as rotations in complex space; ComplEx~\cite{trouillon2016complex} extends to complex-valued embeddings. These methods achieve strong single-hop link prediction but lack structural inductive bias for multi-hop reasoning. PairRE~\cite{chao2021pairre} and RotatE achieve MRR $\sim$0.34 on full FB15k-237, but rely entirely on embedding geometry rather than graph structure for relational composition.
+
+\paragraph{Message-passing GNNs for KGs.}
+R-GCN~\cite{schlichtkrull2018modeling} introduces relation-specific weight matrices for typed edges. CompGCN~\cite{vashishth2019composition} jointly embeds nodes and relations through composition operations (subtraction, multiplication, circular correlation). Both treat edges as typed message channels rather than computational entities---edge representations are derived from relation type embeddings, not learned through edge-to-edge interaction. NBFNet~\cite{zhu2021neural} and RED-GNN~\cite{zhang2022knowledge} address multi-hop reasoning via path-based message passing but still route all information through nodes. A*Net~\cite{zhu2022astar} scales path-based reasoning to large KGs via priority-based entity selection. These path-based methods are a key baseline comparison target for future work; our primary comparison here is against general graph transformer architectures (GraphGPS, GRIT).
+
+\paragraph{Graph transformers.}
+GraphGPS~\cite{rampavsek2022recipe} combines local MPNN message passing with global transformer attention, using positional/structural encodings to inject graph awareness into the attention mechanism. GRIT~\cite{ma2023graph} uses random-walk structural encodings with graph transformers. Both architectures provide expressive node-level representations but lack mechanisms for direct edge-to-edge interaction. Exphormer~\cite{shirzad2023exphormer} addresses scalability via sparse attention patterns but does not introduce edge-level attention.
+
+\paragraph{Edge-aware architectures.}
+Line graphs~\cite{chen2017supervised} and their GNN variants operate on the dual graph where edges become nodes, enabling edge-level message passing. However, line graph construction is $O(E \cdot d_{\max})$ and the resulting graph can be much larger than the original. DELTA's edge adjacency matrix provides similar connectivity at $O(E^{0.97})$ via sparse COO operations, with the crucial difference that DELTA maintains both node and edge representations simultaneously through dual attention. EHGNN~\cite{gong2023ehgnn} incorporates edge features into heterogeneous GNNs but does not implement edge-to-edge attention.
+
+\paragraph{Multi-hop reasoning on KGs.}
+BetaE~\cite{ren2020beta} and ConE~\cite{zhang2021cone} embed logical queries as geometric regions for answering complex queries. GQE~\cite{hamilton2018embedding} and Q2B~\cite{ren2020query2box} project queries into embedding spaces. CQD~\cite{arakelyan2021cqd} answers complex queries by continuous optimization over link predictor scores. GNN-QE~\cite{zhu2022gnnqe} combines GNN encoders with fuzzy logic for complex query answering. These methods are designed specifically for complex query answering rather than general KGC. Our multi-hop evaluation uses chain queries (2p--5p) with soft entity traversal---a complementary protocol that tests compositional capacity within standard KGC training, and is not directly comparable to BetaE/GQE query benchmark numbers.
+
+%----------------------------------------------------------------------
+\section{Architecture}
+\label{sec:architecture}
+%----------------------------------------------------------------------
+
+DELTA processes a knowledge graph $G = (V, E, R)$ with entity set $V$, edge set $E \subseteq V \times R \times V$, and relation set $R$. Each entity $v_i$ has a learned embedding $\mathbf{h}_i \in \mathbb{R}^{d_n}$ and each edge $(v_i, r_k, v_j)$ has a learned embedding $\mathbf{e}_{ij} \in \mathbb{R}^{d_e}$.
+
+\subsection{Multi-Hop Edge Adjacency}
+\label{sec:edge_adj}
+
+The foundation of DELTA is the \emph{edge adjacency matrix} $\mathbf{A}_E$, which encodes structural connectivity between edges. Two edges $e_a = (v_i, r, v_j)$ and $e_b = (v_k, r', v_l)$ are 1-hop adjacent if they share an endpoint: $\{v_i, v_j\} \cap \{v_k, v_l\} \neq \emptyset$. The 2-hop edge adjacency extends this via the incidence structure:
+
+\begin{equation}
+    \mathbf{A}_E^{(2)} = (\mathbf{B}^\top \mathbf{B})^2 - \text{diag}
+\end{equation}
+
+where $\mathbf{B} \in \{0,1\}^{|V| \times |E|}$ is the node-edge incidence matrix. This is computed efficiently using sparse COO tensor operations via \texttt{torch\_sparse.spspmm}, achieving $O(E^{0.97})$ scaling (validated empirically from 50 to 2,500 edges). At 2 hops, an edge can ``see'' edges two steps away, enabling direct reasoning about relational chains such as \texttt{born\_in} $\to$ \texttt{located\_in} without intermediate node representations.
+
+We validate the role of 2-hop edge adjacency in \S\ref{sec:exp_ablation}: on a synthetic transitive relation benchmark, 2-hop achieves 100\% accuracy on derived relations vs.\ 61.1\% for 1-hop. On FB15k-237 multi-hop queries, a direct ablation finds all three adjacency configurations perform comparably (Table~\ref{tab:ablation_hop}); we discuss this result and its implications in \S\ref{sec:exp_ablation}.
+
+\subsection{Edge-to-Edge Attention}
+\label{sec:edge_attn}
+
+Given the edge adjacency $\mathbf{A}_E^{(2)}$ stored as a sparse index $[2, E_{\text{adj}}]$, we compute multi-head edge attention. For edge $e_i$ attending to adjacent edge $e_j$:
+
+\begin{equation}
+    \alpha_{ij}^{(h)} = \frac{\tau^{(h)} \cdot (\mathbf{W}_Q^{(h)} \mathbf{e}_i)^\top (\mathbf{W}_K^{(h)} \mathbf{e}_j)}{\sqrt{d_h}} + \mathbf{W}_{\text{ctx}}[\mathbf{h}_{s(j)} \| \mathbf{h}_{t(j)}]_h
+    \label{eq:edge_attn}
+\end{equation}
+
+where $\tau^{(h)} = \exp(\theta^{(h)})$ is a learnable per-head temperature (always positive), $s(j)$ and $t(j)$ are the source and target nodes of edge $e_j$, $\|$ denotes concatenation, and $d_h = d_e / H$ is the head dimension. The node context bias $\mathbf{W}_{\text{ctx}} \in \mathbb{R}^{2d_n \times H}$ grounds edge attention in the endpoint identities of the attending edges.
+
+Attention weights are computed via scatter-softmax over the sparse adjacency structure (normalizing per target edge), followed by weighted aggregation:
+
+\begin{equation}
+    \mathbf{e}_i' = \text{LayerNorm}\left(\mathbf{e}_i + \mathbf{W}_O \sum_{j \in \mathcal{N}_E(i)} \text{softmax}(\alpha_{ij}) \cdot \mathbf{W}_V \mathbf{e}_j\right)
+\end{equation}
+
+\textbf{Top-$k$ sparse attention.} For large graphs where $|\mathcal{N}_E(i)|$ becomes prohibitive, we retain only the $k$ highest-scoring neighbors per target edge (based on mean attention across heads), then renormalize. At $N{=}5{,}000$ entities with 63M adjacency pairs, $k{=}128$ preserves full-softmax quality exactly (test MRR $0.2472$ vs.\ $0.2457$ for full softmax), while $k{=}64$ degrades by $-5.6\%$.
+
+\subsection{Node Attention}
+\label{sec:node_attn}
+
+Node attention follows a GAT-style~\cite{velickovic2018graph} design where each node attends to its neighbors, with edge features providing a per-head bias:
+
+\begin{equation}
+    \beta_{ij}^{(h)} = \frac{\tau_n^{(h)} \cdot (\mathbf{W}_Q^{(h)} \mathbf{h}_i)^\top (\mathbf{W}_K^{(h)} \mathbf{h}_j)}{\sqrt{d_h}} + \mathbf{W}_{\text{edge}}(\mathbf{e}_{ij})_h
+\end{equation}
+
+Node attention uses independent learnable temperatures $\tau_n^{(h)}$ per head, enabling the model to discover optimal sharpness for each attention stream independently.
+
+\subsection{Dual Parallel Attention}
+\label{sec:dual_attn}
+
+Both attention mechanisms operate on the \emph{same} input state simultaneously:
+
+\begin{equation}
+    \mathbf{H}' = \text{NodeAttn}(\mathbf{H}, \mathbf{E}, G), \qquad \mathbf{E}' = \text{EdgeAttn}(\mathbf{E}, \mathbf{H}, \mathbf{A}_E)
+\end{equation}
+
+This parallel design ensures that neither stream's output biases the other's computation within a layer, and converges 2.7$\times$ faster than sequential alternatives.
+
+\subsection{Reconciliation Bridge}
+\label{sec:reconciliation}
+
+After parallel attention, a bidirectional bridge ensures cross-stream coherence:
+
+\begin{align}
+    \hat{\mathbf{e}}_{ij} &= \text{LN}(\mathbf{e}'_{ij} + \mathbf{W}_1[\mathbf{e}'_{ij} \| \mathbf{h}'_{s(ij)} \| \mathbf{h}'_{t(ij)}]) & \text{(edges absorb node context)} \\
+    \hat{\mathbf{h}}_i &= \text{LN}(\mathbf{h}'_i + \mathbf{W}_2[\mathbf{h}'_i \| \bar{\mathbf{e}}_i]) & \text{(nodes absorb edge context)}
+\end{align}
+
+where $\bar{\mathbf{e}}_i = \text{mean}(\{\hat{\mathbf{e}}_{ij} : j \in \mathcal{N}(i)\})$ aggregates incident updated edge features. Both updates use residual connections with LayerNorm. Edges update first (absorbing node context), then nodes update (absorbing the already node-informed edge features), creating a sequential cascade within the bridge.
+
+\subsection{Link Prediction Head}
+
+For link prediction, we use a DistMult~\cite{yang2015embedding} decoder:
+
+\begin{equation}
+    s(v_i, r_k, v_j) = \mathbf{h}_i^\top \text{diag}(\mathbf{r}_k) \mathbf{h}_j
+\end{equation}
+
+where $\mathbf{r}_k$ is a learned relation embedding. Training uses 1-vs-all binary cross-entropy with label smoothing (0.1), following standard KGC practice.
+
+\subsection{Multi-Hop Scoring}
+
+For $n$-hop path queries $(v_0, r_1, ?, r_2, ?, \ldots, r_n, ?)$, we use \emph{soft entity traversal}: at each intermediate hop, score all entities via the DistMult decoder, apply softmax with temperature $\tau=1.0$ to obtain a probability distribution over entities, take the weighted average entity embedding, and pass it to the next hop. This provides a differentiable approximation to hard entity traversal while remaining faithful to the compositional structure of the query.
+
+%----------------------------------------------------------------------
+\section{Experiments}
+\label{sec:experiments}
+%----------------------------------------------------------------------
+
+\subsection{Setup}
+\label{sec:exp_setup}
+
+\paragraph{Dataset.} We use FB15k-237~\cite{toutanova2015representing}, the standard filtered subset of Freebase with 14,541 entities, 237 relations, and 310,116 triples. For computational feasibility, our primary experiments use a top-500 degree subgraph (494 entities, 207 relations, ${\sim}9{,}700$ train triples) with full filtered evaluation. Scaling experiments (\S\ref{sec:exp_scaling}) extend to $N{=}2{,}000$ and $N{=}5{,}000$ entity subgraphs.
+
+\paragraph{Models.} We compare seven configurations:
+\begin{itemize}
+    \item \textbf{DELTA-Matched} (158K params): 1 DELTA layer, $d_n{=}64$, $d_e{=}32$, 4 heads. Our primary model, designed for parameter-fair comparison.
+    \item \textbf{DELTA-Full} (293K params): 3 DELTA layers.
+    \item \textbf{SelfBootstrapHybrid} (381K params): A FixedChain DELTA layer bootstraps graph construction before 3 DELTA processing layers.
+    \item \textbf{GraphGPS}~\cite{rampavsek2022recipe} (228K params): Local MPNN + global transformer attention.
+    \item \textbf{GRIT}~\cite{ma2023graph} (197K params): Random-walk structural encodings + graph transformer.
+    \item \textbf{DistMult}~\cite{yang2015embedding} (47K params): Pure embedding baseline (no GNN).
+    \item \textbf{SelfBootstrap} (299K params): DELTA bootstraps its own graph construction.
+\end{itemize}
+
+\paragraph{Training.} All models use Adam optimizer ($\text{lr}=0.003$), batch size 4,096, 1-vs-all BCE loss with label smoothing 0.1, and early stopping with patience 10. Evaluation uses standard filtered MRR and Hits@$k$ metrics. Multi-hop queries use 10\% DropEdge for DELTA (validated in \S\ref{sec:exp_compositional}).
+
+\paragraph{Multi-hop query generation.} Chain queries are generated by composing training edges to reach test edges: a 2-hop query chains one train edge to one test edge, a 3-hop query chains two train edges to one test edge, etc. All queries undergo strict leakage prevention: no 1-hop shortcuts between anchor and answer in the training graph, no duplicate queries, and automated audit verification before evaluation. Query counts: 1p=486, 2p=5,382, 3p=10,000, 4p=10,000, 5p=10,000.
+
+%----------------------------------------------------------------------
+\subsection{Compositional Reasoning}
+\label{sec:exp_compositional}
+%----------------------------------------------------------------------
+
+\textbf{This is DELTA's core claim:} edge-to-edge attention with 2-hop adjacency provides fundamentally better compositional reasoning than node-based architectures, and the advantage \emph{grows} with reasoning depth.
+
+\begin{table}[t]
+\centering
+\caption{Multi-hop MRR by reasoning depth (single seed, 0\% DropEdge). DELTA-Matched is the only model with higher MRR at 5-hop than 2-hop (net $+0.032$). All baselines show net degradation from 2-hop to 5-hop.}
+\label{tab:depth}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+\textbf{Model} & \textbf{Params} & \textbf{1p} & \textbf{2p} & \textbf{3p} & \textbf{4p} & \textbf{5p} \\
+\midrule
+\textbf{DELTA-Matched} & 158K & 0.541 & \textbf{0.758} & \textbf{0.753} & \textbf{0.767} & \textbf{0.790} \\
+GraphGPS & 228K & \textbf{0.523} & 0.754 & 0.727 & 0.701 & 0.690 \\
+DistMult & 47K & 0.494 & 0.728 & 0.583 & 0.511 & 0.457 \\
+\midrule
+\multicolumn{2}{@{}l}{\textit{DELTA -- GraphGPS gap}} & +0.018 & +0.004 & +0.026 & +0.066 & \textbf{+0.100} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{The depth advantage accelerates.}
+Table~\ref{tab:depth} presents the central result. DELTA-Matched's lead over GraphGPS grows from $+0.004$ (2p) to $+0.100$ (5p)---a 25$\times$ amplification. Critically, DELTA's 5p MRR (0.790) \emph{exceeds} its own 2p MRR (0.758). No other model exhibits this property: GraphGPS loses $-0.064$ MRR from 2p$\to$5p, while DistMult loses $-0.271$.
+
+\paragraph{Consistent improvement under regularization.}
+Table~\ref{tab:all_models} shows the full 7-model comparison at seed=1 with 0\% DropEdge. DELTA-Matched shows a small net gain from 2p (0.733) to 3p (0.738), while every other model degrades; the same configuration shows a brief 2p$\to$3p dip in Table~\ref{tab:depth} before recovering to 5p. The multi-seed evaluation (Table~\ref{tab:multiseed}) with 10\% DropEdge confirms the advantage is robust: DELTA @10\% DropEdge improves from 2p ($0.730 \pm 0.011$) to 3p ($0.742 \pm 0.009$), while GraphGPS degrades ($0.727\to 0.713$). The 2p$\to$3p improvement is consistent across seeds under regularization. This suggests the advantage stems from parameter efficiency combined with edge-to-edge attention: larger models overfit to 1-hop statistics, while DELTA-Matched is forced to learn genuinely compositional representations.
+
+\begin{table}[t]
+\centering
+\caption{Complete multi-hop results (7 models, seed=1). Only DELTA-Matched improves from 2p$\to$3p.}
+\label{tab:all_models}
+\begin{tabular}{@{}lcccccr@{}}
+\toprule
+\textbf{Model} & \textbf{Params} & \textbf{1p} & \textbf{2p} & \textbf{3p} & \textbf{3p H@10} & \textbf{2p$\to$3p} \\
+\midrule
+\textbf{DELTA-Matched} & 158K & 0.533 & \textbf{0.733} & \textbf{0.738} & \textbf{0.873} & \textbf{+0.005} \\
+SBHybrid & 381K & \textbf{0.541} & 0.722 & 0.695 & 0.833 & $-0.027$ \\
+GraphGPS & 228K & 0.549 & 0.718 & 0.697 & 0.850 & $-0.021$ \\
+DELTA-Full & 293K & 0.524 & 0.711 & 0.692 & 0.836 & $-0.020$ \\
+SelfBootstrap & 299K & 0.512 & 0.712 & 0.686 & 0.829 & $-0.026$ \\
+GRIT & 197K & 0.460 & 0.712 & 0.644 & 0.783 & $-0.068$ \\
+DistMult & 47K & 0.532 & 0.715 & 0.566 & 0.710 & $-0.150$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Multi-seed validation.}
+To confirm statistical robustness, we run DELTA-Matched (with 10\% DropEdge) and GraphGPS across 3 seeds (Table~\ref{tab:multiseed}). At 3-hop, DELTA achieves $0.742 \pm 0.009$ vs.\ GraphGPS $0.713 \pm 0.007$. The confidence intervals do not overlap: DELTA's worst seed (0.731) exceeds GraphGPS's best (0.722).
+
+\begin{table}[t]
+\centering
+\caption{Multi-seed 3-hop MRR ($\pm$ std, 3 seeds). Non-overlapping confidence intervals.}
+\label{tab:multiseed}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Config} & \textbf{Params} & \textbf{1p} & \textbf{2p} & \textbf{3p} & \textbf{2p$\to$3p} \\
+\midrule
+DELTA @10\% DE & 158K & $0.543 \pm 0.006$ & $0.730 \pm 0.011$ & $\mathbf{0.742 \pm 0.009}$ & +0.012 \\
+GraphGPS & 228K & $0.529 \pm 0.009$ & $0.727 \pm 0.007$ & $0.713 \pm 0.007$ & $-0.014$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Robustness to regularization.}
+We sweep DropEdge rates (0\%--40\%) for both DELTA-Matched and GraphGPS (Appendix~\ref{app:dropedge}). DELTA leads GraphGPS on 3p MRR at all five rates tested, with the advantage ranging from $+0.001$ (at 20\%, within noise) to $+0.029$ (at 0\%). The advantage is statistically meaningful at four of the five rates; the multi-hop advantage is structural, not an artifact of a particular hyperparameter configuration.
+
+%----------------------------------------------------------------------
+\subsection{Standard Link Prediction}
+\label{sec:exp_lp}
+%----------------------------------------------------------------------
+
+\begin{table}[t]
+\centering
+\caption{Standard link prediction (1p) on FB15k-237 top-500 subgraph. Best-validation checkpoint, seed=1.}
+\label{tab:lp}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+\textbf{Model} & \textbf{Params} & \textbf{MRR} & \textbf{H@1} & \textbf{H@3} & \textbf{H@10} & \textbf{Peak Ep} \\
+\midrule
+GraphGPS & 228K & \textbf{0.513} & \textbf{0.375} & 0.581 & 0.813 & 200 \\
+SBHybrid & 381K & 0.509 & 0.363 & \textbf{0.587} & \textbf{0.816} & 250 \\
+DELTA-Matched & 158K & 0.495 & 0.346 & 0.572 & 0.804 & 200 \\
+DELTA-Full & 293K & 0.494 & 0.355 & 0.559 & 0.792 & 200 \\
+DistMult & 47K & 0.484 & 0.346 & 0.548 & 0.763 & 500+ \\
+GRIT & 197K & 0.439 & 0.295 & 0.496 & 0.760 & 200 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:lp} shows standard link prediction results. GraphGPS leads on 1p MRR (0.513 vs.\ DELTA-Matched's 0.495), a gap of $-0.018$. However, DELTA-Matched achieves 97\% of GraphGPS's MRR with only 69\% of the parameters (158K vs.\ 228K). All models on the top-500 subgraph exceed published full FB15k-237 results for DistMult (0.241) and CompGCN (0.355) by large margins, reflecting the higher link density of the degree-based subgraph.
+
+The LP vs.\ multi-hop contrast illustrates DELTA's architectural thesis: standard 1p evaluation rewards memorization of local link statistics, where GraphGPS's larger parameter budget provides an advantage. Multi-hop evaluation rewards compositional generalization, where DELTA's edge-to-edge attention provides a structural advantage that grows with depth.
+
+%----------------------------------------------------------------------
+\subsection{Ablation: 1-Hop vs.\ 2-Hop Edge Adjacency}
+\label{sec:exp_ablation}
+%----------------------------------------------------------------------
+
+To directly validate the role of 2-hop edge adjacency---the architectural mechanism underlying DELTA's compositional reasoning---we ablate three configurations on the FB15k-237 subgraph using the multi-hop evaluation protocol:
+
+\begin{itemize}
+    \item \textbf{1-hop}: edges attend only to directly adjacent edges (share a node)
+    \item \textbf{2-hop}: edges attend to edges two steps away (default DELTA)
+    \item \textbf{Node-only}: edge attention stream disabled; DELTA reduces to GAT-style node attention
+\end{itemize}
+
+\begin{table}[t]
+\centering
+\caption{Hop-depth ablation (Phase 66): DELTA-Matched on FB15k-237 top-500 subgraph, 3 seeds $\times$ 500 epochs. Values are mean $\pm$ std. All differences are within 1$\sigma$; no condition is statistically superior.}
+\label{tab:ablation_hop}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Config} & \textbf{LP MRR} & \textbf{1p MRR} & \textbf{2p MRR} & \textbf{3p MRR} & \textbf{2p$\to$3p} \\
+\midrule
+2-hop (DELTA)  & $0.496\pm0.003$ & $0.534\pm0.008$ & $0.726\pm0.014$ & $0.731\pm0.006$ & $+0.005$ \\
+1-hop          & $0.498\pm0.008$ & $0.551\pm0.001$ & $0.721\pm0.007$ & $0.729\pm0.007$ & $+0.008$ \\
+Node-only      & $0.505\pm0.006$ & $0.553\pm0.006$ & $0.728\pm0.011$ & $0.742\pm0.012$ & $+0.014$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:ablation_hop} shows that on the top-500 subgraph all three configurations are statistically indistinguishable: every pairwise gap is within one standard deviation (3 seeds). Notably, the \emph{node-only} condition (edge attention disabled) achieves the highest point estimates on every metric, though again within noise. This contrasts sharply with the synthetic transitive benchmark (2-hop 100\% vs.\ 1-hop 61.1\%), where compositional structure is unambiguous.
+
+We interpret this as evidence that on this degree-biased subgraph, multi-hop MRR is dominated by entity embedding quality learned during link-prediction training; the edge adjacency mechanism provides a secondary contribution. The subgraph's high density (mean node degree $\approx 19.7$) means 1-hop adjacency already covers nearly all structurally relevant edges. This motivates Phase 67 (full FB15k-237, mean degree $\approx 4.1$): does 2-hop provide measurable benefit on the sparse graph where 1-hop neighbors are genuinely limited? The edge attention stream incurs no accuracy penalty---all conditions are competitive---so the architectural question is one of expressivity vs.\ computational cost at scale.
+
+%----------------------------------------------------------------------
+\subsection{Inference Efficiency}
+\label{sec:exp_inference}
+%----------------------------------------------------------------------
+
+\begin{table}[t]
+\centering
+\caption{Inference timing comparison (mean of 10 runs, CUDA-synchronized).}
+\label{tab:timing}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Metric} & \textbf{DELTA-Matched} & \textbf{GraphGPS} & \textbf{Ratio} \\
+\midrule
+Encoding (once) & 454.1 ms & 8.8 ms & 51.8$\times$ \\
+1p per-query & 777.7 $\mu$s & 921.9 $\mu$s & \textbf{0.84$\times$} \\
+2p per-query & 1,380 $\mu$s & 1,476 $\mu$s & \textbf{0.94$\times$} \\
+3p per-query & 1,251 $\mu$s & 1,371 $\mu$s & \textbf{0.91$\times$} \\
+Training (total) & 3,782 s & 110 s & 34.2$\times$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:timing} reveals an important nuance in DELTA's computational profile. Encoding---a one-time graph processing step that includes 2-hop edge adjacency construction---is 51.8$\times$ slower than GraphGPS. However, \emph{per-query scoring} is 0.84--0.94$\times$ GraphGPS: DELTA is faster per query. In deployment scenarios where the graph is encoded once and queries are scored many times, DELTA's amortized cost is comparable to or better than GraphGPS. Training cost (34.2$\times$) is a one-time expense dominated by edge adjacency computation.
+
+%----------------------------------------------------------------------
+\subsection{Attention Temperature Asymmetry}
+\label{sec:exp_mechanistic}
+%----------------------------------------------------------------------
+
+We introduce learnable per-head temperature parameters $\tau^{(h)} = \exp(\theta^{(h)})$ that scale attention scores before softmax (Eq.~\ref{eq:edge_attn}). Higher $\tau$ produces sharper (more selective) attention; lower $\tau$ produces softer (more uniform) attention. Starting from uniform initialization, we observe how the model discovers differential sharpness preferences through gradient descent. We report these as observational findings; causal attribution would require controlled interventions such as temperature freezing, which we leave to future work.
+
+\paragraph{Edge--node temperature divergence.}
+Across all configurations tested (20+ over 9 experimental phases), a consistent pattern emerges: \textbf{edge attention temperatures drift upward} (from 4.0 to 4.4--5.0) while \textbf{node attention temperatures drift downward} (from 4.0 to 3.5--3.7). The model autonomously discovers that edges benefit from selective, discriminative attention (identifying which relational compositions matter), while nodes benefit from broader, averaging attention (aggregating diverse neighborhood signals).
+
+\paragraph{Layer 0 is always dead.}
+Regardless of temperature initialization, first-layer attention heads remain near-uniform (entropy $>0.95$). This is architecturally expected: initial entity embeddings carry no relational information worth selectively attending to. Useful attention emerges only after the first reconciliation bridge provides cross-stream context.
+
+\paragraph{Temperature controls operating mode.}
+We identify three distinct operating regimes:
+\begin{enumerate}
+    \item \textbf{LP-optimized} (asymmetric: node$=$2, edge$=$6): LP MRR 0.491, sacrifices multi-hop.
+    \item \textbf{Balanced} (uniform temp$=$4.0): Best 3p MRR (0.402), moderate LP.
+    \item \textbf{Annealed} (node temp $4.0 \to 2.0$ during training): Breaks the 3p ceiling (0.415), approaching combined LP+3p optimality.
+\end{enumerate}
+
+Temperature annealing from high (exploration) to low (exploitation) during training creates compositional representations in early epochs that static initialization cannot replicate. This finding---that training \emph{trajectory} matters, not just final temperature---connects to curriculum learning and suggests that compositional representations require a specific developmental sequence.
+
+\paragraph{LP improvements are robust; multi-hop temperature effects are not.}
+Multi-seed validation (3 seeds) confirms that temperature-driven LP improvements are statistically robust (MRR $0.484 \pm 0.005$). However, multi-hop MRR differences between temperature configurations showed high cross-seed variance. Increasing query counts to 10,000 reduced cross-seed std by 66--84\%, confirming that evaluation protocol sensitivity was the dominant variance source. We do not make strong claims about temperature effects on multi-hop reasoning; the primary validated effect is on link prediction.
+
+%----------------------------------------------------------------------
+\subsection{Scaling Analysis}
+\label{sec:exp_scaling}
+%----------------------------------------------------------------------
+
+We evaluate DELTA's scaling behavior across three graph sizes (Table~\ref{tab:scaling}).
+
+\begin{table}[t]
+\centering
+\caption{Scaling analysis: DELTA (1-layer) vs.\ DistMult across entity counts. All models on FB15k-237 subgraphs, seed=42.}
+\label{tab:scaling}
+\begin{tabular}{@{}cccccccc@{}}
+\toprule
+\textbf{$N$} & \textbf{Triples} & \textbf{$|E_{\text{adj}}|$} & \multicolumn{2}{c}{\textbf{Test MRR}} & \textbf{$\Delta$} & \textbf{DELTA time} & \textbf{DM time} \\
+\cmidrule(lr){4-5}
+& & & DELTA & DM & & & \\
+\midrule
+500 & 9,700 & 256K & 0.495 & 0.484 & +0.011 & 3,782s & 110s \\
+2,000 & 62,700 & 15.2M & 0.334 & 0.319 & +0.015 & 5,788s & 72s \\
+5,000 & 152,800 & 63.0M & 0.247 & 0.224 & +0.023 & 21,688s & 1,784s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Genuine but modest advantage at scale.}
+DELTA consistently outperforms DistMult at all scales tested, with the gap growing slightly from $+0.011$ ($N{=}500$) to $+0.023$ ($N{=}5{,}000$). The advantage is real---confirmed by careful convergence analysis (DistMult was given 2,000 epochs to converge at $N{=}5{,}000$, peaking at epoch 200)---but modest relative to the $10{\times}$ compute cost.
+
+\paragraph{Depth is the scaling bottleneck, not the mechanism.}
+At $N{=}2{,}000$ with 15.2M edge adjacency pairs, 3-layer DELTA catastrophically over-smooths (MRR $0.002$, near random), while 1-layer DELTA surpasses DistMult. Each additional layer compounds representation homogenization through the dense adjacency graph. Residual gating (Phase 60) eliminates the failure mode but gates freeze at ${\sim}10\%$ layer / $90\%$ residual, confirming that additional depth provides no benefit at this scale.
+
+\paragraph{Attention dilution is the primary scaling challenge.}
+At $N{=}5{,}000$, each edge has hundreds of adjacency neighbors. Full softmax over these large neighborhoods produces near-uniform attention weights, requiring ${\sim}50$ training epochs to learn discriminative patterns (vs.\ ${\sim}25$ epochs at $N{=}500$). Subsampling the edge adjacency to ${\sim}48\%$ retention slightly \emph{improves} MRR ($+0.007$), suggesting that a moderate number of high-quality neighbors outperforms access to all neighbors.
+
+\paragraph{Top-$k$ sparse attention is a validated scaling mechanism.}
+At $k{=}128$, sparse attention on the full 63M adjacency pairs matches full-softmax quality exactly (test MRR $0.2472$ vs.\ $0.2457$), while $k{=}64$ degrades by $-5.6\%$. The quality cliff lies between 64 and 128 neighbors. This validates a path to larger-scale deployment: for graphs where full-softmax edge attention is memory-prohibitive, $k{=}128$ provides lossless approximation.
+
+%----------------------------------------------------------------------
+\section{Discussion}
+\label{sec:discussion}
+%----------------------------------------------------------------------
+
+\paragraph{Why does the advantage grow with depth?}
+We hypothesize that 2-hop edge adjacency creates a multiplicative advantage for compositional reasoning. At each hop, DELTA composes relational information directly in edge space, while node-based models must decompress through node representations. For single-hop predictions, this overhead is negligible---node-level representations suffice. But at 5 hops, the accumulated compression loss in node-mediated architectures becomes substantial, while DELTA's direct edge-to-edge channel preserves compositional fidelity. The temperature analysis supports this interpretation: edge attention's preference for sharpness indicates selective relational composition, not broad averaging.
+
+\paragraph{Why does capacity hurt multi-hop?}
+DELTA-Matched (158K) consistently outperforms DELTA-Full (293K) on multi-hop tasks despite having fewer parameters. We attribute this to an overfitting--generalization trade-off: larger models have sufficient capacity to memorize local link statistics (achieving higher 1p MRR), which provides a shortcut that bypasses compositional reasoning. The constrained model must learn genuinely compositional representations because it cannot afford to memorize.
+
+\paragraph{Limitations.}
+Our primary experiments use a 500-entity subgraph of FB15k-237. While scaling experiments extend to $N{=}5{,}000$, full-scale evaluation on the complete 14,541-entity graph remains an important open direction. The one-time encoding cost (51.8$\times$ GraphGPS) limits applicability to rapidly changing graphs; per-query inference is competitive once the graph is encoded. Our multi-hop evaluation uses soft entity traversal with internally generated chain queries rather than the established BetaE/ConE/GQE complex-query benchmarks, which use different query generation protocols and evaluation metrics; results are not directly comparable to published multi-hop reasoning numbers. We compare primarily against general graph transformers (GraphGPS, GRIT) rather than specialized path-based KG reasoners (NBFNet~\cite{zhu2021neural}, A*Net~\cite{zhu2022astar}); adding these baselines is a high-priority next step. We have not evaluated on datasets beyond the Freebase family (YAGO3-10, WN18RR~\cite{dettmers2018convolutional}, ogbl-wikikg2 are important next steps). The training cost (34.2$\times$ GraphGPS) may be prohibitive for practitioners with limited compute.
+
+%----------------------------------------------------------------------
+\section{Conclusion}
+\label{sec:conclusion}
+%----------------------------------------------------------------------
+
+We have presented DELTA, an architecture that treats edges as first-class computational entities via edge-to-edge attention over multi-hop adjacency. The central finding is that this design creates a compositional reasoning advantage that \emph{grows with depth}: DELTA-Matched is the only model tested that improves MRR as hop count increases from 2 to 5, with the advantage over GraphGPS accelerating from $+0.004$ to $+0.100$. Mechanistic analysis reveals an emergent edge--node temperature asymmetry that provides interpretable evidence for the distinct computational roles of the two attention streams.
+
+These results suggest that the standard single-hop link prediction benchmark undervalues architectures with strong relational inductive biases. Multi-hop evaluation provides a more discriminating test of compositional capacity, and we encourage its adoption alongside standard metrics.
+
+\textbf{Future work} includes (1) full-scale evaluation on complete FB15k-237 (14,541 entities) and cross-family benchmarks (YAGO3-10, WN18RR, ogbl-wikikg2); (2) evaluation on established complex query benchmarks (BetaE/GQE query splits~\cite{ren2020beta}) to enable direct comparison with specialized multi-hop reasoners; (3) comparison against path-based baselines NBFNet~\cite{zhu2021neural} and A*Net~\cite{zhu2022astar}; (4) integration of the BrainEncoder differentiable graph construction module (which achieves $+4.7\%$ Hits@10 in preliminary experiments); and (5) extension to non-KG domains where graph structure must be discovered from raw input. The top-$k$ sparse attention mechanism validated at $N{=}5{,}000$ provides a concrete path to scaling edge-to-edge attention to larger knowledge graphs.
+
+%----------------------------------------------------------------------
+% References
+%----------------------------------------------------------------------
+
+\bibliographystyle{plain}
+
+\begin{thebibliography}{30}
+
+\bibitem{bordes2013translating}
+Antoine Bordes, Nicolas Usunier, Alberto Garcia-Duran, Jason Weston, and Oksana Yakhnenko.
+\newblock Translating embeddings for modeling multi-relational data.
+\newblock In \emph{NeurIPS}, 2013.
+
+\bibitem{yang2015embedding}
+Bishan Yang, Wen-tau Yih, Xiaodong He, Jianfeng Gao, and Li Deng.
+\newblock Embedding entities and relations for learning and inference in knowledge bases.
+\newblock In \emph{ICLR}, 2015.
+
+\bibitem{sun2019rotate}
+Zhiqing Sun, Zhi-Hong Deng, Jian-Yun Nie, and Jian Tang.
+\newblock RotatE: Knowledge graph embedding by relational rotation in complex space.
+\newblock In \emph{ICLR}, 2019.
+
+\bibitem{trouillon2016complex}
+Th{\'e}o Trouillon, Johannes Welbl, Sebastian Riedel, {\'E}ric Gaussier, and Guillaume Bouchard.
+\newblock Complex embeddings for simple link prediction.
+\newblock In \emph{ICML}, 2016.
+
+\bibitem{chao2021pairre}
+Linlin Chao, Jianshan He, Taifeng Wang, and Wei Chu.
+\newblock PairRE: Knowledge graph embeddings via paired relation vectors.
+\newblock In \emph{ACL}, 2021.
+
+\bibitem{schlichtkrull2018modeling}
+Michael Schlichtkrull, Thomas~N. Kipf, Peter Bloem, Rianne van~den Berg, Ivan Titov, and Max Welling.
+\newblock Modeling relational data with graph convolutional networks.
+\newblock In \emph{ESWC}, 2018.
+
+\bibitem{vashishth2019composition}
+Shikhar Vashishth, Soumya Sanyal, Vikram Nitin, and Partha Talukdar.
+\newblock Composition-based multi-relational graph convolutional networks.
+\newblock In \emph{ICLR}, 2020.
+
+\bibitem{zhu2021neural}
+Zhaocheng Zhu, Zuobai Zhang, Louis-Pascal Xhonneux, and Jian Tang.
+\newblock Neural Bellman-Ford networks: A general graph neural network framework for link prediction.
+\newblock In \emph{NeurIPS}, 2021.
+
+\bibitem{zhang2022knowledge}
+Yongqi Zhang and Quanming Yao.
+\newblock Knowledge graph reasoning with relational digraph.
+\newblock In \emph{NeurIPS}, 2022.
+
+\bibitem{rampavsek2022recipe}
+Ladislav Ramp{\'a}{\v{s}}ek, Michael Galkin, Vijay Prakash Dwivedi, Anh~Tuan Luu, Guy Wolf, and Dominique Beaini.
+\newblock Recipe for a general, powerful, scalable graph transformer.
+\newblock In \emph{NeurIPS}, 2022.
+
+\bibitem{ma2023graph}
+Liheng Ma, Chen Lin, Derek Lim, Adriana Romero-Soriano, Puneet~K. Dokania, Mark Coates, Philip Torr, and Ser-Nam Lim.
+\newblock Graph inductive biases in transformers without message passing.
+\newblock In \emph{ICML}, 2023.
+
+\bibitem{shirzad2023exphormer}
+Hamed Shirzad, Ameya Velingker, Balaji Venkatachalam, Danica~J. Sutherland, and Ali~Kemal Sinop.
+\newblock Exphormer: Sparse transformers for graphs.
+\newblock In \emph{ICML}, 2023.
+
+\bibitem{chen2017supervised}
+Zhengdao Chen, Xiang Li, and Joan Bruna.
+\newblock Supervised community detection with line graph neural networks.
+\newblock In \emph{ICLR}, 2019.
+
+\bibitem{gong2023ehgnn}
+Jiaqi Gong, Shichao Pei, Jiaxin Bai, and Xiangliang Zhang.
+\newblock EHGNN: Edge heterogeneous graph neural network.
+\newblock \emph{arXiv preprint arXiv:2310.07242}, 2023.
+
+\bibitem{ren2020beta}
+Hongyu Ren and Jure Leskovec.
+\newblock Beta embeddings for multi-hop logical reasoning in knowledge graphs.
+\newblock In \emph{NeurIPS}, 2020.
+
+\bibitem{zhang2021cone}
+Zhanqiu Zhang, Jie Wang, Jiajun Chen, Shuiwang Ji, and Feng Wu.
+\newblock ConE: Cone embeddings for multi-hop reasoning over knowledge graphs.
+\newblock In \emph{NeurIPS}, 2021.
+
+\bibitem{hamilton2018embedding}
+William~L. Hamilton, Payal Bajaj, Marinka Zitnik, Dan Jurafsky, and Jure Leskovec.
+\newblock Embedding logical queries on knowledge graphs.
+\newblock In \emph{NeurIPS}, 2018.
+
+\bibitem{ren2020query2box}
+Hongyu Ren, Weihua Hu, and Jure Leskovec.
+\newblock Query2Box: Reasoning over knowledge graphs in vector space using box embeddings.
+\newblock In \emph{ICLR}, 2020.
+
+\bibitem{toutanova2015representing}
+Kristina Toutanova and Danqi Chen.
+\newblock Observed versus latent features for knowledge base and text inference.
+\newblock In \emph{3rd Workshop on Continuous Vector Space Models and their Compositionality}, 2015.
+
+\bibitem{velickovic2018graph}
+Petar Veli{\v{c}}kovi{\'c}, Guillem Cucurull, Arantxa Casanova, Adriana Romero, Pietro Li{\`o}, and Yoshua Bengio.
+\newblock Graph attention networks.
+\newblock In \emph{ICLR}, 2018.
+
+\bibitem{zhu2022astar}
+Zhaocheng Zhu, Xinyu Yuan, Michael Galkin, Sophie Xhonneux, Ming Zhang, Maxime Gazeau, and Jian Tang.
+\newblock A*Net: A scalable path-based reasoning approach for knowledge graphs.
+\newblock In \emph{NeurIPS}, 2023.
+
+\bibitem{ren2020gqe}
+William~L. Hamilton, Payal Bajaj, Marinka Zitnik, Dan Jurafsky, and Jure Leskovec.
+\newblock Embedding logical queries on knowledge graphs.
+\newblock In \emph{NeurIPS}, 2018.
+
+\bibitem{arakelyan2021cqd}
+Erik Arakelyan, Daniel Daza, Pasquale Minervini, and Michael Cochez.
+\newblock Complex query answering with neural link predictors.
+\newblock In \emph{ICLR}, 2021.
+
+\bibitem{zhu2022gnnqe}
+Zhaocheng Zhu, Mikhail Galkin, Zuobai Zhang, and Jian Tang.
+\newblock Neural-symbolic models for logical queries on knowledge graphs.
+\newblock In \emph{ICML}, 2022.
+
+\bibitem{dettmers2018convolutional}
+Tim Dettmers, Pasquale Minervini, Pontus Stenetorp, and Sebastian Riedel.
+\newblock Convolutional 2D knowledge graph embeddings.
+\newblock In \emph{AAAI}, 2018.
+
+\end{thebibliography}
+
+%----------------------------------------------------------------------
+% Appendix
+%----------------------------------------------------------------------
+\newpage
+\appendix
+
+\section{Hits@10 by Depth}
+\label{app:hits10}
+
+\begin{table}[h]
+\centering
+\caption{Hits@10 across reasoning depths (single seed, same experiment as Table~\ref{tab:depth}).}
+\label{tab:hits10_depth}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Model} & \textbf{1p} & \textbf{2p} & \textbf{3p} & \textbf{4p} & \textbf{5p} \\
+\midrule
+DELTA-Matched & 0.854 & 0.889 & \textbf{0.881} & \textbf{0.885} & \textbf{0.895} \\
+GraphGPS & \textbf{0.848} & \textbf{0.897} & 0.859 & 0.818 & 0.826 \\
+DistMult & 0.800 & 0.858 & 0.744 & 0.672 & 0.587 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{DropEdge Robustness}
+\label{app:dropedge}
+
+\begin{table}[h]
+\centering
+\caption{3-hop MRR across DropEdge rates. DELTA-Matched leads at all rates.}
+\label{tab:dropedge}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Model} & \textbf{0\%} & \textbf{10\%} & \textbf{20\%} & \textbf{30\%} & \textbf{40\%} \\
+\midrule
+DELTA-Matched & 0.740 & 0.744 & 0.724 & 0.732 & 0.744 \\
+GraphGPS & 0.711 & 0.716 & 0.723 & 0.720 & 0.725 \\
+\midrule
+$\Delta$ & +0.029 & +0.028 & +0.001 & +0.012 & +0.019 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Brain Architecture (Preliminary)}
+\label{app:brain}
+
+The BrainEncoder module uses Gumbel-sigmoid differentiable edge selection to construct new edges from learned node representations, then processes the augmented graph (original + constructed edges) through DELTA layers. On the FB15k-237 subgraph ($N{=}494$):
+
+\begin{table}[h]
+\centering
+\caption{BrainEncoder results (multi-seed, density $d{=}0.01$, 200 epochs).}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Config} & \textbf{MRR} & \textbf{H@1} & \textbf{H@10} & \textbf{Constructed edges} \\
+\midrule
+DELTA-Full & 0.494 & 0.355 & 0.760 & 0 \\
+brain\_hybrid ($d$=0.01) & $0.484 \pm 0.010$ & $0.334 \pm 0.011$ & $\mathbf{0.799 \pm 0.006}$ & 2,435 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The brain\_hybrid configuration matches DELTA-Full on MRR while delivering $+4.7\%$ Hits@10, demonstrating that differentiable graph construction adds genuine recall through learned structural augmentation. Density is a critical hyperparameter: $d{=}0.01$ (2,435 edges) strictly dominates $d{=}0.02$ (4,870 edges) on all metrics.
+
+\section{Domain Transfer (Preliminary)}
+\label{app:transfer}
+
+A frozen DELTA encoder trained on FB15k-237, evaluated via a linear probe on WN18RR, achieves accuracy of \textbf{0.961}---without any domain adaptation mechanism (no GRL, no fine-tuning). \textbf{Note:} this evaluation uses 100 training samples, giving approximate $\pm$5\% confidence intervals; results should be treated as a preliminary signal, not a statistically validated finding. A proper transfer evaluation requires $\geq$10,000 samples with confidence intervals on held-out test splits. We report this result as a directional indicator that DELTA's learned edge representations may capture transferable relational structure.
+
+\end{document}

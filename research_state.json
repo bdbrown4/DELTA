@@ -1,8 +1,9 @@
 {
   "last_updated": "2026-04-23",
-  "last_completed_phase": 65,
-  "next_phase": 66,
+  "last_completed_phase": 66,
+  "next_phase": 67,
   "current_phase": null,
+  "phase_66_note": "COMPLETED. 3 conditions × 3 seeds × 500 epochs on RTX 3080 Ti (1879s). RESULT: REJECTED — all three configs statistically indistinguishable. hops=2 vs hops=1 gap: 2p=+0.005, 3p=+0.002 (within 1σ). Surprising: node_only outperforms both on all multi-hop metrics (2p=0.728, 3p=0.742). Multi-hop MRR dominated by entity embedding quality at this graph density. Dense subgraph (mean degree 19.7) saturates 1-hop adjacency; 2-hop adds no measurable signal. Motivates Phase 67 on sparse full graph (mean degree 4.1). Paper table (tab:ablation_hop) updated.",
   "phase_65_note": "DEFERRED — compute-prohibitive (816s/epoch × 75ep × 2 cond ≈ 34hr). Epoch 1 successful (sp_loss=0.0407, 24765 edges). 5 infra bugs fixed. Brain at N=5000 deferred to post-paper.",
 
   "best_results": {
@@ -385,6 +386,12 @@
       "hypothesis": "Top-k sparse edge attention on full 63M E_adj matches full softmax attention quality while enabling scaling to larger N",
       "evidence": "topk=128 test MRR=0.2472 vs Phase 63 full-softmax (same 63M E_adj) test MRR=0.2457 — Δ=+0.0015, within noise. Quality preserved. topk=64 degrades: test MRR=0.2332, Δ=−0.0140 (−5.6%). topk=256 OOM on 98GB Blackwell — memory limit lies between 128 and 256. Speedup not realized at N=5000 (epoch time near-identical for B/C). Attention dilution warmup persists under topk: ep25 near-zero MRR for all conditions. Best viable sparse attention budget at N=5000: topk=128.",
       "significance": "high"
+    },
+    {
+      "phase": 66,
+      "hypothesis": "hops=2 edge adjacency provides measurably better multi-hop MRR than hops=1 on FB15k-237 subgraph",
+      "evidence": "3 conditions × 3 seeds × 500 epochs on RTX 3080 Ti (1879s). hops=2 vs hops=1: 2p gap=+0.005, 3p gap=+0.002 — both within 1σ (hops=1 2p σ=0.007, hops=2 2p σ=0.014). No condition statistically superior. node_only outperforms both on all multi-hop metrics (2p: 0.728 vs 0.721/0.726; 3p: 0.742 vs 0.729/0.731). All conditions within 1σ. Edge attention stream provides no measurable advantage over pure node attention on this dense subgraph (mean degree 19.7). Paper's synthetic transitive benchmark result (100% vs 61.1%) does not generalize to FB15k-237 multi-hop chain queries at N=500. Edge attention incurs no accuracy penalty — all conditions competitive.",
+      "significance": "high — honest negative result; motivates Phase 67 on sparse full graph"
     }
   ],
 
@@ -452,6 +459,9 @@
     "L0 temperature does NOT explain D's 3p — RESOLVED in Phase 49. The LP/3p trade-off is fundamental to asymmetric init.",
     "Temperature annealing BREAKS the 3p ceiling (K=0.4148 > D=0.4018) but LP still short (0.4819 vs 0.4887) — RESOLVED in Phase 50. Pareto frontier shifted.",
     "RESOLVED Phase 51: Static node=2.6 gets 3p=0.4001, annealed K gets 0.4148 — trajectory adds +0.015 bonus. Static is close but cannot match annealed.",
+    "RESOLVED Phase 66: Does hops=2 provide measurable benefit over hops=1 on FB15k-237 N=500 subgraph? NO — all three conditions (node_only/hops1/hops2) statistically indistinguishable. Multi-hop MRR dominated by entity embedding quality at this density. Edge attention stream does not hurt but doesn't help on this dense subgraph.",
+    "Phase 67 (OPEN): Does hops=2 provide measurable benefit on SPARSE full FB15k-237 (14.5K entities, mean degree 4.1)? Phase 66 dense subgraph result may not generalize. 1-hop neighbors are genuinely limited at low degree — this is where 2-hop edge adjacency should theoretically help.",
+    "Phase 68 (OPEN): What is DELTA's performance on standard BetaE/GQE query benchmark splits? Current multi-hop results use homemade chain queries and are not directly comparable to published baselines.",
     "Is there a theoretical ceiling for edge temp, or does the model keep wanting infinite sharpness?",
     "Can DELTA-Full with targeted temperature match DELTA-Matched's compositional advantage?",
     "Can DELTA-Full be compressed via importance pruning to match DELTA-Matched on 3p/5p?",
@@ -566,7 +576,8 @@
     "59": { "title": "Medium-Scale Evaluation: DELTA at N=2000", "result": "PARTIAL -- 3-layer DELTA MRR=0.0018 at N=2000 (REJECTED, catastrophic over-smoothing from 15.2M E_adj pairs). 1-layer DELTA val_MRR=0.3338 SURPASSES DistMult (0.3185) — edge-to-edge attention mechanism works at scale, depth is the bottleneck. brain_hybrid OOM at N=2000. spspmm optimization reduces edge_adj build from 3s to 0.2s." },
     "62": { "title": "Scaling DELTA to N=5000 — Test MRR Generalization", "result": "REJECTED -- DELTA 1L test MRR=0.2404, DM test MRR=0.2244, gap=+0.016 (below 0.04 threshold). Sanity check PASSED (subsampled E_adj MRR=0.3371 vs ref 0.3088). Scaling curve non-monotonic: N=500 gap=+0.004, N=2000 gap=+0.076, N=5000 gap=+0.016. N=2000 spike was DM overfitting pathology. Subsampling at 23.8% is a major confound." },
     "63": { "title": "Edge Adjacency Subsampling Ablation at N=5000", "result": "PARTIAL -- Best improvement: B (30M, 47.6%) test MRR=0.2471 vs A (15M, 23.8%)=0.2404, Δ=+0.0067 (below 0.02 threshold). Full retention D (63M, 100%) test MRR=0.2457, gap vs DM=+0.0213. Non-monotonic test MRR: B > D > C > A. Attention dilution causes near-zero MRR at ep25 for all conditions above 15M. H@10 invariant to E_adj budget. Subsampling is a minor confound, not the primary bottleneck. Total compute: 48.0hr on RTX PRO 6000 Blackwell." },
-    "64": { "title": "Top-k Sparse Edge-to-Edge Attention at N=5000", "result": "CONFIRMED (topk=128) + PARTIAL (topk=64) + OOM (topk=256) -- topk=128 test MRR=0.2472, matches Phase 63 full-softmax (0.2457, Δ=+0.0015, within noise). topk=64 test MRR=0.2332 (−5.6% vs topk=128). topk=256 OOM after ep25 on 98GB GPU. Epoch time near-identical for all conditions (505-509s) — no speedup at N=5000. Attention dilution warmup persists under topk. Optimal sparse budget: topk=128. Total compute: 165,644s (46.0hr)." }
+    "64": { "title": "Top-k Sparse Edge-to-Edge Attention at N=5000", "result": "CONFIRMED (topk=128) + PARTIAL (topk=64) + OOM (topk=256) -- topk=128 test MRR=0.2472, matches Phase 63 full-softmax (0.2457, Δ=+0.0015, within noise). topk=64 test MRR=0.2332 (−5.6% vs topk=128). topk=256 OOM after ep25 on 98GB GPU. Epoch time near-identical for all conditions (505-509s) — no speedup at N=5000. Attention dilution warmup persists under topk. Optimal sparse budget: topk=128. Total compute: 165,644s (46.0hr)." },
+    "66": { "title": "1-hop vs 2-hop Edge Adjacency Ablation (NeurIPS reviewer response)", "result": "REJECTED — 3 conditions × 3 seeds × 500 epochs. hops=2 vs hops=1: 2p gap=+0.005, 3p gap=+0.002 (within 1σ). node_only outperforms both on all multi-hop metrics. Hypothesis that hops=2 is the driver of DELTA's multi-hop advantage is NOT confirmed on dense N=500 subgraph (mean degree 19.7). Multi-hop MRR dominated by entity embedding quality at this density. Paper table (tab:ablation_hop) updated with actual numbers. Phase 67 (full sparse graph, mean degree 4.1) is the critical follow-up. Total compute: 1879s on RTX 3080 Ti. Output: phase66_output.json." }
 
   },
 

@@ -673,9 +673,27 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#gap-6-sequence-domain-generalization-future-phase-66" class="md-nav__link">
+  <a href="#gap-6-hop-depth-ablation-addressed-but-open-phase-66-phase-67" class="md-nav__link">
     <span class="md-ellipsis">
-      Gap 6: Sequence domain generalization — FUTURE (Phase 66+)
+      Gap 6: Hop-depth ablation — ADDRESSED BUT OPEN (Phase 66 → Phase 67)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gap-7-standard-benchmark-comparison-future-phase-68" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gap 7: Standard benchmark comparison — FUTURE (Phase 68)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gap-8-sequence-domain-generalization-future" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gap 8: Sequence domain generalization — FUTURE
     </span>
   </a>
   
@@ -1013,9 +1031,27 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#gap-6-sequence-domain-generalization-future-phase-66" class="md-nav__link">
+  <a href="#gap-6-hop-depth-ablation-addressed-but-open-phase-66-phase-67" class="md-nav__link">
     <span class="md-ellipsis">
-      Gap 6: Sequence domain generalization — FUTURE (Phase 66+)
+      Gap 6: Hop-depth ablation — ADDRESSED BUT OPEN (Phase 66 → Phase 67)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gap-7-standard-benchmark-comparison-future-phase-68" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gap 7: Standard benchmark comparison — FUTURE (Phase 68)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gap-8-sequence-domain-generalization-future" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gap 8: Sequence domain generalization — FUTURE
     </span>
   </a>
   
@@ -1138,7 +1174,7 @@
 
 
 <h1 id="status-roadmap">Status &amp; Roadmap<a class="headerlink" href="#status-roadmap" title="Permanent link">&para;</a></h1>
-<p><em>Last updated: Phase 65 deferred (2026-04-23)</em></p>
+<p><em>Last updated: Phase 66 completed (2026-04-23)</em></p>
 <hr />
 <h2 id="current-best-results">Current Best Results<a class="headerlink" href="#current-best-results" title="Permanent link">&para;</a></h2>
 <table>
@@ -1450,11 +1486,23 @@
 <li>1-layer accepted as scaling architecture; depth provides no benefit at N≥2000</li>
 <li><strong>Phase 64: topk=128 sparse attention CONFIRMED — preserves full-attention quality (test MRR=0.2472 vs full softmax 0.2457). Dilution controlled. Memory ceiling at topk=128 (256 OOM on 98GB).</strong></li>
 </ul>
-<h3 id="gap-6-sequence-domain-generalization-future-phase-66">Gap 6: Sequence domain generalization — FUTURE (Phase 66+)<a class="headerlink" href="#gap-6-sequence-domain-generalization-future-phase-66" title="Permanent link">&para;</a></h3>
+<h3 id="gap-6-hop-depth-ablation-addressed-but-open-phase-66-phase-67">Gap 6: Hop-depth ablation — ADDRESSED BUT OPEN (Phase 66 → Phase 67)<a class="headerlink" href="#gap-6-hop-depth-ablation-addressed-but-open-phase-66-phase-67" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Phase 66 (3 seeds × 500 epochs, RTX 3080 Ti): hops=2 vs hops=1 gap on N=500 dense subgraph is within 1σ (2p=+0.005, 3p=+0.002). node_only outperforms both. REJECTED on dense subgraph (mean degree ≈19.7).</li>
+<li>Dense subgraph result does not answer the question for the sparse full graph: at mean degree ≈4.1, 1-hop edge adjacency covers only ~16 pairs per edge — leaving far more room for 2-hop to add signal.</li>
+<li>Phase 67 (PLANNED): repeat on full sparse FB15k-237 (14.5K entities) with topk=128 sparse attention + NBFNet/A*Net baselines. Requires RunPod H100.</li>
+</ul>
+<h3 id="gap-7-standard-benchmark-comparison-future-phase-68">Gap 7: Standard benchmark comparison — FUTURE (Phase 68)<a class="headerlink" href="#gap-7-standard-benchmark-comparison-future-phase-68" title="Permanent link">&para;</a></h3>
+<ul>
+<li>All multi-hop results use custom chain query generator — not directly comparable to published BetaE/GQE results</li>
+<li>Phase 68 (PLANNED): BetaE 9-query-type evaluation (1p/2p/3p/2i/3i/ip/pi/2u/up) on standard BetaE splits</li>
+<li>Dataset: https://snap.stanford.edu/betae/KG_data.zip</li>
+</ul>
+<h3 id="gap-8-sequence-domain-generalization-future">Gap 8: Sequence domain generalization — FUTURE<a class="headerlink" href="#gap-8-sequence-domain-generalization-future" title="Permanent link">&para;</a></h3>
 <ul>
 <li>All current evidence is on knowledge graphs where structure is pre-defined or semi-explicit</li>
 <li>BrainEncoder's Gumbel-sigmoid construction (Phases 55–58) is the mechanism for sequence domains</li>
-<li>Prerequisites: sparse attention (Phase 64), full Brain stack (Phase 65); then LRA ListOps pilot (Phase 66)</li>
+<li>Prerequisites: Phase 67 (full graph), Phase 68 (BetaE benchmark), then LRA ListOps pilot</li>
 </ul>
 <hr />
 <h2 id="roadmap">Roadmap<a class="headerlink" href="#roadmap" title="Permanent link">&para;</a></h2>
@@ -1584,13 +1632,23 @@
 </tr>
 <tr>
 <td><strong>66</strong></td>
-<td><strong>LRA ListOps sequence pilot or Brain N=5000 retry</strong></td>
-<td>Planned</td>
+<td><strong>1-hop vs 2-hop edge adjacency ablation</strong></td>
+<td><strong>Done</strong> — REJECTED on dense N=500 subgraph (hops=2 vs hops=1 within 1σ). Paper table updated with actual numbers.</td>
 </tr>
 <tr>
-<td><strong>67+</strong></td>
-<td><strong>Iterative refinement &amp; domain expansion</strong></td>
-<td>Planned — multi-pass construction, temporal reasoning</td>
+<td><strong>67</strong></td>
+<td><strong>Full sparse FB15k-237 hop-depth ablation + NBFNet baselines</strong></td>
+<td>Planned — RunPod H100, topk=128 sparse attention, 3 seeds</td>
+</tr>
+<tr>
+<td><strong>68</strong></td>
+<td><strong>BetaE 9-query-type benchmark</strong></td>
+<td>Planned — standard comparison to published BetaE/GQE results</td>
+</tr>
+<tr>
+<td><strong>69+</strong></td>
+<td><strong>Brain N=5000 retry + iterative refinement</strong></td>
+<td>Planned — post-paper-submission</td>
 </tr>
 </tbody>
 </table>

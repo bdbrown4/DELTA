@@ -1055,6 +1055,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#47-2-hop-edge-adjacency-provides-no-measurable-advantage-on-dense-subgraph-entity-embedding-quality-dominates-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      47. 2-hop edge adjacency provides no measurable advantage on dense subgraph — entity embedding quality dominates (REJECTED)
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1774,6 +1783,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#47-2-hop-edge-adjacency-provides-no-measurable-advantage-on-dense-subgraph-entity-embedding-quality-dominates-rejected" class="md-nav__link">
+    <span class="md-ellipsis">
+      47. 2-hop edge adjacency provides no measurable advantage on dense subgraph — entity embedding quality dominates (REJECTED)
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1798,7 +1816,7 @@
 
 
 <h1 id="key-findings">Key Findings<a class="headerlink" href="#key-findings" title="Permanent link">&para;</a></h1>
-<p>44 key findings from 63 experiment phases, organized by research stage. See <a href="../validation-phases/">Validation Phases</a> for complete result tables.</p>
+<p>44 key findings from 66 experiment phases, organized by research stage. See <a href="../validation-phases/">Validation Phases</a> for complete result tables.</p>
 <hr />
 <h2 id="core-architecture-phases-1-15">Core Architecture (Phases 1-15)<a class="headerlink" href="#core-architecture-phases-1-15" title="Permanent link">&para;</a></h2>
 <h3 id="1-edge-attention-is-deltas-strongest-signal">1. Edge attention is DELTA's strongest signal<a class="headerlink" href="#1-edge-attention-is-deltas-strongest-signal" title="Permanent link">&para;</a></h3>
@@ -1905,6 +1923,9 @@
 <p>Phase 64: Top-k sparse edge attention tested at 3 budgets on full 63M E_adj at N=5000. <strong>topk=128 test MRR=0.2472</strong>, matching Phase 63 full-softmax on same data (0.2457, Δ=+0.0015, within noise). Quality is fully preserved at 128 neighbors. <strong>topk=64 test MRR=0.2332</strong> (−5.6% vs topk=128; −3.3% on H@10). The quality cliff lies between 64 and 128 neighbors. <strong>topk=256 OOM</strong> after ep25 on the 98GB Blackwell GPU — memory limit is between 128 and 256 at N=5000. Sparse attention provides no epoch-time speedup at this scale (508s/ep for both topk=128 and full-softmax 525s/ep); the bottleneck is upstream E_adj processing, not the attention kernel. The optimal cost/quality point remains Phase 63 Cond B (30M subsample, full softmax, 37,653s). <strong>Sparse attention is validated as a scaling mechanism: for larger N where full E_adj softmax is infeasible, topk=128 preserves quality without accuracy penalty.</strong></p>
 <h3 id="46-brainencoder-is-architecturally-sound-at-n5000-but-compute-prohibitive-without-dedicated-hardware">46. BrainEncoder is architecturally sound at N=5000 but compute-prohibitive without dedicated hardware<a class="headerlink" href="#46-brainencoder-is-architecturally-sound-at-n5000-but-compute-prohibitive-without-dedicated-hardware" title="Permanent link">&para;</a></h3>
 <p>Phase 65: Brain hybrid (1 bootstrap layer + BrainConstructor + 2 Stage-3 layers) at N=5000 ran successfully for 1 epoch (816.7s/epoch, 1.6× Phase 64 cost) with healthy signals — sp_loss=0.0407, constructed_edges=24,765 (matching target_density=0.001). No OOM, no numerical issues. However, 816.7s/epoch × 75 epochs × 2 conditions ≈ 34hr = ~$64 on RunPod, and the pod became unreachable mid-run. Experiment deferred. <strong>Key engineering contributions</strong>: (1) pure PyTorch fallback for <code>build_edge_adjacency()</code> (no <code>torch_sparse</code>); (2) <code>evaluate_lp_fast</code> reducing 70,656 GPU-CPU syncs to ~6; (3) removal of <code>torch.cuda.empty_cache()</code> from the training hot path (was causing ~25min stalls per call under 92.5GB pool); (4) Stage 1 eval path fix (subsample skipped when cache=None → 30.7GB allocation → compaction). Brain at N=5000 is feasible in principle; Phase 64's topk=128 provides the memory headroom. Cost-effectiveness requires a dedicated instance or reduced N.</p>
+<hr />
+<h3 id="47-2-hop-edge-adjacency-provides-no-measurable-advantage-on-dense-subgraph-entity-embedding-quality-dominates-rejected">47. 2-hop edge adjacency provides no measurable advantage on dense subgraph — entity embedding quality dominates (REJECTED)<a class="headerlink" href="#47-2-hop-edge-adjacency-provides-no-measurable-advantage-on-dense-subgraph-entity-embedding-quality-dominates-rejected" title="Permanent link">&para;</a></h3>
+<p>Phase 66: 3-condition × 3-seed × 500-epoch ablation (RTX 3080 Ti, 1879s). <strong>hops=2 vs hops=1: 2p gap=+0.005, 3p gap=+0.002 — both within 1σ.</strong> Surprisingly, node_only outperforms both on every metric (LP MRR=0.505, 2p=0.728, 3p=0.742 vs hops=1: 0.498/0.721/0.729 and hops=2: 0.496/0.726/0.731). On the dense N=500 subgraph (mean degree ≈19.7), 1-hop adjacency already reaches all structurally relevant edge pairs; 2-hop provides a near-complete graph that adds noise rather than signal. The synthetic transitive benchmark result (2-hop 100% vs 1-hop 61.1%) does not generalize to FB15k-237 chain queries at this density. The edge attention stream does not hurt — all conditions are competitive — but the 2-hop hypothesis is not supported. The critical test is Phase 67 on the sparse full FB15k-237 graph (mean degree ≈4.1), where 1-hop genuinely bottlenecks the information available to the attention mechanism.</p>
 <hr />
 <p><em>See <a href="../validation-phases/">Validation Phases</a> for complete result tables. See <a href="../status-and-roadmap/">Status &amp; Roadmap</a> for current priorities.</em></p>
 

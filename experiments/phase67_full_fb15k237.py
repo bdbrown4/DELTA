@@ -125,6 +125,9 @@ def build_topk_adj(edge_index, device, hops=1, topk=128, seed=0):
     Returns:
         adj [2, K] where K <= E * topk
     """
+    if hops == 2 and topk is not None:
+        return _build_two_hop_topk_adj(edge_index, device, topk, seed=seed)
+
     import warnings
 
     N = edge_index.max().item() + 1
@@ -152,6 +155,73 @@ def build_topk_adj(edge_index, device, hops=1, topk=128, seed=0):
               f"[{topk_time:.1f}s]")
 
     del tmp
+    return adj
+
+
+def _build_two_hop_topk_adj(edge_index, device, topk, seed=0):
+    """Build hops<=2 adjacency directly, without materializing the full 2-hop line graph.
+
+    For an edge (u, v), edges within two hops in the line graph are exactly the
+    edges incident to any node in {u, v} ∪ N(u) ∪ N(v). We build those candidate
+    sets directly and cap them to `topk` per target edge before moving to GPU.
+    """
+    edge_index_cpu = edge_index.cpu().numpy()
+    src = edge_index_cpu[0]
+    dst = edge_index_cpu[1]
+    num_edges = edge_index_cpu.shape[1]
+    num_nodes = int(edge_index_cpu.max()) + 1
+
+    incident_edges = [[] for _ in range(num_nodes)]
+    neighbor_nodes = [set() for _ in range(num_nodes)]
+
+    for edge_id, (head, tail) in enumerate(zip(src, dst)):
+        head = int(head)
+        tail = int(tail)
+        incident_edges[head].append(edge_id)
+        if tail != head:
+            incident_edges[tail].append(edge_id)
+            neighbor_nodes[head].add(tail)
+            neighbor_nodes[tail].add(head)
+
+    max_pairs = num_edges * topk
+    sources = np.empty(max_pairs, dtype=np.int32)
+    targets = np.empty(max_pairs, dtype=np.int32)
+    rng = np.random.default_rng(seed)
+
+    write_ptr = 0
+    t0 = time.time()
+    for edge_id, (head, tail) in enumerate(zip(src, dst)):
+        candidate_nodes = {int(head), int(tail)}
+        candidate_nodes.update(neighbor_nodes[int(head)])
+        candidate_nodes.update(neighbor_nodes[int(tail)])
+
+        candidate_edges = set()
+        for node_id in candidate_nodes:
+            candidate_edges.update(incident_edges[node_id])
+
+        candidate_edges.discard(edge_id)
+        if not candidate_edges:
+            continue
+
+        candidate_array = np.fromiter(candidate_edges, dtype=np.int32)
+        if candidate_array.shape[0] > topk:
+            candidate_array = rng.choice(candidate_array, size=topk, replace=False)
+
+        next_ptr = write_ptr + candidate_array.shape[0]
+        sources[write_ptr:next_ptr] = candidate_array
+        targets[write_ptr:next_ptr] = edge_id
+        write_ptr = next_ptr
+
+        if (edge_id + 1) % 25000 == 0:
+            elapsed = time.time() - t0
+            print(f"    hops=2 progress: {edge_id + 1:,}/{num_edges:,} edges "
+                  f"[{elapsed:.1f}s]")
+
+    elapsed = time.time() - t0
+    adj = torch.from_numpy(
+        np.stack([sources[:write_ptr], targets[:write_ptr]])
+    ).to(device=device, dtype=torch.long)
+    print(f"    hops=2 direct topk={topk}: {adj.shape[1]:,} pairs built in {elapsed:.1f}s")
     return adj
 
 

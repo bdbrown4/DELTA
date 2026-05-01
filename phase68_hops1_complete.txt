@@ -1,0 +1,125 @@
+===========================================================================
+Phase 68: Random-Subgraph Hop-Depth Control
+  device=cuda  epochs=500  seeds=[42, 123, 456]
+  conditions=['hops1', 'hops2']
+  subgraph: random N=2500 (seed=0)
+===========================================================================
+
+[1/4] Loading random FB15k-237 subgraph...
+  Loaded: N=2242 entities, 189 relations, 8397 train triples
+  Mean entity degree (train): 7.6
+
+[2/4] Generating multi-hop queries...
+  1p: 691, 2p: 3344, 3p: 10000
+  Leakage audit: PASSED
+
+[3/4] Pre-building edge adjacencies...
+  Building edge adjacencies...
+    hops=1: 964,253 pairs [0.1s]
+    hops=2: 9,932,484 pairs [0.2s]
+    node_only: 0 pairs (edge attention disabled)
+
+[4/4] Running ablation conditions...
+
+============================================================
+Condition: hops1 (cache_hops=1, adj_pairs=964,253)
+============================================================
+
+  Seed 42:
+
+  [DELTA-Matched / hops1] seed=42, 272,376 params (103,696 encoder)
+    Ep   25  loss=0.0041  val_MRR=0.0042  val_H@10=0.0079  [42s]
+    Ep   50  loss=0.0039  val_MRR=0.0074  val_H@10=0.0097  [84s]
+    Ep   75  loss=0.0039  val_MRR=0.0098  val_H@10=0.0167  [125s]
+    Ep  100  loss=0.0038  val_MRR=0.0186  val_H@10=0.0423  [167s]
+    Ep  125  loss=0.0038  val_MRR=0.0319  val_H@10=0.1118  [208s]
+    Ep  150  loss=0.0038  val_MRR=0.0791  val_H@10=0.1426  [249s]
+    Ep  175  loss=0.0038  val_MRR=0.0892  val_H@10=0.1241  [291s]
+    Ep  200  loss=0.0037  val_MRR=0.0910  val_H@10=0.1224  [333s]
+    Ep  225  loss=0.0037  val_MRR=0.0910  val_H@10=0.1241  [376s]
+    Ep  250  loss=0.0037  val_MRR=0.0917  val_H@10=0.1259  [419s]
+    Ep  275  loss=0.0037  val_MRR=0.0925  val_H@10=0.1259  [461s]
+    Ep  300  loss=0.0037  val_MRR=0.0984  val_H@10=0.1461  [503s]
+    Ep  325  loss=0.0036  val_MRR=0.1091  val_H@10=0.1734  [546s]
+    Ep  350  loss=0.0036  val_MRR=0.1111  val_H@10=0.1761  [588s]
+    Ep  375  loss=0.0035  val_MRR=0.1202  val_H@10=0.1928  [630s]
+    Ep  400  loss=0.0035  val_MRR=0.1482  val_H@10=0.2148  [672s]
+    Ep  425  loss=0.0033  val_MRR=0.1897  val_H@10=0.2843  [714s]
+    Ep  450  loss=0.0032  val_MRR=0.2009  val_H@10=0.3099  [756s]
+    Ep  475  loss=0.0031  val_MRR=0.2384  val_H@10=0.3600  [798s]
+    Ep  500  loss=0.0030  val_MRR=0.2574  val_H@10=0.4085  [842s]
+    Training done: best_val_MRR=0.2574 [842s]
+    LP test: MRR=0.2484  H@10=0.3842
+    1p: MRR=0.3736  H@10=0.5355  (n=691)
+    2p: MRR=0.2810  H@10=0.4303  (n=3344)
+    3p: MRR=0.3117  H@10=0.4778  (n=10000)
+  Seed 42 done in 860s
+
+  Seed 123:
+
+  [DELTA-Matched / hops1] seed=123, 272,376 params (103,696 encoder)
+    Ep   25  loss=0.0041  val_MRR=0.0030  val_H@10=0.0044  [42s]
+    Ep   50  loss=0.0039  val_MRR=0.0039  val_H@10=0.0044  [84s]
+    Ep   75  loss=0.0039  val_MRR=0.0240  val_H@10=0.1162  [125s]
+    Ep  100  loss=0.0038  val_MRR=0.0329  val_H@10=0.1338  [167s]
+    Ep  125  loss=0.0038  val_MRR=0.0644  val_H@10=0.1294  [209s]
+    Ep  150  loss=0.0038  val_MRR=0.0639  val_H@10=0.1347  [251s]
+    Ep  175  loss=0.0038  val_MRR=0.0625  val_H@10=0.1197  [293s]
+    Ep  200  loss=0.0037  val_MRR=0.0530  val_H@10=0.1188  [336s]
+    Ep  225  loss=0.0037  val_MRR=0.0632  val_H@10=0.1206  [379s]
+    Ep  250  loss=0.0037  val_MRR=0.0917  val_H@10=0.1215  [421s]
+    Ep  275  loss=0.0037  val_MRR=0.0638  val_H@10=0.1206  [463s]
+    Ep  300  loss=0.0037  val_MRR=0.0759  val_H@10=0.1206  [504s]
+    Ep  325  loss=0.0037  val_MRR=0.0637  val_H@10=0.1206  [546s]
+    Ep  350  loss=0.0037  val_MRR=0.0657  val_H@10=0.1312  [587s]
+    Ep  375  loss=0.0037  val_MRR=0.0812  val_H@10=0.1620  [629s]
+    Ep  400  loss=0.0036  val_MRR=0.0871  val_H@10=0.1937  [672s]
+    Ep  425  loss=0.0035  val_MRR=0.1049  val_H@10=0.2306  [715s]
+    Ep  450  loss=0.0034  val_MRR=0.1347  val_H@10=0.2667  [758s]
+    Ep  475  loss=0.0032  val_MRR=0.1820  val_H@10=0.3239  [801s]
+    Ep  500  loss=0.0031  val_MRR=0.1999  val_H@10=0.3486  [844s]
+    Training done: best_val_MRR=0.1999 [844s]
+    LP test: MRR=0.1902  H@10=0.3618
+    1p: MRR=0.2791  H@10=0.4993  (n=691)
+    2p: MRR=0.1614  H@10=0.3394  (n=3344)
+    3p: MRR=0.1891  H@10=0.3767  (n=10000)
+  Seed 123 done in 858s
+
+  Seed 456:
+
+  [DELTA-Matched / hops1] seed=456, 272,376 params (103,696 encoder)
+    Ep   25  loss=0.0040  val_MRR=0.0029  val_H@10=0.0026  [43s]
+    Ep   50  loss=0.0039  val_MRR=0.0055  val_H@10=0.0062  [86s]
+    Ep   75  loss=0.0038  val_MRR=0.0443  val_H@10=0.1444  [129s]
+    Ep  100  loss=0.0038  val_MRR=0.0907  val_H@10=0.1523  [172s]
+    Ep  125  loss=0.0038  val_MRR=0.0629  val_H@10=0.1215  [216s]
+    Ep  150  loss=0.0038  val_MRR=0.0624  val_H@10=0.1188  [259s]
+    Ep  175  loss=0.0038  val_MRR=0.0687  val_H@10=0.1188  [302s]
+    Ep  200  loss=0.0037  val_MRR=0.0868  val_H@10=0.1215  [344s]
+    Ep  225  loss=0.0037  val_MRR=0.0901  val_H@10=0.1215  [387s]
+    Ep  250  loss=0.0037  val_MRR=0.0908  val_H@10=0.1188  [430s]
+    Ep  275  loss=0.0037  val_MRR=0.1102  val_H@10=0.1259  [473s]
+    Ep  300  loss=0.0037  val_MRR=0.1125  val_H@10=0.1461  [516s]
+    Ep  325  loss=0.0037  val_MRR=0.1252  val_H@10=0.1637  [560s]
+    Ep  350  loss=0.0036  val_MRR=0.1342  val_H@10=0.1725  [603s]
+    Ep  375  loss=0.0035  val_MRR=0.1497  val_H@10=0.2201  [646s]
+    Ep  400  loss=0.0034  val_MRR=0.1612  val_H@10=0.2359  [689s]
+    Ep  425  loss=0.0033  val_MRR=0.1804  val_H@10=0.2667  [732s]
+    Ep  450  loss=0.0032  val_MRR=0.2129  val_H@10=0.3213  [774s]
+    Ep  475  loss=0.0031  val_MRR=0.2307  val_H@10=0.3838  [817s]
+    Ep  500  loss=0.0030  val_MRR=0.2455  val_H@10=0.4181  [860s]
+    Training done: best_val_MRR=0.2455 [860s]
+    LP test: MRR=0.2476  H@10=0.4038
+    1p: MRR=0.3502  H@10=0.5398  (n=691)
+    2p: MRR=0.2840  H@10=0.4085  (n=3344)
+    3p: MRR=0.3214  H@10=0.4908  (n=10000)
+  Seed 456 done in 877s
+
+============================================================
+Condition: hops2 (cache_hops=2, adj_pairs=9,932,484)
+============================================================
+
+  Seed 42:
+
+  [DELTA-Matched / hops2] seed=42, 272,376 params (103,696 encoder)
+    Ep   25  loss=0.0041  val_MRR=0.0042  val_H@10=0.0079  [2234s]

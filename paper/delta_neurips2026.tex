@@ -1,7 +1,7 @@
 \documentclass{article}
 
 % NeurIPS 2026 style
-\usepackage[final,main,nonatbib]{neurips_2026}  % NeurIPS 2026 style
+\usepackage[nonatbib]{neurips_2026}  % NeurIPS 2026 style — submission (blind review)
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -786,5 +786,80 @@ The brain\_hybrid configuration matches DELTA-Full on MRR while delivering $+4.7
 \label{app:transfer}
 
 A frozen DELTA encoder trained on FB15k-237, evaluated via a linear probe on WN18RR, achieves accuracy of \textbf{0.961}---without any domain adaptation mechanism (no GRL, no fine-tuning). \textbf{Note:} this evaluation uses 100 training samples, giving approximate $\pm$5\% confidence intervals; results should be treated as a preliminary signal, not a statistically validated finding. A proper transfer evaluation requires $\geq$10,000 samples with confidence intervals on held-out test splits. We report this result as a directional indicator that DELTA's learned edge representations may capture transferable relational structure.
+
+%----------------------------------------------------------------------
+% NeurIPS Paper Checklist
+%----------------------------------------------------------------------
+\newpage
+\section*{NeurIPS Paper Checklist}
+
+\begin{enumerate}
+
+\item {\bf Claims}
+\item[] Question: Do the main claims made in the abstract and introduction accurately reflect the paper's contributions and scope?
+\item[] Answer: \answerYes{}
+\item[] Justification: The abstract and introduction claim (1) that edge-to-edge attention over multi-hop adjacency improves compositional reasoning on knowledge graphs, and (2) that DELTA demonstrates consistent improvements on synthetic, full-graph, and subgraph benchmarks. All claims are directly supported by the experimental results in \S\ref{sec:experiments} with numerical evidence.
+
+\item {\bf Limitations}
+\item[] Question: Does the paper discuss the limitations of the work?
+\item[] Answer: \answerYes{}
+\item[] Justification: Limitations are explicitly addressed in \S\ref{sec:discussion}: the gap between demonstrating the mechanism and achieving SOTA LP performance ($\approx$0.205 vs.\ $\approx$0.34--0.41 published SOTA); the hop-depth ablation showing statistical indistinguishability on the dense subgraph; the preliminary nature of BrainEncoder and domain transfer results; and missing baselines (NBFNet, A*Net).
+
+\item {\bf Theory Assumptions and Proofs}
+\item[] Question: For each theoretical result, does the paper provide complete proofs of all formal claims?
+\item[] Answer: \answerNA{}
+\item[] Justification: The paper does not make formal theoretical claims requiring proofs. The $O(E^{0.97})$ scaling claim is validated empirically. Architectural design choices are motivated and validated experimentally.
+
+\item {\bf Experimental Reproducibility Details}
+\item[] Question: Does the paper fully describe the experimental setup to enable re-implementation?
+\item[] Answer: \answerYes{}
+\item[] Justification: \S\ref{sec:experiments} specifies dataset (FB15k-237, publicly available), subgraph construction procedure (top-$k$ degree filter), model hyperparameters (hidden dimensions, number of layers, hop depth, learning rate, epochs, DropEdge rate), evaluation metrics, and the number of seeds for each experiment. Phase identifiers map to distinct experimental conditions described in the text.
+
+\item {\bf Code of Ethics}
+\item[] Question: Does the research conducted in the paper conform, in every way, with the NeurIPS Code of Ethics?
+\item[] Answer: \answerYes{}
+\item[] Justification: This work involves publicly available knowledge graph benchmarks (FB15k-237, WN18RR) with no human subjects, no sensitive data, and no potential for direct harm. No crowdsourcing was used.
+
+\item {\bf Broader Impacts}
+\item[] Question: Does the paper discuss both potential positive societal impacts and negative societal impacts of the work?
+\item[] Answer: \answerNA{}
+\item[] Justification: This is basic research on graph neural network architectures for knowledge graph reasoning. There are no foreseeable direct negative societal impacts beyond general concerns about misuse of AI systems, which are not specific to this contribution.
+
+\item {\bf Safeguards}
+\item[] Question: Does the paper describe safeguards that have been put in place for responsible release of data or models?
+\item[] Answer: \answerNA{}
+\item[] Justification: All datasets used are already publicly available standard benchmarks. No new datasets are released with this submission.
+
+\item {\bf Human Subjects}
+\item[] Question: Does the research involve human subjects?
+\item[] Answer: \answerNo{}
+\item[] Justification: All experiments use benchmark knowledge graph datasets (FB15k-237, WN18RR) derived from Freebase and WordNet. No human subjects were involved.
+
+\item {\bf Institutional Review Board (IRB) Approvals}
+\item[] Question: Does the paper describe whether IRB approvals (or an equivalent approval/review based on the requirements of your country or institution) were obtained?
+\item[] Answer: \answerNA{}
+\item[] Justification: No human subjects research was conducted.
+
+\item {\bf Licenses for Existing Assets}
+\item[] Question: Are the creators or original owners of assets (e.g., code, data, models), used in the paper, properly credited?
+\item[] Answer: \answerYes{}
+\item[] Justification: FB15k-237~\cite{toutanova2015representing} is cited. GraphGPS~\cite{rampavsek2022recipe} and GRIT~\cite{ma2023graph} are cited as baseline comparisons. All referenced architectures and datasets are properly attributed in the bibliography.
+
+\item {\bf New Assets}
+\item[] Question: Are new assets introduced in the paper documented with appropriate information?
+\item[] Answer: \answerNA{}
+\item[] Justification: No new datasets or pre-trained models are released with this submission.
+
+\item {\bf Crowdsourcing and Human Subjects}
+\item[] Question: For crowdsourcing experiments and research with human subjects, does the paper include the necessary information (e.g., description of tasks, payments, and any instructions given to participants)?
+\item[] Answer: \answerNA{}
+\item[] Justification: No crowdsourcing or human subject experiments were conducted.
+
+\item {\bf Personally Identifiable Information or Offensive Content}
+\item[] Question: Does the paper contain personally identifiable information (PII) or offensive content?
+\item[] Answer: \answerNo{}
+\item[] Justification: All data is derived from publicly available knowledge graph benchmarks. No PII or offensive content is present.
+
+\end{enumerate}
 
 \end{document}

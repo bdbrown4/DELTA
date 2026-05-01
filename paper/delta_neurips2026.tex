@@ -785,24 +785,44 @@ Using top-degree entities for primary experiments biases toward entities with ri
 \item {\bf Claims}
 \item[] Question: Do the main claims made in the abstract and introduction accurately reflect the paper's contributions and scope?
 \item[] Answer: \answerYes{}
-\item[] Justification: The abstract and introduction claim (1) that edge-to-edge attention over multi-hop adjacency improves compositional reasoning on knowledge graphs, and (2) that DELTA demonstrates consistent improvements on synthetic, full-graph, and subgraph benchmarks. All claims are directly supported by the experimental results in \S\ref{sec:experiments} with numerical evidence.
+\item[] Justification: The abstract and introduction claim (1) that edge-to-edge attention over multi-hop adjacency improves compositional reasoning on knowledge graphs, and (2) that DELTA demonstrates consistent improvements on synthetic, full-graph, and subgraph benchmarks. All claims are directly supported by the experimental results in \S\ref{sec:experiments} with numerical evidence. Scope caveats (SOTA LP gap, dense-subgraph null ablation) are stated explicitly in the abstract and \S\ref{sec:discussion}.
 
 \item {\bf Limitations}
 \item[] Question: Does the paper discuss the limitations of the work?
 \item[] Answer: \answerYes{}
-\item[] Justification: Limitations are addressed in §\ref{sec:discussion} (summary) and Appendix~\ref{app:limitations} (detailed): the gap between SOTA and DELTA's full-graph LP; the Phase 66 dense-subgraph ablation finding all conditions statistically indistinguishable; the preliminary nature of BrainEncoder and domain transfer results; and missing baselines (NBFNet, A*Net).
+\item[] Justification: Limitations are addressed in \S\ref{sec:discussion} (summary paragraph) and Appendix~\ref{app:limitations} (detailed): the gap between SOTA and DELTA's full-graph LP; the Phase 66 dense-subgraph ablation finding all conditions statistically indistinguishable; the preliminary nature of BrainEncoder and domain transfer results; and missing baselines (NBFNet, A*Net).
 
 \item {\bf Theory Assumptions and Proofs}
 \item[] Question: For each theoretical result, does the paper provide complete proofs of all formal claims?
 \item[] Answer: \answerNA{}
-\item[] Justification: The paper does not make formal theoretical claims requiring proofs. The $O(E^{0.97})$ scaling claim is validated empirically. Architectural design choices are motivated and validated experimentally.
+\item[] Justification: The paper does not make formal theoretical claims requiring proofs. The $O(E^{0.97})$ scaling claim is validated empirically (\S\ref{sec:edge_adj}). Architectural design choices are motivated and validated experimentally.
 
-\item {\bf Experimental Reproducibility Details}
+\item {\bf Experimental Result Reproducibility}
 \item[] Question: Does the paper fully describe the experimental setup to enable re-implementation?
 \item[] Answer: \answerYes{}
-\item[] Justification: \S\ref{sec:experiments} specifies dataset (FB15k-237, publicly available), subgraph construction procedure (top-$k$ degree filter), model hyperparameters (hidden dimensions, number of layers, hop depth, learning rate, epochs, DropEdge rate), evaluation metrics, and the number of seeds for each experiment. Phase identifiers map to distinct experimental conditions described in the text. Code covering the edge adjacency construction, top-$k$ sparse attention implementation, and multi-hop query generation procedure will be released upon acceptance.
+\item[] Justification: \S\ref{sec:exp_setup} specifies dataset (FB15k-237, publicly available), subgraph construction (top-$k$ degree filter), model hyperparameters (hidden dimensions, number of layers, hop depth, $\text{lr}{=}0.003$, batch size 4,096, label smoothing 0.1, DropEdge rate), evaluation metrics, and number of seeds per experiment. Phase identifiers map to distinct experimental conditions described in the text. Code covering edge adjacency construction, top-$k$ sparse attention, and multi-hop query generation will be released upon acceptance.
 
-\item {\bf Code of Ethics}
+\item {\bf Open Access to Data and Code}
+\item[] Question: Does the paper provide open access to the data and code, with instructions for reproducibility?
+\item[] Answer: \answerNo{}
+\item[] Justification: Code will be released upon acceptance. All datasets used (FB15k-237, WN18RR) are publicly available benchmarks. The paper provides sufficient architectural and hyperparameter detail to enable re-implementation without the code.
+
+\item {\bf Experimental Setting/Details}
+\item[] Question: Does the paper specify all the training and test details (e.g., data splits, hyperparameters, how they were chosen)?
+\item[] Answer: \answerYes{}
+\item[] Justification: \S\ref{sec:exp_setup} specifies optimizer (Adam, $\text{lr}{=}0.003$), batch size (4,096), loss (1-vs-all BCE with label smoothing 0.1), early stopping (patience 10), evaluation metrics (filtered MRR, Hits@$k$), number of epochs per phase (200--500 depending on experiment), and seeds used. Hyperparameters were selected based on prior GNN work and kept fixed across all models for fair comparison.
+
+\item {\bf Experiment Statistical Significance}
+\item[] Question: Does the paper report error bars suitably and correctly defined or other appropriate information about the statistical significance of the experiments?
+\item[] Answer: \answerYes{}
+\item[] Justification: Multi-seed experiments (Phases 34, 66, 67, 68) report mean $\pm$ std across 3--5 seeds throughout Tables~\ref{tab:synthetic}, \ref{tab:ablation_hop}, \ref{tab:multiseed}, \ref{tab:cross_density}, \ref{tab:phase67}, and \ref{tab:phase68}. Error bars represent standard deviation across seeds. The Phase 66 null result and the Phase 67 threshold comparison explicitly use standard deviation overlap to assess statistical significance.
+
+\item {\bf Experiments Compute Resource}
+\item[] Question: For each experiment, does the paper provide sufficient information on the computer resources (type of compute, memory, time) needed to reproduce the experiments?
+\item[] Answer: \answerYes{}
+\item[] Justification: Synthetic benchmarks (Phase 34) ran on an H100 GPU (mentioned in abstract and \S\ref{sec:exp_synthetic}). Subgraph experiments (Phases 66, 68) used 500 epochs; full-graph experiments (Phase 67) used 200 epochs with top-$k{=}128$ sparse attention. Appendix~\ref{app:inference} reports training time: DELTA-Matched total training is 3,782s vs.\ GraphGPS 110s. Per-query inference is 0.84--0.94$\times$ GraphGPS after the one-time 454ms encoding step.
+
+\item {\bf Code Of Ethics}
 \item[] Question: Does the research conducted in the paper conform, in every way, with the NeurIPS Code of Ethics?
 \item[] Answer: \answerYes{}
 \item[] Justification: This work involves publicly available knowledge graph benchmarks (FB15k-237, WN18RR) with no human subjects, no sensitive data, and no potential for direct harm. No crowdsourcing was used.
@@ -810,42 +830,37 @@ Using top-degree entities for primary experiments biases toward entities with ri
 \item {\bf Broader Impacts}
 \item[] Question: Does the paper discuss both potential positive societal impacts and negative societal impacts of the work?
 \item[] Answer: \answerNA{}
-\item[] Justification: This is basic research on graph neural network architectures for knowledge graph reasoning. There are no foreseeable direct negative societal impacts beyond general concerns about misuse of AI systems, which are not specific to this contribution.
+\item[] Justification: This is foundational research on graph neural network architectures for knowledge graph reasoning. There are no foreseeable direct negative societal impacts beyond general concerns about AI misuse not specific to this contribution.
 
 \item {\bf Safeguards}
 \item[] Question: Does the paper describe safeguards that have been put in place for responsible release of data or models?
 \item[] Answer: \answerNA{}
-\item[] Justification: All datasets used are already publicly available standard benchmarks. No new datasets are released with this submission.
-
-\item {\bf Human Subjects}
-\item[] Question: Does the research involve human subjects?
-\item[] Answer: \answerNo{}
-\item[] Justification: All experiments use benchmark knowledge graph datasets (FB15k-237, WN18RR) derived from Freebase and WordNet. No human subjects were involved.
-
-\item {\bf Institutional Review Board (IRB) Approvals}
-\item[] Question: Does the paper describe whether IRB approvals (or an equivalent approval/review based on the requirements of your country or institution) were obtained?
-\item[] Answer: \answerNA{}
-\item[] Justification: No human subjects research was conducted.
+\item[] Justification: All datasets used are already publicly available standard benchmarks. No new datasets or high-risk models are released with this submission.
 
 \item {\bf Licenses for Existing Assets}
-\item[] Question: Are the creators or original owners of assets (e.g., code, data, models), used in the paper, properly credited?
+\item[] Question: Are the creators or original owners of assets (e.g., code, data, models) used in the paper properly credited?
 \item[] Answer: \answerYes{}
-\item[] Justification: FB15k-237~\cite{toutanova2015representing} is cited. GraphGPS~\cite{rampavsek2022recipe} and GRIT~\cite{ma2023graph} are cited as baseline comparisons. All referenced architectures and datasets are properly attributed in the bibliography.
+\item[] Justification: FB15k-237~\cite{toutanova2015representing} is cited. GraphGPS~\cite{rampavsek2022recipe} and GRIT~\cite{ma2023graph} are cited as baselines. DistMult~\cite{yang2015embedding}, RotatE~\cite{sun2019rotate}, NBFNet~\cite{zhu2021neural}, and A*Net~\cite{zhu2022astar} are properly attributed. All referenced architectures and datasets have corresponding bibliography entries.
 
 \item {\bf New Assets}
 \item[] Question: Are new assets introduced in the paper documented with appropriate information?
 \item[] Answer: \answerNA{}
-\item[] Justification: No new datasets or pre-trained models are released with this submission.
+\item[] Justification: No new datasets or pre-trained models are released with this submission. Code will be released upon acceptance.
 
-\item {\bf Crowdsourcing and Human Subjects}
+\item {\bf Crowdsourcing and Research with Human Subjects}
 \item[] Question: For crowdsourcing experiments and research with human subjects, does the paper include the necessary information (e.g., description of tasks, payments, and any instructions given to participants)?
 \item[] Answer: \answerNA{}
 \item[] Justification: No crowdsourcing or human subject experiments were conducted.
 
-\item {\bf Personally Identifiable Information or Offensive Content}
-\item[] Question: Does the paper contain personally identifiable information (PII) or offensive content?
-\item[] Answer: \answerNo{}
-\item[] Justification: All data is derived from publicly available knowledge graph benchmarks. No PII or offensive content is present.
+\item {\bf Institutional Review Board (IRB) Approvals}
+\item[] Question: Does the paper describe whether IRB approvals (or equivalent) were obtained?
+\item[] Answer: \answerNA{}
+\item[] Justification: No human subjects research was conducted.
+
+\item {\bf Declaration of LLM Usage}
+\item[] Question: Does the paper describe the usage of LLMs if they are an important, original, or non-standard component of the core methods?
+\item[] Answer: \answerNA{}
+\item[] Justification: LLMs were not used as any component of the core research methods. LLM-based tools were used for writing assistance (editing, grammar, drafting) and code assistance during development, but do not constitute an original or non-standard part of the methodology.
 
 \end{enumerate}
 

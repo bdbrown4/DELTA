@@ -98,7 +98,7 @@ The foundation of DELTA is the \emph{edge adjacency matrix} $\mathbf{A}_E$, whic
 
 where $\mathbf{B} \in \{0,1\}^{|V| \times |E|}$ is the node-edge incidence matrix. This is computed efficiently using sparse COO tensor operations via \texttt{torch\_sparse.spspmm}, achieving $O(E^{0.97})$ scaling (validated empirically from 50 to 2,500 edges). At 2 hops, an edge can ``see'' edges two steps away, enabling direct reasoning about relational chains such as \texttt{born\_in} $\to$ \texttt{located\_in} without intermediate node representations.
 
-We validate the role of 2-hop edge adjacency in \S\ref{sec:exp_ablation}: on a synthetic transitive relation benchmark, 2-hop achieves 100\% accuracy on derived relations vs.\ 61.1\% for 1-hop. On FB15k-237 multi-hop queries, a direct ablation finds all three adjacency configurations perform comparably (Table~\ref{tab:ablation_hop}); we discuss this result and its implications in \S\ref{sec:exp_ablation}.
+We validate the role of 2-hop edge adjacency in \S\ref{sec:exp_synthetic}: on a synthetic transitive relation benchmark, 2-hop achieves 100\% accuracy on derived relations vs.\ 61.1\% for 1-hop. On FB15k-237 multi-hop queries, a direct ablation finds all three adjacency configurations perform comparably (Table~\ref{tab:ablation_hop}); we discuss this result and its implications in \S\ref{sec:exp_ablation}.
 
 \subsection{Edge-to-Edge Attention}
 \label{sec:edge_attn}
@@ -279,8 +279,6 @@ Table~\ref{tab:depth} presents the central result. DELTA-Matched's lead over Gra
 Table~\ref{tab:multiseed} confirms statistical robustness (3 seeds, 10\% DropEdge): DELTA improves from 2p ($0.730 \pm 0.011$) to 3p ($0.742 \pm 0.009$), while GraphGPS degrades ($0.727\to 0.713$); confidence intervals do not overlap. The full 7-model single-seed comparison (Appendix~\ref{app:multihop_full}, Table~\ref{tab:all_models}) shows DELTA-Matched is the only model with a positive 2p$\to$3p delta ($+0.005$); every other model degrades.
 
 
-To confirm statistical robustness, we run DELTA-Matched (with 10\% DropEdge) and GraphGPS across 3 seeds (Table~\ref{tab:multiseed}). At 3-hop, DELTA achieves $0.742 \pm 0.009$ vs.\ GraphGPS $0.713 \pm 0.007$. The confidence intervals do not overlap: DELTA's worst seed (0.731) exceeds GraphGPS's best (0.722).
-
 \begin{table}[t]
 \centering
 \caption{Multi-seed 3-hop MRR ($\pm$ std, 3 seeds). Non-overlapping confidence intervals.}
@@ -303,7 +301,7 @@ We sweep DropEdge rates (0\%--40\%) for both DELTA-Matched and GraphGPS (Appendi
 \label{sec:exp_lp}
 %----------------------------------------------------------------------
 
-On standard 1p link prediction (top-500 subgraph), GraphGPS leads by $-0.018$ MRR (0.513 vs.\ DELTA-Matched 0.495); DELTA-Matched achieves 97\% of GraphGPS's MRR with 69\% of parameters (158K vs.\ 228K). Full per-model results in Appendix~\ref{app:lp_full} (Table~\ref{tab:lp}). Standard 1p rewards memorization of local statistics, where GraphGPS's larger capacity provides an advantage; the compositional inductive bias of DELTA yields returns only at multi-hop depth (Table~\ref{tab:depth}).
+On standard 1p link prediction (top-500 subgraph), GraphGPS leads DELTA-Matched by $0.018$ MRR (0.513 vs.\ 0.495). Full per-model results in Appendix~\ref{app:lp_full} (Table~\ref{tab:lp}).
 
 %----------------------------------------------------------------------
 \subsection{Ablation: 1-Hop vs.\ 2-Hop Edge Adjacency}
@@ -336,7 +334,7 @@ Node-only      & $0.505\pm0.006$ & $0.553\pm0.006$ & $0.728\pm0.011$ & $0.742\pm
 Table~\ref{tab:ablation_hop} shows all three configurations are statistically indistinguishable on the dense subgraph (every pairwise gap within one standard deviation). The node-only condition achieves the highest point estimates, though within noise---consistent with 1-hop adjacency already saturating the structural neighborhood at mean degree $\approx 19.7$. This motivates the full-graph ablation below, where 1-hop neighborhoods are genuinely sparse.
 
 \paragraph{Full-Scale Ablation (Phases 67--68).}
-On the complete 14,541-entity graph (mean degree $\approx 4.1$, top-$k{=}128$ sparse attention, 1,064K parameters, 3 seeds), hops=2 achieves $\mathbf{+0.012}$ on 3p MRR over hops=1, exceeding the pre-specified $+0.010$ threshold. (Preliminary 2-seed results showed $+0.017$; seed~456's hops=2 3p score revised the 3-seed average to $+0.012$, still above threshold.) LP MRR is statistically equivalent ($0.204$ vs.\ $0.205$). On a random 2,242-entity subgraph (uniformly sampled, mean degree~7.6, equal adjacency budget), the 3p gap is $+0.010$ over 3 seeds. Full multi-metric breakdowns in Appendix~\ref{app:ablation_full} (Tables~\ref{tab:phase67}--\ref{tab:phase68}). Table~\ref{tab:cross_density} synthesizes all three density regimes.
+On the complete 14,541-entity graph (mean degree $\approx 4.1$, top-$k{=}128$ sparse attention, 1,064K parameters, 3 seeds), hops=2 achieves $\mathbf{+0.012}$ on 3p MRR over hops=1, exceeding the pre-specified $+0.010$ threshold. (Preliminary 2-seed results showed $+0.017$; seed~456's hops=2 3p score revised the 3-seed average to $+0.012$, still above threshold.) LP MRR is statistically equivalent ($0.204$ vs.\ $0.205$). On a random 2,242-entity subgraph (uniformly sampled, mean degree~7.6, equal adjacency budget), the 3p gap is $+0.010$ over 3 seeds. Full multi-metric breakdowns in Appendix~\ref{app:ablation_full} (Table~\ref{tab:phase67} Phase~67 and Table~\ref{tab:phase68} Phase~68). Table~\ref{tab:cross_density} synthesizes all three density regimes.
 
 \begin{table}[h]
 \small
@@ -368,6 +366,9 @@ We hypothesize that 2-hop edge adjacency creates a multiplicative compositional 
 
 \paragraph{When does the mechanism matter?}
 The Phase 66 dense-subgraph ablation (mean degree ${\approx}19.7$) finds all adjacency conditions statistically indistinguishable, while the Phase 67 full-graph ablation (mean degree ${\approx}4.1$) finds $+0.012$ on 3p MRR. The mechanism matters when graph sparsity creates relational chains that 1-hop adjacency cannot bridge. Table~\ref{tab:cross_density} confirms this monotonically across all three density regimes.
+
+\paragraph{Does the compositional inductive bias trade off against 1p performance?}
+DELTA-Matched (158K parameters) consistently outperforms DELTA-Full (293K) on multi-hop tasks, which we interpret as larger models memorizing local link statistics at the expense of compositional generalization. The full-graph LP gap below SOTA ($0.205$ vs.\ $0.338$--$0.415$) likely reflects training-strategy differences---self-adversarial negative sampling, longer schedules, entity-specific regularization---rather than an architectural incompatibility. The per-scale gap on the top-500 subgraph is only $-0.018$ against GraphGPS (97\% of its MRR at 69\% of parameters), suggesting the mechanism itself does not preclude competitive 1p performance; optimizing for it is an engineering question, not a structural limitation.
 
 %----------------------------------------------------------------------
 \section{Conclusion}
@@ -799,7 +800,7 @@ Using top-degree entities for primary experiments biases toward entities with ri
 \item {\bf Experimental Reproducibility Details}
 \item[] Question: Does the paper fully describe the experimental setup to enable re-implementation?
 \item[] Answer: \answerYes{}
-\item[] Justification: \S\ref{sec:experiments} specifies dataset (FB15k-237, publicly available), subgraph construction procedure (top-$k$ degree filter), model hyperparameters (hidden dimensions, number of layers, hop depth, learning rate, epochs, DropEdge rate), evaluation metrics, and the number of seeds for each experiment. Phase identifiers map to distinct experimental conditions described in the text.
+\item[] Justification: \S\ref{sec:experiments} specifies dataset (FB15k-237, publicly available), subgraph construction procedure (top-$k$ degree filter), model hyperparameters (hidden dimensions, number of layers, hop depth, learning rate, epochs, DropEdge rate), evaluation metrics, and the number of seeds for each experiment. Phase identifiers map to distinct experimental conditions described in the text. Code covering the edge adjacency construction, top-$k$ sparse attention implementation, and multi-hop query generation procedure will be released upon acceptance.
 
 \item {\bf Code of Ethics}
 \item[] Question: Does the research conducted in the paper conform, in every way, with the NeurIPS Code of Ethics?

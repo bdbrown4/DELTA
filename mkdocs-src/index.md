@@ -1,4 +1,4 @@
-# DELTA: Dynamic Edge-and-Node Architecture with Layered, Tiered Attention
+# DELTA: Dual Edge-Linked Transformer Architecture
 
 A research implementation of the DELTA architecture — building toward **[The Brain](the-brain.md)**: a system that dynamically constructs its own relational graphs and reasons over them, without pre-defined topology or transformer scaffolding.
 

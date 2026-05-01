@@ -1,4 +1,4 @@
-# DELTA: Dynamic Edge-and-Node Architecture with Layered, Tiered Attention
+# DELTA: Dual Edge-Linked Transformer Architecture
 
 > **[Full Documentation](https://bdbrown4.github.io/DELTA/)** — Architecture, experiment results, research agenda, and setup guides.
 

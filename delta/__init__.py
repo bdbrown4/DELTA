@@ -1,4 +1,4 @@
-"""DELTA: Dynamic Edge-and-Node Architecture with Layered, Tiered Attention."""
+"""DELTA: Dual Edge-Linked Transformer Architecture."""
 
 from delta.graph import DeltaGraph
 from delta.attention import NodeAttention, EdgeAttention, DualParallelAttention

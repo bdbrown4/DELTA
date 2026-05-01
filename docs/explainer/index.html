@@ -6,17 +6,17 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Dynamic Edge-and-Node Architecture with Layered, Tiered Attention — Edge-Centric Dual Attention for Relational Reasoning on Knowledge Graphs">
+        <meta name="description" content="Dual Edge-Linked Transformer Architecture — Edge-Centric Dual Attention for Compositional Reasoning on Knowledge Graphs">
       
       
       
-        <link rel="canonical" href="https://bdbrown4.github.io/DELTA/bootstrap-strategy/">
+        <link rel="canonical" href="https://bdbrown4.github.io/DELTA/explainer/">
       
       
-        <link rel="prev" href="../ARCHITECTURE_VISUAL/">
+        <link rel="prev" href="..">
       
       
-        <link rel="next" href="../adaptive-architecture/">
+        <link rel="next" href="../architecture/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Bootstrap Strategy - DELTA Documentation</title>
+        <title>Explainer (Start Here) - DELTA Documentation</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#bootstrap-strategy" class="md-skip">
+        <a href="#delta-explained-for-a-software-engineer" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Bootstrap Strategy
+              Explainer (Start Here)
             
           </span>
         </div>
@@ -286,10 +286,185 @@
       
   
   
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explainer (Start Here)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Explainer (Start Here)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-30-second-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The 30-second version
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-the-actual-problem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What's the actual problem?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-bug-in-how-gnns-are-built" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The bug in how GNNs are built
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-delta-does-differently" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What DELTA does differently
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-do-you-prove-this-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How do you prove this works?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#whats-the-story-delta-is-telling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What's the story DELTA is telling?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-is-this-interesting-beyond-the-immediate-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why is this interesting beyond the immediate result?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-does-this-fit-in-the-broader-landscape" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where does this fit in the broader landscape?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tldr-for-the-engineer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TL;DR for the engineer
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
   
   
     
     
+      
+        
       
         
       
@@ -308,108 +483,7 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Vision
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Vision
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../the-brain/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    The Brain
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-    
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-    
-    
-    
-      
-        
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
         
           
           <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
@@ -430,7 +504,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -497,30 +571,50 @@
 
               
             
-              
-                
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
   
   
     
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
+    
       
         
       
+    
+    
+    
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
           
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
   
   
   <span class="md-ellipsis">
     
   
-    Bootstrap Strategy
+    Vision
   
 
     
@@ -528,132 +622,19 @@
   
   
 
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+            <span class="md-nav__icon md-icon"></span>
+          </label>
         
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
   
-  
-  <span class="md-ellipsis">
-    
-  
-    Bootstrap Strategy
+    Vision
   
 
-    
-  </span>
-  
-  
-
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#the-chicken-and-egg-problem" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The Chicken-and-Egg Problem
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#phase-27b-the-real-test" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 27b: The Real Test
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#phase-36-constructor-at-scale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 36: Constructor at Scale
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#phase-38-differentiable-construction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 38: Differentiable Construction
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#phase-39-self-bootstrapped-delta-the-scaffold-comes-down" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Phase 39: Self-Bootstrapped DELTA — The Scaffold Comes Down
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Phase 39: Self-Bootstrapped DELTA — The Scaffold Comes Down">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#why-57-over-fixedchain" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why +57% Over FixedChain?
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#updated-bootstrap-assessment" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Updated Bootstrap Assessment
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
-    </li>
-  
-
-              
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
             
               
                 
@@ -662,42 +643,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../adaptive-architecture/" class="md-nav__link">
+      <a href="../the-brain/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Adaptive Architecture
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../architecture-evolution/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Evolution
+    The Brain
   
 
     
@@ -731,10 +684,6 @@
       
         
       
-        
-      
-        
-      
     
     
     
@@ -750,17 +699,17 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   
   <span class="md-ellipsis">
     
   
-    Experiments
+    Results
   
 
     
@@ -771,44 +720,16 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Experiments
+    Results
   
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../validation-phases/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Validation Phases
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
             
               
                 
@@ -845,195 +766,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../COLAB_RESULTS/" class="md-nav__link">
+      <a href="../validation-phases/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Colab Results
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../backward-compatibility/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Backward Compatibility
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-        
-      
-    
-    
-    
-      
-        
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
-        
-          
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Research
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Research
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../RESEARCH_AGENDA/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Agenda
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../PUBLICATION_ROADMAP/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Publication Roadmap
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../research-methodology/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Methodology
+    Validation Phases
   
 
     
@@ -1089,8 +829,6 @@
   
     
     
-      
-        
       
         
       
@@ -1178,34 +916,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../COLAB_SETUP/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Colab Setup Guide
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../project-structure/" class="md-nav__link">
         
   
@@ -1230,6 +940,33 @@
           </ul>
         </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../research-methodology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Research Methodology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -1261,10 +998,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#the-chicken-and-egg-problem" class="md-nav__link">
+  <a href="#the-30-second-version" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The Chicken-and-Egg Problem
+        The 30-second version
       
     </span>
   </a>
@@ -1272,10 +1009,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#phase-27b-the-real-test" class="md-nav__link">
+  <a href="#whats-the-actual-problem" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Phase 27b: The Real Test
+        What's the actual problem?
       
     </span>
   </a>
@@ -1283,10 +1020,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#phase-36-constructor-at-scale" class="md-nav__link">
+  <a href="#the-bug-in-how-gnns-are-built" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Phase 36: Constructor at Scale
+        The bug in how GNNs are built
       
     </span>
   </a>
@@ -1294,10 +1031,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#phase-38-differentiable-construction" class="md-nav__link">
+  <a href="#what-delta-does-differently" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Phase 38: Differentiable Construction
+        What DELTA does differently
       
     </span>
   </a>
@@ -1305,41 +1042,57 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#phase-39-self-bootstrapped-delta-the-scaffold-comes-down" class="md-nav__link">
+  <a href="#how-do-you-prove-this-works" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Phase 39: Self-Bootstrapped DELTA — The Scaffold Comes Down
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Phase 39: Self-Bootstrapped DELTA — The Scaffold Comes Down">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#why-57-over-fixedchain" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why +57% Over FixedChain?
+        How do you prove this works?
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#updated-bootstrap-assessment" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#whats-the-story-delta-is-telling" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Updated Bootstrap Assessment
+        What's the story DELTA is telling?
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#why-is-this-interesting-beyond-the-immediate-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why is this interesting beyond the immediate result?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-does-this-fit-in-the-broader-landscape" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where does this fit in the broader landscape?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tldr-for-the-engineer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TL;DR for the engineer
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1363,144 +1116,101 @@
   
 
 
-<h1 id="bootstrap-strategy">Bootstrap Strategy<a class="headerlink" href="#bootstrap-strategy" title="Permanent link">&para;</a></h1>
-<h2 id="the-chicken-and-egg-problem">The Chicken-and-Egg Problem<a class="headerlink" href="#the-chicken-and-egg-problem" title="Permanent link">&para;</a></h2>
-<p>Graph construction faces a fundamental bootstrapping challenge: you need to understand the input to build the graph, but the graph is how you understand input. DELTA's journey from external scaffolding to full self-bootstrap:</p>
+<h1 id="delta-explained-for-a-software-engineer">DELTA, Explained for a Software Engineer<a class="headerlink" href="#delta-explained-for-a-software-engineer" title="Permanent link">&para;</a></h1>
+<h2 id="the-30-second-version">The 30-second version<a class="headerlink" href="#the-30-second-version" title="Permanent link">&para;</a></h2>
+<p>There's a class of AI models called <strong>graph neural networks</strong> (GNNs) — they're what Google uses to rank search results, what Pinterest uses for recommendations, what drug companies use to predict molecule interactions. They work on data structured as networks: nodes connected by edges (relationships).</p>
+<p>DELTA argues that pretty much every GNN built so far has been designed wrong in a specific, fixable way. It proposes a fix, shows the fix works on small problems where you can isolate the mechanism cleanly, and shows it works (more modestly) on a real-world benchmark. That's the whole story.</p>
+<hr />
+<h2 id="whats-the-actual-problem">What's the actual problem?<a class="headerlink" href="#whats-the-actual-problem" title="Permanent link">&para;</a></h2>
+<p>Imagine you have a knowledge graph — basically a giant database of facts shaped like a network. Nodes are things (people, places, companies). Edges are relationships (<code>born_in</code>, <code>works_at</code>, <code>located_in</code>, <code>married_to</code>).</p>
+<p>Now ask the AI a question that requires chaining facts together:</p>
+<blockquote>
+<p>"Where is Sundar Pichai's employer headquartered?"</p>
+</blockquote>
+<p>To answer this, the model has to compose two relationships:</p>
 <ol>
-<li><strong>Phase 5–27b:</strong> Use a lightweight transformer to bootstrap an initial graph</li>
-<li><strong>Phase 33/36:</strong> Try to make the constructor contribute — hard thresholding blocks gradients</li>
-<li><strong>Phase 38:</strong> Differentiable construction with Gumbel-sigmoid — Hybrid reaches 98% of FixedChain</li>
-<li><strong>Phase 39:</strong> <strong>Self-bootstrapped DELTA</strong> — no transformer anywhere. DELTA bootstraps DELTA at 157% of FixedChain.</li>
+<li><code>Sundar Pichai → works_at → Google</code></li>
+<li><code>Google → headquartered_in → Mountain View</code></li>
 </ol>
-<p><strong>The transformer scaffold is down.</strong></p>
+<p>This is called <strong>multi-hop reasoning</strong>. Sounds simple. Humans do it without thinking. But it turns out current AI models are kind of bad at it, and they get worse the more hops you add.</p>
+<p>DELTA's central claim about <em>why</em> they're bad is the heart of the argument.</p>
 <hr />
-<h2 id="phase-27b-the-real-test">Phase 27b: The Real Test<a class="headerlink" href="#phase-27b-the-real-test" title="Permanent link">&para;</a></h2>
-<p>Phase 27b clarified the bootstrap's true role. On a 2-hop path composition task (16 relational classes, N=1000):</p>
+<h2 id="the-bug-in-how-gnns-are-built">The bug in how GNNs are built<a class="headerlink" href="#the-bug-in-how-gnns-are-built" title="Permanent link">&para;</a></h2>
+<p>Think of a GNN like a message-passing system. Every node sends messages to its neighbors, neighbors aggregate the messages they receive, and after a few rounds, every node has absorbed information from the network around it.</p>
+<p>In this design, <strong>edges are basically just pipes</strong>. They carry messages between nodes. They don't really <em>think</em>. They have no representation of their own that learns and evolves.</p>
+<p>DELTA's argument: this is exactly backwards for the kind of reasoning we want the model to do. When you're chaining <code>works_at</code> with <code>headquartered_in</code>, the interesting computation is <em>between the two relationships themselves</em>. But in a standard GNN, those two edges can't talk to each other directly. They have to route their interaction through the intermediate node (Google), which compresses the information at every hop.</p>
+<p>It's like trying to have a conversation about your conversation, but you're only allowed to communicate by passing notes through a third person who summarizes everything before forwarding it. You lose fidelity at every step.</p>
+<hr />
+<h2 id="what-delta-does-differently">What DELTA does differently<a class="headerlink" href="#what-delta-does-differently" title="Permanent link">&para;</a></h2>
+<p>DELTA flips this around: <strong>edges become first-class citizens</strong>. They get their own representations, their own attention mechanism, and — critically — they can attend directly to other edges.</p>
+<p>The mechanism is called <strong>edge-to-edge attention with multi-hop adjacency</strong>. Two key concepts:</p>
+<p><strong>1. Edge adjacency.</strong> Two edges are "adjacent" if they share a node. So <code>works_at(Pichai, Google)</code> and <code>headquartered_in(Google, Mountain View)</code> are adjacent because they both touch the Google node. The model builds a separate graph just of edge-to-edge adjacency relationships.</p>
+<p><strong>2. Multi-hop attention.</strong> The model lets each edge attend not just to immediately adjacent edges, but to edges <em>two hops away</em> in this edge-graph. This is the part that actually enables compositional reasoning — it gives each edge a direct line of sight to the relationships it would need to compose with.</p>
+<p>Think of it like this: in a normal GNN, if you want <code>works_at</code> and <code>headquartered_in</code> to combine, you have to pass everything through Google's node representation, which is also juggling a thousand other facts about Google. In DELTA, the two edges talk to each other directly, with the node serving as context but not as a bottleneck.</p>
+<p>There's also an architectural detail called the <strong>reconciliation bridge</strong> — after the edge-attention and node-attention streams compute in parallel, the bridge merges their updates so neither stream gets out of sync with the other. It's a non-trivial part of the design, and DELTA's research actually flags (honestly) that it might be doing more of the heavy lifting than the edge attention itself.</p>
+<hr />
+<h2 id="how-do-you-prove-this-works">How do you prove this works?<a class="headerlink" href="#how-do-you-prove-this-works" title="Permanent link">&para;</a></h2>
+<p>This is where DELTA's methodology gets interesting and is what reviewers will spend most of their time on.</p>
+<p>You can't just throw an architecture at a benchmark and report numbers, because there are too many confounds. So DELTA builds a layered evidence stack:</p>
+<p><strong>Layer 1: Synthetic toy problems where you can isolate the mechanism.</strong>
+Build a tiny graph with explicitly transitive relationships (if A→B and B→C, then A↔C). Test whether the model learns the transitivity. DELTA gets 100% accuracy. A version with only 1-hop adjacency (the ablation) gets 61%. A standard node-based model gets 83%. This is the cleanest evidence that the mechanism does what it claims.</p>
+<p><strong>Layer 2: Three more synthetic tasks</strong> — classifying edges by type, classifying edges with 80% noise, discovering compositional rules. DELTA crushes the baselines (GraphGPS, GRIT) by huge margins on all three. Importantly, DELTA's research <em>flags</em> that the biggest margin (+57 points) is partially inflated because the comparison isn't perfectly fair — the baselines don't have native edge-classification heads. The cleaner comparison (+9.5 points on path composition) is still meaningfully positive.</p>
+<p><strong>Layer 3: A small but dense subgraph of FB15k-237</strong> (a standard knowledge graph benchmark — 14,541 entities representing the Freebase knowledge base). They take the top 500 most-connected entities and run the full multi-hop sweep. DELTA is the only model among 7 tested that gets <em>better</em> as you ask harder questions (5-hop &gt; 2-hop). Every other model degrades. This is the headline "wow" result.</p>
+<p><strong>The catch:</strong> when the edge-to-edge mechanism is directly tested as the cause of this on the dense subgraph, the test comes back null. 1-hop, 2-hop, and even no-edge-attention all perform the same. DELTA handles this honestly by acknowledging it explicitly: when the graph is dense enough, 1-hop already reaches everything you need, so the mechanism doesn't get to shine.</p>
+<p><strong>Layer 4: The full graph (14,541 entities, sparse).</strong> They re-run the mechanism ablation on the real-world graph where it should matter. 2-hop adjacency improves 3-hop reasoning by +0.012 MRR over 1-hop. Small number, but it exceeds their pre-specified threshold for "this is meaningful," and it confirms the mechanism on a sparse graph.</p>
+<p><strong>Layer 5: Density control.</strong> A reviewer pointed out that the dense subgraph is suspicious — maybe the result is a quirk of the graph's structure. So DELTA ran the experiment on a <em>random</em> subgraph at intermediate density. The result confirms the prediction: the advantage of 2-hop over 1-hop scales inversely with density.</p>
 <table>
 <thead>
 <tr>
-<th>Model</th>
-<th>Accuracy</th>
-<th>vs. Random (6.2%)</th>
+<th>Phase</th>
+<th>Subgraph</th>
+<th>Mean Degree</th>
+<th>2-hop vs 1-hop (3p MRR)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Fixed Chain DELTA</td>
-<td><strong>40.7%</strong></td>
-<td>6.6×</td>
+<td>67</td>
+<td>Full FB15k-237 (N=14,541)</td>
+<td>4.1</td>
+<td><strong>+0.012</strong></td>
 </tr>
 <tr>
-<td>Transformer</td>
-<td>36.3%</td>
-<td>5.9×</td>
+<td>68</td>
+<td>Random (N=2,242)</td>
+<td>7.6</td>
+<td>+0.010</td>
 </tr>
 <tr>
-<td>Bootstrap DELTA (GraphConstructor)</td>
-<td>34.3%</td>
-<td>5.5×</td>
+<td>66</td>
+<td>Top-degree (N=500)</td>
+<td>19.7</td>
+<td>+0.002</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Key insight:</strong> Graph structure helps (+4.4% over Transformer), but the hard-thresholded constructor is the bottleneck, not graph processing.</p>
+<p>This is the cleanest evidence in DELTA's validation stack. The mechanism behaves exactly the way the design rationale predicts across three independent density regimes.</p>
 <hr />
-<h2 id="phase-36-constructor-at-scale">Phase 36: Constructor at Scale<a class="headerlink" href="#phase-36-constructor-at-scale" title="Permanent link">&para;</a></h2>
-<p>Phase 36 scaled the constructor test to 500–5000 nodes. Result: the hard-thresholded GraphConstructor adds ≤1.3% over fixed topology. Not because learned construction is impossible, but because <strong>hard thresholding blocks gradient flow</strong>.</p>
+<h2 id="whats-the-story-delta-is-telling">What's the story DELTA is telling?<a class="headerlink" href="#whats-the-story-delta-is-telling" title="Permanent link">&para;</a></h2>
+<p>The story is: <strong>the standard benchmark for knowledge graphs is measuring the wrong thing.</strong> Single-hop link prediction (the standard evaluation) rewards models that memorize local patterns. Multi-hop reasoning rewards models that genuinely <em>compose</em> relationships. These are different capabilities, and current architectures conflate them.</p>
+<p>DELTA is an architectural argument that compositional reasoning needs its own inductive bias — you can't just add more parameters to a node-based model and expect it to learn relational composition from scratch. You need to bake the structure of "relationships about relationships" into the model itself.</p>
+<p>DELTA is <em>not</em> claiming to be the new state-of-the-art on knowledge graph completion. It explicitly reports underperforming RotatE/CompGCN/NBFNet on the standard benchmark. The argument is more careful: DELTA demonstrates a mechanism, and the question of whether you can keep that mechanism while also matching SOTA on standard tasks is left as the central open problem for follow-up work.</p>
 <hr />
-<h2 id="phase-38-differentiable-construction">Phase 38: Differentiable Construction<a class="headerlink" href="#phase-38-differentiable-construction" title="Permanent link">&para;</a></h2>
-<p><em>(Was Phase 46. Experiment file: <code>experiments/phase46_differentiable_constructor.py</code>)</em></p>
-<p>Phase 38 identified the root cause: <code>attn &gt; threshold</code> is non-differentiable — task loss cannot flow back through edge decisions. Three Gumbel-sigmoid variants were tested. <strong>Full 3-seed results:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Variant</th>
-<th>Accuracy (3 seeds)</th>
-<th>vs FixedChain</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Transformer (control)</td>
-<td>0.387 ± 0.031</td>
-<td>84%</td>
-</tr>
-<tr>
-<td><strong>FixedChain</strong> (control)</td>
-<td><strong>0.461 ± 0.034</strong></td>
-<td>100%</td>
-</tr>
-<tr>
-<td>DifferentiableConstructor</td>
-<td>0.393 ± 0.017</td>
-<td>85%</td>
-</tr>
-<tr>
-<td>TaskConditionedConstructor</td>
-<td>0.397 ± 0.005</td>
-<td>86%</td>
-</tr>
-<tr>
-<td><strong>HybridConstructor</strong></td>
-<td><strong>0.452 ± 0.006</strong></td>
-<td><strong>98%</strong></td>
-</tr>
-</tbody>
-</table>
-<p><strong>Hybrid wins:</strong> Preserving base topology + learning additional edges reaches 98% of FixedChain with minimal variance. Pure differentiable construction is harder — learning everything from scratch plateaus at ~85%.</p>
+<h2 id="why-is-this-interesting-beyond-the-immediate-result">Why is this interesting beyond the immediate result?<a class="headerlink" href="#why-is-this-interesting-beyond-the-immediate-result" title="Permanent link">&para;</a></h2>
+<p>A few reasons that translate to the engineering mindset:</p>
+<p><strong>1. It's a clean architectural argument.</strong> You don't see this much in modern ML — most work is "we trained a bigger model with a clever trick and it scores higher." DELTA is more like "the standard design has a structural flaw and here's the fix, demonstrated in a way that isolates the mechanism." That's closer to how you'd think about API design or system architecture than to typical benchmark-chasing.</p>
+<p><strong>2. The methodology is unusually honest.</strong> DELTA doesn't paper over the null result on the dense subgraph. It names the problem, explains why the design rationale predicts it, and designs the next experiment to test the prediction. That's the kind of empirical discipline that's rare in ML work and makes the contribution more trustable, even where the numbers are modest.</p>
+<p><strong>3. The mechanism generalizes beyond knowledge graphs.</strong> Anywhere you have data with rich relational structure — drug interactions, social network analysis, code dependency graphs, recommender systems — the same critique applies. If your model treats edges as passive pipes, you're losing information. DELTA is a candidate fix that's general enough to apply broadly.</p>
+<p><strong>4. The "Layer 0 is always dead" observation is genuinely interesting.</strong> First-layer attention always converges to uniform/random distributions. This means the reconciliation bridge is doing something architecturally important that the edge attention by itself can't do — first the streams need to be coupled, then attention has something to attend over. DELTA flags this as an open question rather than burying it.</p>
 <hr />
-<h2 id="phase-39-self-bootstrapped-delta-the-scaffold-comes-down">Phase 39: Self-Bootstrapped DELTA — The Scaffold Comes Down<a class="headerlink" href="#phase-39-self-bootstrapped-delta-the-scaffold-comes-down" title="Permanent link">&para;</a></h2>
-<p><em>(Was Phase 46b. Experiment file: <code>experiments/phase46b_self_bootstrapped.py</code>)</em></p>
-<p>The breakthrough: replace the transformer bootstrap with a FixedChain DELTA layer. The system is now <strong>DELTA all the way down</strong> — a lightweight DELTA pass bootstraps embeddings, those embeddings feed the constructor, and a full DELTA stack processes the resulting graph.</p>
-<p><strong>Full 3-seed results:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Model</th>
-<th>Accuracy (3 seeds)</th>
-<th>vs FixedChain</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Transformer</td>
-<td>0.429 ± 0.021</td>
-<td>89%</td>
-</tr>
-<tr>
-<td>FixedChain</td>
-<td>0.481 ± 0.015</td>
-<td>100%</td>
-</tr>
-<tr>
-<td>P38_Hybrid</td>
-<td>0.459 ± 0.036</td>
-<td>95%</td>
-</tr>
-<tr>
-<td><strong>SelfBootstrap</strong></td>
-<td><strong>0.757 ± 0.041</strong></td>
-<td><strong>157%</strong></td>
-</tr>
-<tr>
-<td>SelfBootstrapHybrid</td>
-<td>0.716 ± 0.038</td>
-<td>149%</td>
-</tr>
-</tbody>
-</table>
-<h3 id="why-57-over-fixedchain">Why +57% Over FixedChain?<a class="headerlink" href="#why-57-over-fixedchain" title="Permanent link">&para;</a></h3>
-<p>The self-bootstrap DELTA runs a full edge-attention + reconciliation pass <em>before</em> the constructor. These DELTA-enriched embeddings contain relational information that raw positional embeddings lack. The constructor doesn't just build a better graph — it builds a graph informed by DELTA's own understanding of the input structure.</p>
-<p>This is the mechanism behind "The Brain": the system uses its own relational reasoning to decide what relationships exist, then reasons over those relationships, then refines its understanding. Each pass makes the next pass smarter.</p>
-<h3 id="updated-bootstrap-assessment">Updated Bootstrap Assessment<a class="headerlink" href="#updated-bootstrap-assessment" title="Permanent link">&para;</a></h3>
-<ul>
-<li>✅ <strong>Encoder transfer</strong> — Phase 35: encoder is domain-invariant (probe 0.961 on WN18RR)</li>
-<li>✅ <strong>Differentiable construction</strong> — Phase 38: Hybrid matches hand-coded topology (98%)</li>
-<li>✅ <strong>Self-bootstrap</strong> — Phase 39: DELTA bootstraps DELTA at 157% of FixedChain</li>
-<li>✅ <strong>Real-data validation</strong> — Phase 40: SelfBootstrapHybrid MRR 0.5089, within 0.004 of GraphGPS. Self-bootstrap is the best DELTA variant on real data.</li>
-</ul>
-<p><strong>The path from external scaffolding to full self-bootstrap is validated on both synthetic and real data.</strong> Phase 40 confirms the self-bootstrap advantage transfers to FB15k-237: SelfBootstrapHybrid (MRR 0.5089, H@10 0.8158) is the best-performing DELTA variant, beating all vanilla DELTA architectures and matching GraphGPS within 0.004 MRR.</p>
+<h2 id="where-does-this-fit-in-the-broader-landscape">Where does this fit in the broader landscape?<a class="headerlink" href="#where-does-this-fit-in-the-broader-landscape" title="Permanent link">&para;</a></h2>
+<p>If you've heard of transformers (the architecture behind GPT, Claude, etc.), this is a graph-flavored cousin. Transformers do attention over sequences of tokens; graph transformers do attention over nodes in a graph. DELTA's contribution is adding a parallel attention stream over <em>edges</em> and connecting it to the node stream.</p>
+<p>The closest existing comparison is <strong>line graphs</strong> — a classical graph theory technique where you turn edges into nodes of a new graph. DELTA's edge adjacency mechanism is morally similar but more efficient (avoiding the quadratic blowup) and importantly maintains both representations simultaneously.</p>
+<p>If this work pans out at scale — meaning if follow-up work closes the gap to SOTA single-hop performance while preserving the depth-monotonic compositional advantage — DELTA becomes a meaningful architectural contribution to the GNN literature. If it doesn't, it's still a methodologically rigorous demonstration that compositional reasoning needs explicit architectural support.</p>
 <hr />
-<p><em>See <a href="../the-brain/">The Brain</a> for the long-term vision. See <a href="../validation-phases/">Validation Phases</a> for all result tables.</em></p>
+<h2 id="tldr-for-the-engineer">TL;DR for the engineer<a class="headerlink" href="#tldr-for-the-engineer" title="Permanent link">&para;</a></h2>
+<p>A clever fix to a structural flaw in how graph neural networks reason about chains of relationships. The mechanism is well-motivated, the evidence is layered (synthetic isolation → controlled ablations → full-scale validation → density controls), and the empirical discipline is unusually high. DELTA deliberately doesn't claim SOTA — it claims a mechanism, demonstrates it works, and is honest about what hasn't been validated yet. Whether this becomes part of the standard GNN toolkit depends on follow-up work, but the contribution as it stands is a clean, well-defended architectural argument.</p>
+<p>The most interesting thing isn't even the architecture itself. It's the demonstration that <strong>you can build a research contribution around methodological honesty rather than benchmark-chasing</strong>, and the work still gets through review on the strength of the argument. That's a healthier model for ML research than the field's defaults, and worth paying attention to as a craft observation regardless of whether the architecture itself takes off.</p>
 
 
 

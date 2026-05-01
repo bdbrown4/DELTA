@@ -52,6 +52,7 @@ plugins:
 
 nav:
   - Home: index.md
+  - Explainer (Start Here): explainer.md
   - Architecture:
     - Overview: architecture.md
     - Visual Explainer: ARCHITECTURE_VISUAL.md

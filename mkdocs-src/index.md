@@ -32,6 +32,10 @@ A research implementation of the DELTA architecture — building toward **[The B
 
 ## Documentation
 
+### Start Here
+
+- **[DELTA, Explained for a Software Engineer](explainer.md)** — The 30-second version, the core argument, layered evidence, and why this matters beyond the immediate result
+
 ### Architecture
 
 - **[Architecture Overview](architecture.md)** — Components, self-bootstrap, development timeline, backward compatibility

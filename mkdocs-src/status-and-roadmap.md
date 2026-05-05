@@ -176,7 +176,7 @@ Multi-modal construction, associative memory, compositional generalization. See 
 
 ## Publication Pathway
 
-**Target:** NeurIPS / ICLR — *"DELTA: Edge-Centric Dual Attention for Relational Reasoning on Knowledge Graphs"*
+**Target:** NeurIPS / ICLR — *"DELTA: Dual Edge-Linked Transformer Architecture for Compositional Reasoning on Knowledge Graphs"*
 
 ### What We Have
 

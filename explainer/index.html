@@ -395,6 +395,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#code-and-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Code and Data
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tldr-for-the-engineer" class="md-nav__link">
     <span class="md-ellipsis">
       TL;DR for the engineer
@@ -915,6 +924,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#code-and-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Code and Data
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tldr-for-the-engineer" class="md-nav__link">
     <span class="md-ellipsis">
       TL;DR for the engineer
@@ -967,19 +985,21 @@
 <p>It's like trying to have a conversation about your conversation, but you're only allowed to communicate by passing notes through a third person who summarizes everything before forwarding it. You lose fidelity at every step.</p>
 <hr />
 <h2 id="what-delta-does-differently">What DELTA does differently<a class="headerlink" href="#what-delta-does-differently" title="Permanent link">&para;</a></h2>
-<p>DELTA flips this around: <strong>edges become first-class citizens</strong>. They get their own representations, their own attention mechanism, and — critically — they can attend directly to other edges.</p>
+<p>DELTA flips this around: <strong>edges become first-class citizens alongside nodes</strong>. They get their own representations, their own attention mechanism, and — critically — they can attend directly to other edges. Nodes remain fully active; the point is not to replace node-based computation but to add a parallel edge-based stream that communicates in addition to the existing node stream.</p>
 <p>The mechanism is called <strong>edge-to-edge attention with multi-hop adjacency</strong>. Two key concepts:</p>
 <p><strong>1. Edge adjacency.</strong> Two edges are "adjacent" if they share a node. So <code>works_at(Pichai, Google)</code> and <code>headquartered_in(Google, Mountain View)</code> are adjacent because they both touch the Google node. The model builds a separate graph just of edge-to-edge adjacency relationships.</p>
 <p><strong>2. Multi-hop attention.</strong> The model lets each edge attend not just to immediately adjacent edges, but to edges <em>two hops away</em> in this edge-graph. This is the part that actually enables compositional reasoning — it gives each edge a direct line of sight to the relationships it would need to compose with.</p>
 <p>Think of it like this: in a normal GNN, if you want <code>works_at</code> and <code>headquartered_in</code> to combine, you have to pass everything through Google's node representation, which is also juggling a thousand other facts about Google. In DELTA, the two edges talk to each other directly, with the node serving as context but not as a bottleneck.</p>
-<p>There's also an architectural detail called the <strong>reconciliation bridge</strong> — after the edge-attention and node-attention streams compute in parallel, the bridge merges their updates so neither stream gets out of sync with the other. It's a non-trivial part of the design, and DELTA's research actually flags (honestly) that it might be doing more of the heavy lifting than the edge attention itself.</p>
+<p>There's also an architectural detail called the <strong>reconciliation bridge</strong> — after the edge-attention and node-attention streams compute in parallel, the bridge co-updates both: edges first absorb node context (via residual projection), then nodes absorb the now node-informed edge context (via residual projection). Both updates are residual — the base representations are always preserved, so node learning from edges is guaranteed by construction. It's a non-trivial part of the design, and DELTA's research actually flags (honestly) that it might be doing more of the heavy lifting than the edge attention itself.</p>
+<p>A related design detail: each attention head in both streams has a <strong>learnable per-head temperature</strong> (τ) that controls how sharp or diffuse the attention distribution is. This is not a free hyperparameter you tune — it's a scalar the model discovers through gradient descent. In every configuration tested, edge attention heads consistently drifted toward sharper, more selective distributions while node heads drifted toward softer, averaging ones. This divergence, reported in the paper's mechanistic analysis, is an emergent signal that the two streams are doing structurally different jobs — edge heads are discriminating, node heads are aggregating — without being told to.</p>
 <hr />
 <h2 id="how-do-you-prove-this-works">How do you prove this works?<a class="headerlink" href="#how-do-you-prove-this-works" title="Permanent link">&para;</a></h2>
 <p>This is where DELTA's methodology gets interesting and is what reviewers will spend most of their time on.</p>
 <p>You can't just throw an architecture at a benchmark and report numbers, because there are too many confounds. So DELTA builds a layered evidence stack:</p>
 <p><strong>Layer 1: Synthetic toy problems where you can isolate the mechanism.</strong>
 Build a tiny graph with explicitly transitive relationships (if A→B and B→C, then A↔C). Test whether the model learns the transitivity. DELTA gets 100% accuracy. A version with only 1-hop adjacency (the ablation) gets 61%. A standard node-based model gets 83%. This is the cleanest evidence that the mechanism does what it claims.</p>
-<p><strong>Layer 2: Three more synthetic tasks</strong> — classifying edges by type, classifying edges with 80% noise, discovering compositional rules. DELTA crushes the baselines (GraphGPS, GRIT) by huge margins on all three. Importantly, DELTA's research <em>flags</em> that the biggest margin (+57 points) is partially inflated because the comparison isn't perfectly fair — the baselines don't have native edge-classification heads. The cleaner comparison (+9.5 points on path composition) is still meaningfully positive.</p>
+<p><strong>Layer 2: Three more synthetic tasks</strong> — classifying edges by type, classifying edges with 80% noise, discovering compositional rules. DELTA outperforms the baselines (GraphGPS, GRIT) by significant margins on all three. Importantly, DELTA's research <em>flags</em> that the biggest margin (+57 points) is partially inflated because the comparison isn't perfectly fair — the baselines don't have native edge-classification heads. The cleaner comparison (+9.5 points on path composition) is still meaningfully positive.</p>
+<p>One important qualifier: these are structural tasks that play to DELTA's strengths. On <strong>standard 1-hop link prediction</strong> — the dominant benchmark in the field — GraphGPS actually leads DELTA-Matched by a small margin (0.513 vs. 0.495 MRR on the top-500 subgraph). The paper is explicit about this. DELTA's architectural advantage is specifically on compositional, multi-hop tasks, not on single-hop pattern memorization. Any claim that DELTA "performs well on standard link prediction" should be read as "competitive, but not best-in-class" on 1-hop metrics.</p>
 <p><strong>Layer 3: A small but dense subgraph of FB15k-237</strong> (a standard knowledge graph benchmark — 14,541 entities representing the Freebase knowledge base). They take the top 500 most-connected entities and run the full multi-hop sweep. DELTA is the only model among 7 tested that gets <em>better</em> as you ask harder questions (5-hop &gt; 2-hop). Every other model degrades. This is the headline "wow" result.</p>
 <p><strong>The catch:</strong> when the edge-to-edge mechanism is directly tested as the cause of this on the dense subgraph, the test comes back null. 1-hop, 2-hop, and even no-edge-attention all perform the same. DELTA handles this honestly by acknowledging it explicitly: when the graph is dense enough, 1-hop already reaches everything you need, so the mechanism doesn't get to shine.</p>
 <p><strong>Layer 4: The full graph (14,541 entities, sparse).</strong> They re-run the mechanism ablation on the real-world graph where it should matter. 2-hop adjacency improves 3-hop reasoning by +0.012 MRR over 1-hop. Small number, but it exceeds their pre-specified threshold for "this is meaningful," and it confirms the mechanism on a sparse graph.</p>
@@ -1020,6 +1040,7 @@ Build a tiny graph with explicitly transitive relationships (if A→B and B→C,
 <p>The story is: <strong>the standard benchmark for knowledge graphs is measuring the wrong thing.</strong> Single-hop link prediction (the standard evaluation) rewards models that memorize local patterns. Multi-hop reasoning rewards models that genuinely <em>compose</em> relationships. These are different capabilities, and current architectures conflate them.</p>
 <p>DELTA is an architectural argument that compositional reasoning needs its own inductive bias — you can't just add more parameters to a node-based model and expect it to learn relational composition from scratch. You need to bake the structure of "relationships about relationships" into the model itself.</p>
 <p>DELTA is <em>not</em> claiming to be the new state-of-the-art on knowledge graph completion. It explicitly reports underperforming RotatE/CompGCN/NBFNet on the standard benchmark. The argument is more careful: DELTA demonstrates a mechanism, and the question of whether you can keep that mechanism while also matching SOTA on standard tasks is left as the central open problem for follow-up work.</p>
+<p>One more nuance worth stating explicitly: DELTA's edge-centric benefit is <strong>density-dependent</strong>. On sparse graphs (mean degree ~4.1, like the full FB15k-237), 1-hop adjacency is insufficient to cover most relational chains, so 2-hop edge adjacency adds real information. On very dense graphs (mean degree ~19.7, like the top-500 subgraph), 1-hop adjacency already covers nearly everything, and multi-hop edge attention has nothing extra to contribute — that's exactly the null result in the dense-subgraph mechanism ablation. An implication: for dense graphs, 1-hop adjacency often suffices and edges add little. The mechanism shines on sparse, real-world graphs.</p>
 <hr />
 <h2 id="why-is-this-interesting-beyond-the-immediate-result">Why is this interesting beyond the immediate result?<a class="headerlink" href="#why-is-this-interesting-beyond-the-immediate-result" title="Permanent link">&para;</a></h2>
 <p>A few reasons that translate to the engineering mindset:</p>
@@ -1032,6 +1053,9 @@ Build a tiny graph with explicitly transitive relationships (if A→B and B→C,
 <p>If you've heard of transformers (the architecture behind GPT, Claude, etc.), this is a graph-flavored cousin. Transformers do attention over sequences of tokens; graph transformers do attention over nodes in a graph. DELTA's contribution is adding a parallel attention stream over <em>edges</em> and connecting it to the node stream.</p>
 <p>The closest existing comparison is <strong>line graphs</strong> — a classical graph theory technique where you turn edges into nodes of a new graph. DELTA's edge adjacency mechanism is morally similar but more efficient (avoiding the quadratic blowup) and importantly maintains both representations simultaneously.</p>
 <p>If this work pans out at scale — meaning if follow-up work closes the gap to SOTA single-hop performance while preserving the depth-monotonic compositional advantage — DELTA becomes a meaningful architectural contribution to the GNN literature. If it doesn't, it's still a methodologically rigorous demonstration that compositional reasoning needs explicit architectural support.</p>
+<hr />
+<h2 id="code-and-data">Code and Data<a class="headerlink" href="#code-and-data" title="Permanent link">&para;</a></h2>
+<p>The primary benchmark dataset (FB15k-237) is publicly available. The DELTA implementation — edge adjacency construction, top-k sparse attention, and multi-hop query generation — <strong>will be released upon acceptance</strong> of the paper. No public code repository exists yet. The paper provides sufficient architectural and hyperparameter detail to support reimplementation in the meantime; the NeurIPS checklist explicitly confirms this.</p>
 <hr />
 <h2 id="tldr-for-the-engineer">TL;DR for the engineer<a class="headerlink" href="#tldr-for-the-engineer" title="Permanent link">&para;</a></h2>
 <p>A clever fix to a structural flaw in how graph neural networks reason about chains of relationships. The mechanism is well-motivated, the evidence is layered (synthetic isolation → controlled ablations → full-scale validation → density controls), and the empirical discipline is unusually high. DELTA deliberately doesn't claim SOTA — it claims a mechanism, demonstrates it works, and is honest about what hasn't been validated yet. Whether this becomes part of the standard GNN toolkit depends on follow-up work, but the contribution as it stands is a clean, well-defended architectural argument.</p>

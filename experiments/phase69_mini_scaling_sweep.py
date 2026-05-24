@@ -64,6 +64,7 @@ import sys, os, gc, time, argparse, json
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import torch
+import torch.nn.functional as F
 import numpy as np
 
 from experiments.phase46c_link_prediction import (
@@ -74,9 +75,11 @@ from delta.model import DELTAModel
 from delta.brain import BrainEncoder
 from delta.graph import DeltaGraph
 
-# ── Mini architecture — half Phase 64/65 dimensions ──────────────────────────
-D_NODE = 32
-D_EDGE = 16
+# ── Mini architecture — quarter Phase 64/65 dimensions ─────────────────────
+# d_node=16 keeps peak VRAM for a single encode+backward under 3 GB at N=5000
+# (Phase 64 ran d_node=64; each halving of d_node halves attention tensor size)
+D_NODE = 16
+D_EDGE = 8
 TOPK   = 128          # Phase 64's validated sparse-attention budget
 
 # ── Brain constructor config ──────────────────────────────────────────────────
@@ -131,6 +134,74 @@ def build_edge_adj(N: int, E_train: int, ei: torch.Tensor) -> tuple:
 
 
 # ═════════════════════════════════════════════════════════════════════════════
+# Encode-once training loop
+# ═════════════════════════════════════════════════════════════════════════════
+
+def _train_epoch_sweep(model, train_triples, edge_index, edge_types,
+                       optimizer, device, batch_size, cached_edge_adj,
+                       label_smoothing: float = 0.1) -> float:
+    """One training epoch: encode once, mini-batch over triples.
+
+    The standard phase46c train_epoch calls model.encode() inside the
+    mini-batch loop, so the full E_adj attention pass runs (num_batches)
+    times per epoch.  At N=2000 that's 16× a 2.7s encode = 42s/epoch and
+    10 GB VRAM.  This version encodes once and uses retain_graph backward
+    so gradients from every batch still flow through the encoder:
+
+        epoch time  ≈ 1 encode forward + 1 encode backward
+                    ≈ O(E_adj) instead of O(E_adj × batches)
+
+    Memory peak = encoder saved-activations (one copy) + one batch's
+    score tensors [B, N] × 2.  At d_node=16, N=5000: ~6 GB total.
+    """
+    model.train()
+    optimizer.zero_grad()
+
+    ei = edge_index.to(device)
+    et = edge_types.to(device)
+
+    # ── Encode the full graph ONCE ──────────────────────────────────────
+    node_feats = model.encode(ei, et, cached_edge_adj=cached_edge_adj)
+
+    N = model.num_entities
+    n = train_triples.shape[1]
+    perm = torch.randperm(n)
+    starts = list(range(0, n, batch_size))
+    total_loss = 0.0
+
+    for i, start in enumerate(starts):
+        last_batch = (i == len(starts) - 1)
+        idx = perm[start: start + batch_size]
+        h = train_triples[0, idx].to(device)
+        r = train_triples[1, idx].to(device)
+        t = train_triples[2, idx].to(device)
+        B = h.shape[0]
+
+        # Tail prediction
+        scores_t = model.score_all_tails(node_feats, h, r)    # [B, N]
+        targets_t = torch.zeros(B, N, device=device)
+        targets_t[torch.arange(B, device=device), t] = 1.0
+        smooth_t = targets_t * (1 - label_smoothing) + label_smoothing / N
+        loss_t = F.binary_cross_entropy_with_logits(scores_t, smooth_t)
+
+        # Head prediction
+        scores_h = model.score_all_heads(node_feats, r, t)    # [B, N]
+        targets_h = torch.zeros(B, N, device=device)
+        targets_h[torch.arange(B, device=device), h] = 1.0
+        smooth_h = targets_h * (1 - label_smoothing) + label_smoothing / N
+        loss_h = F.binary_cross_entropy_with_logits(scores_h, smooth_h)
+
+        loss = (loss_t + loss_h) * 0.5
+        # retain_graph keeps the encoder's computation graph alive for the
+        # next batch; freed only on the last backward of the epoch.
+        loss.backward(retain_graph=not last_batch)
+        total_loss += loss.item()
+
+    optimizer.step()
+    return total_loss / max(len(starts), 1)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
 # Per-point training loop
 # ═════════════════════════════════════════════════════════════════════════════
 
@@ -143,12 +214,14 @@ def run_sweep_point(model, data, ei, et, cached_edge_adj, label: str) -> dict:
     opt = torch.optim.Adam(model.parameters(), lr=LR)
     ep_times = []
     best_val_mrr = 0.0
+    vram = 0.0
 
     for ep in range(1, MAX_EPOCHS + 1):
-        reset_vram() if ep == 1 else None
+        if ep == 1:
+            reset_vram()
         t_ep = time.time()
-        train_epoch(model, data['train'], ei, et, opt, device,
-                    batch_size=BS, cached_edge_adj=cached_edge_adj)
+        _train_epoch_sweep(model, data['train'], ei, et, opt, device,
+                           batch_size=BS, cached_edge_adj=cached_edge_adj)
         ep_times.append(time.time() - t_ep)
 
         if ep == 1:
@@ -157,9 +230,10 @@ def run_sweep_point(model, data, ei, et, cached_edge_adj, label: str) -> dict:
                   f'peak VRAM={vram:.0f} MB', flush=True)
 
         if ep % EVAL_EVERY == 0 or ep == MAX_EPOCHS:
-            val = evaluate_lp(model, data['val'], ei, et,
-                              data['hr_to_tails'], data['rt_to_heads'],
-                              device, cached_edge_adj=cached_edge_adj)
+            with torch.no_grad():
+                val = evaluate_lp(model, data['val'], ei, et,
+                                  data['hr_to_tails'], data['rt_to_heads'],
+                                  device, cached_edge_adj=cached_edge_adj)
             best_val_mrr = max(best_val_mrr, val['MRR'])
             elapsed = sum(ep_times)
             print(f'    [{label}] Ep{ep:3d}  MRR={val["MRR"]:.4f}  '

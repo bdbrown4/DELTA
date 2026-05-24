@@ -204,10 +204,14 @@ def _train_epoch_sweep(model, train_triples, edge_index, edge_types,
     n = train_triples.shape[1]
     perm = torch.randperm(n)
     starts = list(range(0, n, batch_size))
-    total_loss = 0.0
 
-    for i, start in enumerate(starts):
-        last_batch = (i == len(starts) - 1)
+    # Accumulate tensor loss across all batches, then call backward ONCE.
+    # This replaces retain_graph=True + K backward calls with a single backward.
+    # Cost: encoder backward fires 1× instead of K× per epoch.
+    # VRAM: K × 2 × [B, neg_k+1] kept live until backward — bounded and small.
+    batch_losses = []
+
+    for start in starts:
         idx = perm[start: start + batch_size]
         h = train_triples[0, idx].to(device)
         r = train_triples[1, idx].to(device)
@@ -235,12 +239,13 @@ def _train_epoch_sweep(model, train_triples, edge_index, edge_types,
         labels_h[:, 0] = 1.0
         loss_h = F.binary_cross_entropy_with_logits(logits_h, labels_h)
 
-        loss = (loss_t + loss_h) * 0.5
-        loss.backward(retain_graph=not last_batch)
-        total_loss += loss.item()
+        batch_losses.append((loss_t + loss_h) * 0.5)
 
+    # Single backward: encoder grad accumulated once across all batches
+    total_loss = torch.stack(batch_losses).mean()
+    total_loss.backward()
     optimizer.step()
-    return total_loss / max(len(starts), 1)
+    return total_loss.item()
 
 
 # ═════════════════════════════════════════════════════════════════════════════

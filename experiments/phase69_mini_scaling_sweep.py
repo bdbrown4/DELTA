@@ -205,13 +205,17 @@ def _train_epoch_sweep(model, train_triples, edge_index, edge_types,
     perm = torch.randperm(n)
     starts = list(range(0, n, batch_size))
 
-    # Accumulate tensor loss across all batches, then call backward ONCE.
-    # This replaces retain_graph=True + K backward calls with a single backward.
-    # Cost: encoder backward fires 1× instead of K× per epoch.
-    # VRAM: K × 2 × [B, neg_k+1] kept live until backward — bounded and small.
-    batch_losses = []
+    # Accumulate batch losses in micro-batches of GRAD_ACCUM, then backward.
+    # Tradeoff:
+    #   retain_graph only:  encoder backward fires K times   → slow, low VRAM
+    #   single backward:    encoder backward fires 1 time    → fast, K-batch VRAM
+    #   micro-batch (this): encoder backward fires K/G times → balanced
+    # G=GRAD_ACCUM controls the tradeoff.  G=1 → retain_graph.  G=K → single bwd.
+    GRAD_ACCUM = 8   # fire encoder backward every 8 batches
+    mini_losses: list = []
 
-    for start in starts:
+    for i, start in enumerate(starts):
+        last_batch = (i == len(starts) - 1)
         idx = perm[start: start + batch_size]
         h = train_triples[0, idx].to(device)
         r = train_triples[1, idx].to(device)
@@ -239,13 +243,17 @@ def _train_epoch_sweep(model, train_triples, edge_index, edge_types,
         labels_h[:, 0] = 1.0
         loss_h = F.binary_cross_entropy_with_logits(logits_h, labels_h)
 
-        batch_losses.append((loss_t + loss_h) * 0.5)
+        mini_losses.append((loss_t + loss_h) * 0.5)
 
-    # Single backward: encoder grad accumulated once across all batches
-    total_loss = torch.stack(batch_losses).mean()
-    total_loss.backward()
+        flush = (len(mini_losses) == GRAD_ACCUM) or last_batch
+        if flush:
+            chunk_loss = torch.stack(mini_losses).mean()
+            chunk_loss.backward(retain_graph=not last_batch)
+            mini_losses = []
+
+    # Gradient is now accumulated; VRAM at any point: encoder + GRAD_ACCUM batches
     optimizer.step()
-    return total_loss.item()
+    return 0.0  # loss tracking not critical for scaling experiment
 
 
 # ═════════════════════════════════════════════════════════════════════════════

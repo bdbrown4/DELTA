@@ -8,7 +8,7 @@ A research implementation of the DELTA architecture — a novel AI framework tha
 
 Reality is a graph. Language is a lossy compression of reality into sequences. Transformers reconstruct relational structure from flat sequences. DELTA operates on relational structure directly.
 
-GNN edges are passive scalar wires. DELTA edges are **first-class computational citizens** that attend to each other. That edge-to-edge attention is what produces the Phase 28 +24% noise robustness gap — and Phase 39's self-bootstrapped DELTA proves the system can build its own graph without any transformer scaffold.
+GNN edges are passive scalar wires. DELTA edges are **first-class computational citizens** that attend to each other. That edge-to-edge attention is what produces the Phase 28 +24% noise robustness gap — and Phase 46b's self-bootstrapped DELTA proves the system can build its own graph without any transformer scaffold.
 
 ## Headline Results
 

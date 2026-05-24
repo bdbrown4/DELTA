@@ -261,7 +261,7 @@ def run_sweep_point(model, data, ei, et, cached_edge_adj, cached_adj_full,
     # Use cached_adj_train (≤10M pairs) so timing is consistent across all N.
     # Full E_adj (cached_adj_full) overflows VRAM at N≥3K, causing paging and
     # unreliable measurements (73× cliff at N=2984 with 29M pairs).
-    encode_fwd_s = _time_encode_fwd(model, ei, et, cached_adj_train)
+    encode_fwd_s = _time_encode_fwd(model, ei, et, cached_edge_adj)
     print(f'    [{label}] encode_fwd={encode_fwd_s:.3f}s (capped E_adj, no grad)',
           flush=True)
 

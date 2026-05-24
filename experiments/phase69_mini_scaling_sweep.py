@@ -257,10 +257,12 @@ def run_sweep_point(model, data, ei, et, cached_edge_adj, cached_adj_full,
     Returns a dict with keys:
       encode_fwd_s, ep1_s, mean_ep_s, peak_vram_mb, val_mrr, ep_times
     """
-    # ── Forward-only encode timing (no gradients, full E_adj) ────────────
-    # This is the primary scaling law measurement: O(E_adj) ∝ O(N^b)
-    encode_fwd_s = _time_encode_fwd(model, ei, et, cached_adj_full)
-    print(f'    [{label}] encode_fwd={encode_fwd_s:.3f}s (full E_adj, no grad)',
+    # ── Forward-only encode timing (no gradients, capped E_adj) ─────────────
+    # Use cached_adj_train (≤10M pairs) so timing is consistent across all N.
+    # Full E_adj (cached_adj_full) overflows VRAM at N≥3K, causing paging and
+    # unreliable measurements (73× cliff at N=2984 with 29M pairs).
+    encode_fwd_s = _time_encode_fwd(model, ei, et, cached_adj_train)
+    print(f'    [{label}] encode_fwd={encode_fwd_s:.3f}s (capped E_adj, no grad)',
           flush=True)
 
     opt = torch.optim.Adam(model.parameters(), lr=LR)

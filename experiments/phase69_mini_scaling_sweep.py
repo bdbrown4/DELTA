@@ -93,6 +93,14 @@ EVAL_EVERY  = 10
 BS          = 4096
 LR          = 0.003
 SEED        = 42
+NEG_K       = 256    # negative samples per positive triple (replaces 1-vs-all)
+
+# ── E_adj cap ─────────────────────────────────────────────────────────────────
+# Empirically: for top-N high-degree FB15k-237 entities, E_adj ∝ N^1.67.
+# At N=3000 that's ~29M pairs → encoder saved-activations alone hit ~13 GB
+# (exceeds 12 GB RTX 3080 Ti).  Capping at 10M keeps peak VRAM ≤ 5 GB for
+# all N on 12 GB local GPU.  Set to None to disable (use on RunPod).
+DEFAULT_MAX_ADJ_PAIRS = 10_000_000
 
 # ── N sweep ───────────────────────────────────────────────────────────────────
 DEFAULT_N_VALUES = [500, 1000, 2000, 3000, 5000]
@@ -133,26 +141,55 @@ def build_edge_adj(N: int, E_train: int, ei: torch.Tensor) -> tuple:
     return full_adj, full_adj.shape[1], time.time() - t0
 
 
+def _time_encode_fwd(model, ei, et, cached_adj, n_warmup: int = 1,
+                     n_time: int = 3) -> float:
+    """Time the encoder forward pass only (no gradients, no scoring).
+
+    This is the primary measurement for the scaling law:
+      encode_fwd_s ∝ E_adj ∝ N^b
+
+    No saved activations → no VRAM pressure from backward, giving a clean
+    signal uncontaminated by the N^2 1-vs-all scoring overhead.
+    """
+    model.eval()
+    ei_d = ei.to(device)
+    et_d = et.to(device)
+    with torch.no_grad():
+        for _ in range(n_warmup):
+            _ = model.encode(ei_d, et_d, cached_edge_adj=cached_adj)
+    if device == 'cuda':
+        torch.cuda.synchronize()
+    t0 = time.time()
+    with torch.no_grad():
+        for _ in range(n_time):
+            _ = model.encode(ei_d, et_d, cached_edge_adj=cached_adj)
+    if device == 'cuda':
+        torch.cuda.synchronize()
+    return (time.time() - t0) / n_time
+
+
 # ═════════════════════════════════════════════════════════════════════════════
 # Encode-once training loop
 # ═════════════════════════════════════════════════════════════════════════════
 
 def _train_epoch_sweep(model, train_triples, edge_index, edge_types,
                        optimizer, device, batch_size, cached_edge_adj,
-                       label_smoothing: float = 0.1) -> float:
-    """One training epoch: encode once, mini-batch over triples.
+                       neg_k: int = NEG_K) -> float:
+    """One training epoch: encode once, negative-sampling loss.
 
-    The standard phase46c train_epoch calls model.encode() inside the
-    mini-batch loop, so the full E_adj attention pass runs (num_batches)
-    times per epoch.  At N=2000 that's 16× a 2.7s encode = 42s/epoch and
-    10 GB VRAM.  This version encodes once and uses retain_graph backward
-    so gradients from every batch still flow through the encoder:
+    Why negative sampling instead of 1-vs-all:
+    ─ 1-vs-all creates [B, N] score matrices per batch.  With retain_graph=True
+      across all batches, ALL of those tensors accumulate in VRAM simultaneously:
+        N=2000: 16 batches × 2 × [4096, 1991] × 4B = 1 GB extra
+        N=3000: 24 batches × 2 × [4096, 2984] × 4B = 2.3 GB extra
+      Combined with the encoder saved-activations (~N^1.67 growth), this causes
+      VRAM to hit 15+ GB at N=3000 (OOM paging, 224s/ep).
 
-        epoch time  ≈ 1 encode forward + 1 encode backward
-                    ≈ O(E_adj) instead of O(E_adj × batches)
+    ─ Negative sampling creates [B, neg_k+1] tensors per batch:
+        N=3000: 24 batches × 2 × [4096, 257] × 4B = 0.2 GB (≈12× less)
+      retain_graph only retains the encoder graph (bounded by E_adj cap).
 
-    Memory peak = encoder saved-activations (one copy) + one batch's
-    score tensors [B, N] × 2.  At d_node=16, N=5000: ~6 GB total.
+    Loss: binary cross-entropy over (1 positive, neg_k negatives) per triple.
     """
     model.train()
     optimizer.zero_grad()
@@ -160,7 +197,7 @@ def _train_epoch_sweep(model, train_triples, edge_index, edge_types,
     ei = edge_index.to(device)
     et = edge_types.to(device)
 
-    # ── Encode the full graph ONCE ──────────────────────────────────────
+    # ── Encode ONCE ──────────────────────────────────────────────────────────
     node_feats = model.encode(ei, et, cached_edge_adj=cached_edge_adj)
 
     N = model.num_entities
@@ -176,24 +213,29 @@ def _train_epoch_sweep(model, train_triples, edge_index, edge_types,
         r = train_triples[1, idx].to(device)
         t = train_triples[2, idx].to(device)
         B = h.shape[0]
+        r_emb = model.decoder_rel_emb(r)    # [B, d]
 
-        # Tail prediction
-        scores_t = model.score_all_tails(node_feats, h, r)    # [B, N]
-        targets_t = torch.zeros(B, N, device=device)
-        targets_t[torch.arange(B, device=device), t] = 1.0
-        smooth_t = targets_t * (1 - label_smoothing) + label_smoothing / N
-        loss_t = F.binary_cross_entropy_with_logits(scores_t, smooth_t)
+        # ── Tail prediction ───────────────────────────────────────────────
+        hr = node_feats[h] * r_emb           # [B, d]
+        pos_t  = (hr * node_feats[t]).sum(-1)                          # [B]
+        neg_ti = torch.randint(0, N, (B, neg_k), device=device)
+        neg_t  = (hr.unsqueeze(1) * node_feats[neg_ti]).sum(-1)        # [B, neg_k]
+        logits_t = torch.cat([pos_t.unsqueeze(1), neg_t], dim=1)       # [B, neg_k+1]
+        labels_t = torch.zeros(B, neg_k + 1, device=device)
+        labels_t[:, 0] = 1.0
+        loss_t = F.binary_cross_entropy_with_logits(logits_t, labels_t)
 
-        # Head prediction
-        scores_h = model.score_all_heads(node_feats, r, t)    # [B, N]
-        targets_h = torch.zeros(B, N, device=device)
-        targets_h[torch.arange(B, device=device), h] = 1.0
-        smooth_h = targets_h * (1 - label_smoothing) + label_smoothing / N
-        loss_h = F.binary_cross_entropy_with_logits(scores_h, smooth_h)
+        # ── Head prediction ───────────────────────────────────────────────
+        rt = r_emb * node_feats[t]           # [B, d]
+        pos_h  = (node_feats[h] * rt).sum(-1)                          # [B]
+        neg_hi = torch.randint(0, N, (B, neg_k), device=device)
+        neg_h  = (rt.unsqueeze(1) * node_feats[neg_hi]).sum(-1)        # [B, neg_k]
+        logits_h = torch.cat([pos_h.unsqueeze(1), neg_h], dim=1)       # [B, neg_k+1]
+        labels_h = torch.zeros(B, neg_k + 1, device=device)
+        labels_h[:, 0] = 1.0
+        loss_h = F.binary_cross_entropy_with_logits(logits_h, labels_h)
 
         loss = (loss_t + loss_h) * 0.5
-        # retain_graph keeps the encoder's computation graph alive for the
-        # next batch; freed only on the last backward of the epoch.
         loss.backward(retain_graph=not last_batch)
         total_loss += loss.item()
 
@@ -205,12 +247,22 @@ def _train_epoch_sweep(model, train_triples, edge_index, edge_types,
 # Per-point training loop
 # ═════════════════════════════════════════════════════════════════════════════
 
-def run_sweep_point(model, data, ei, et, cached_edge_adj, label: str) -> dict:
+def run_sweep_point(model, data, ei, et, cached_edge_adj, cached_adj_full,
+                    label: str, neg_k: int = NEG_K) -> dict:
     """Train for MAX_EPOCHS and collect timing + quality measurements.
 
+    cached_edge_adj  — (possibly subsampled) E_adj used for training
+    cached_adj_full  — full E_adj used for the forward-only encode timing
+
     Returns a dict with keys:
-      ep1_s, mean_ep_s, peak_vram_mb, val_mrr, ep_times
+      encode_fwd_s, ep1_s, mean_ep_s, peak_vram_mb, val_mrr, ep_times
     """
+    # ── Forward-only encode timing (no gradients, full E_adj) ────────────
+    # This is the primary scaling law measurement: O(E_adj) ∝ O(N^b)
+    encode_fwd_s = _time_encode_fwd(model, ei, et, cached_adj_full)
+    print(f'    [{label}] encode_fwd={encode_fwd_s:.3f}s (full E_adj, no grad)',
+          flush=True)
+
     opt = torch.optim.Adam(model.parameters(), lr=LR)
     ep_times = []
     best_val_mrr = 0.0
@@ -221,7 +273,8 @@ def run_sweep_point(model, data, ei, et, cached_edge_adj, label: str) -> dict:
             reset_vram()
         t_ep = time.time()
         _train_epoch_sweep(model, data['train'], ei, et, opt, device,
-                           batch_size=BS, cached_edge_adj=cached_edge_adj)
+                           batch_size=BS, cached_edge_adj=cached_edge_adj,
+                           neg_k=neg_k)
         ep_times.append(time.time() - t_ep)
 
         if ep == 1:
@@ -242,11 +295,12 @@ def run_sweep_point(model, data, ei, et, cached_edge_adj, label: str) -> dict:
 
     mean_ep = float(np.mean(ep_times[1:10])) if len(ep_times) > 1 else ep_times[0]
     return {
-        'ep1_s':       ep_times[0],
-        'mean_ep_s':   mean_ep,
-        'peak_vram_mb': vram,
-        'val_mrr':     best_val_mrr,
-        'ep_times':    ep_times,
+        'encode_fwd_s':  encode_fwd_s,
+        'ep1_s':         ep_times[0],
+        'mean_ep_s':     mean_ep,
+        'peak_vram_mb':  vram,
+        'val_mrr':       best_val_mrr,
+        'ep_times':      ep_times,
     }
 
 
@@ -302,16 +356,17 @@ def fit_scaling_law(ns: list, times: list) -> dict:
 
 def print_scaling_report(arch: str, ns: list, results: list, law: dict):
     print(f'\n{"─" * 60}')
-    print(f'  Scaling law — {arch}')
-    print(f'  time(N) ≈ {law["a"]:.4f} × N^{law["b"]:.3f}  (R²={law["r2"]:.4f})')
-    print(f'  {"N":>8}  {"ep_time(s)":>12}  {"VRAM(MB)":>10}  {"val_MRR":>9}')
+    print(f'  Scaling law — {arch}  (fitted on encode_fwd_s)')
+    print(f'  encode_fwd(N) ≈ {law["a"]:.6f} × N^{law["b"]:.3f}  (R²={law["r2"]:.4f})')
+    print(f'  {"N":>8}  {"enc_fwd(s)":>12}  {"ep_time(s)":>12}  '
+          f'{"VRAM(MB)":>10}  {"val_MRR":>9}')
     for n, r in zip(ns, results):
-        print(f'  {n:>8,}  {r["mean_ep_s"]:>12.1f}  {r["peak_vram_mb"]:>10.0f}  '
-              f'{r["val_mrr"]:>9.4f}')
-    print(f'\n  Extrapolated epoch time:')
+        print(f'  {n:>8,}  {r["encode_fwd_s"]:>12.3f}  {r["mean_ep_s"]:>12.1f}  '
+              f'{r["peak_vram_mb"]:>10.0f}  {r["val_mrr"]:>9.4f}')
+    print(f'\n  Extrapolated encode_fwd time (no grad):')
     for n, t in law['extrapolation'].items():
         hrs = t / 3600
-        print(f'    N={n:>7,}  →  {t:>8.0f}s/ep  ({hrs:.1f}hr per epoch)')
+        print(f'    N={n:>7,}  →  {t:>8.1f}s/fwd  ({hrs:.2f}hr per fwd pass)')
     print(f'{"─" * 60}\n', flush=True)
 
 
@@ -319,8 +374,14 @@ def print_scaling_report(arch: str, ns: list, results: list, law: dict):
 # Main sweep
 # ═════════════════════════════════════════════════════════════════════════════
 
-def run_arch_sweep(arch: str, n_values: list) -> list:
-    """Run one architecture across all N values. Returns list of result dicts."""
+def run_arch_sweep(arch: str, n_values: list,
+                   max_adj_pairs: int = DEFAULT_MAX_ADJ_PAIRS,
+                   neg_k: int = NEG_K) -> list:
+    """Run one architecture across all N values. Returns list of result dicts.
+
+    max_adj_pairs  — cap E_adj for training to keep VRAM bounded (None=no cap)
+    neg_k          — negatives per triple (replaces 1-vs-all)
+    """
     all_results = []
 
     for N in n_values:
@@ -341,8 +402,17 @@ def run_arch_sweep(arch: str, n_values: list) -> list:
 
         # Build E_adj
         print(f'  Building E_adj...', flush=True)
-        cached_adj, n_pairs, adj_t = build_edge_adj(actual_N, E_train, ei)
+        cached_adj_full, n_pairs, adj_t = build_edge_adj(actual_N, E_train, ei)
         print(f'  E_adj: {n_pairs:,} pairs in {adj_t:.1f}s', flush=True)
+
+        # Subsample E_adj for training to keep VRAM bounded
+        if max_adj_pairs and n_pairs > max_adj_pairs:
+            perm = torch.randperm(n_pairs, device=device)[:max_adj_pairs]
+            cached_adj_train = cached_adj_full[:, perm]
+            print(f'  E_adj subsampled {n_pairs:,} → {max_adj_pairs:,} for training',
+                  flush=True)
+        else:
+            cached_adj_train = cached_adj_full
 
         # Create model
         if arch == 'delta':
@@ -356,7 +426,8 @@ def run_arch_sweep(arch: str, n_values: list) -> list:
         # Train + measure
         label = f'{arch}@N={actual_N}'
         timing = run_sweep_point(model, data, ei.to(device), et.to(device),
-                                 cached_adj, label)
+                                 cached_adj_train, cached_adj_full, label,
+                                 neg_k=neg_k)
 
         # Count brain edges if applicable
         brain_edges = 0
@@ -370,6 +441,8 @@ def run_arch_sweep(arch: str, n_values: list) -> list:
             'E_train':       E_train,
             'adj_build_s':   adj_t,
             'e_adj_pairs':   n_pairs,
+            'e_adj_train':   int(cached_adj_train.shape[1]),
+            'encode_fwd_s':  timing['encode_fwd_s'],
             'ep1_s':         timing['ep1_s'],
             'mean_ep_s':     timing['mean_ep_s'],
             'peak_vram_mb':  timing['peak_vram_mb'],
@@ -378,12 +451,13 @@ def run_arch_sweep(arch: str, n_values: list) -> list:
             'ep_times':      timing['ep_times'],
         }
         all_results.append(result)
-        print(f'\n  ✓ {label}  mean_ep={result["mean_ep_s"]:.1f}s  '
+        print(f'\n  ✓ {label}  enc_fwd={result["encode_fwd_s"]:.2f}s  '
+              f'mean_ep={result["mean_ep_s"]:.1f}s  '
               f'VRAM={result["peak_vram_mb"]:.0f}MB  MRR={result["val_mrr"]:.4f}',
               flush=True)
 
         # Free before next N
-        del model, cached_adj
+        del model, cached_adj_full, cached_adj_train
         reset_vram()
 
     return all_results
@@ -398,7 +472,15 @@ def main():
     parser.add_argument('--n-values', nargs='+', type=int,
                         default=DEFAULT_N_VALUES,
                         help=f'N values to sweep (default: {DEFAULT_N_VALUES})')
+    parser.add_argument('--max-adj-pairs', type=int,
+                        default=DEFAULT_MAX_ADJ_PAIRS,
+                        help='Cap E_adj for training VRAM (default: 10M; 0=no cap)')
+    parser.add_argument('--neg-k', type=int, default=NEG_K,
+                        help=f'Negative samples per triple (default: {NEG_K})')
     args = parser.parse_args()
+    # 0 or negative means no cap
+    if args.max_adj_pairs is not None and args.max_adj_pairs <= 0:
+        args.max_adj_pairs = None
 
     archs = []
     if not args.brain_only:
@@ -411,18 +493,23 @@ def main():
     print(f'  Architecture:  d_node={D_NODE}, d_edge={D_EDGE}, topk={TOPK}')
     print(f'  N sweep:       {args.n_values}')
     print(f'  Architectures: {archs}')
-    print(f'  Epochs/point:  {MAX_EPOCHS}\n', flush=True)
+    print(f'  Epochs/point:  {MAX_EPOCHS}')
+    print(f'  neg_k:         {args.neg_k}')
+    adj_cap_str = f'{args.max_adj_pairs:,}' if args.max_adj_pairs else 'None'
+    print(f'  max_adj_pairs: {adj_cap_str}\n', flush=True)
 
     all_results = {}
     for arch in archs:
-        results = run_arch_sweep(arch, args.n_values)
+        results = run_arch_sweep(arch, args.n_values,
+                                 max_adj_pairs=args.max_adj_pairs,
+                                 neg_k=args.neg_k)
         all_results[arch] = results
 
-        # Fit scaling law (need ≥2 points)
-        ns     = [r['N_actual']  for r in results]
-        times  = [r['mean_ep_s'] for r in results]
+        # Fit scaling law on forward-only encode time (≥2 points needed)
+        ns     = [r['N_actual']    for r in results]
+        times  = [r['encode_fwd_s'] for r in results]
         if len(ns) >= 2 and all(t > 0 for t in times):
-            law = fit_scaling_law(ns, times)
+            law = fit_scaling_law(ns, times)  # fits on encode_fwd_s
             print_scaling_report(arch, ns, results, law)
             all_results[f'{arch}_scaling_law'] = law
 

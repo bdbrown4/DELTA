@@ -391,11 +391,13 @@ def print_scaling_report(arch: str, ns: list, results: list, law: dict):
 
 def run_arch_sweep(arch: str, n_values: list,
                    max_adj_pairs: int = DEFAULT_MAX_ADJ_PAIRS,
-                   neg_k: int = NEG_K) -> list:
+                   neg_k: int = NEG_K,
+                   out_path: str = None) -> list:
     """Run one architecture across all N values. Returns list of result dicts.
 
     max_adj_pairs  — cap E_adj for training to keep VRAM bounded (None=no cap)
     neg_k          — negatives per triple (replaces 1-vs-all)
+    out_path       — if set, incrementally save results here after each N point
     """
     all_results = []
 
@@ -404,76 +406,100 @@ def run_arch_sweep(arch: str, n_values: list,
         print(f'  {arch.upper()}  N={N:,}  (d_node={D_NODE}, topk={TOPK})')
         print(f'{"═" * 60}', flush=True)
 
-        torch.manual_seed(SEED)
-        np.random.seed(SEED)
+        try:
+            torch.manual_seed(SEED)
+            np.random.seed(SEED)
 
-        # Load data subset
-        data = load_lp_data('fb15k-237', max_entities=N)
-        actual_N  = data['num_entities']
-        ei, et    = build_train_graph_tensors(data['train'])
-        E_train   = ei.shape[1]
+            # Load data subset
+            data = load_lp_data('fb15k-237', max_entities=N)
+            actual_N  = data['num_entities']
+            ei, et    = build_train_graph_tensors(data['train'])
+            E_train   = ei.shape[1]
 
-        print(f'  Entities={actual_N:,}  Edges={E_train:,}', flush=True)
+            print(f'  Entities={actual_N:,}  Edges={E_train:,}', flush=True)
 
-        # Build E_adj
-        print(f'  Building E_adj...', flush=True)
-        cached_adj_full, n_pairs, adj_t = build_edge_adj(actual_N, E_train, ei)
-        print(f'  E_adj: {n_pairs:,} pairs in {adj_t:.1f}s', flush=True)
+            # Build E_adj
+            print(f'  Building E_adj...', flush=True)
+            cached_adj_full, n_pairs, adj_t = build_edge_adj(actual_N, E_train, ei)
+            print(f'  E_adj: {n_pairs:,} pairs in {adj_t:.1f}s', flush=True)
 
-        # Subsample E_adj for training to keep VRAM bounded
-        if max_adj_pairs and n_pairs > max_adj_pairs:
-            perm = torch.randperm(n_pairs, device=device)[:max_adj_pairs]
-            cached_adj_train = cached_adj_full[:, perm]
-            print(f'  E_adj subsampled {n_pairs:,} → {max_adj_pairs:,} for training',
+            # Subsample E_adj for training to keep VRAM bounded
+            if max_adj_pairs and n_pairs > max_adj_pairs:
+                perm = torch.randperm(n_pairs, device=device)[:max_adj_pairs]
+                cached_adj_train = cached_adj_full[:, perm]
+                print(f'  E_adj subsampled {n_pairs:,} → {max_adj_pairs:,} for training',
+                      flush=True)
+            else:
+                cached_adj_train = cached_adj_full
+
+            # Create model
+            if arch == 'delta':
+                model = make_delta_model(data['num_entities'], data['num_relations'])
+            else:
+                model = make_brain_model(data['num_entities'], data['num_relations'])
+
+            n_params = sum(p.numel() for p in model.parameters())
+            print(f'  Model params: {n_params:,}', flush=True)
+
+            # Train + measure
+            label = f'{arch}@N={actual_N}'
+            timing = run_sweep_point(model, data, ei.to(device), et.to(device),
+                                     cached_adj_train, cached_adj_full, label,
+                                     neg_k=neg_k)
+
+            # Count brain edges if applicable
+            brain_edges = 0
+            if arch == 'brain' and hasattr(model.encoder, 'last_n_constructed'):
+                brain_edges = model.encoder.last_n_constructed
+
+            result = {
+                'arch':          arch,
+                'N_requested':   N,
+                'N_actual':      actual_N,
+                'E_train':       E_train,
+                'adj_build_s':   adj_t,
+                'e_adj_pairs':   n_pairs,
+                'e_adj_train':   int(cached_adj_train.shape[1]),
+                'encode_fwd_s':  timing['encode_fwd_s'],
+                'ep1_s':         timing['ep1_s'],
+                'mean_ep_s':     timing['mean_ep_s'],
+                'peak_vram_mb':  timing['peak_vram_mb'],
+                'val_mrr':       timing['val_mrr'],
+                'brain_edges':   brain_edges,
+                'ep_times':      timing['ep_times'],
+            }
+            all_results.append(result)
+            print(f'\n  ✓ {label}  enc_fwd={result["encode_fwd_s"]:.2f}s  '
+                  f'mean_ep={result["mean_ep_s"]:.1f}s  '
+                  f'VRAM={result["peak_vram_mb"]:.0f}MB  MRR={result["val_mrr"]:.4f}',
                   flush=True)
-        else:
-            cached_adj_train = cached_adj_full
 
-        # Create model
-        if arch == 'delta':
-            model = make_delta_model(data['num_entities'], data['num_relations'])
-        else:
-            model = make_brain_model(data['num_entities'], data['num_relations'])
+            # Free before next N
+            del model, cached_adj_full, cached_adj_train
 
-        n_params = sum(p.numel() for p in model.parameters())
-        print(f'  Model params: {n_params:,}', flush=True)
+        except torch.cuda.OutOfMemoryError as oom:
+            print(f'\n  ✗ {arch}@N={N} OOM: {oom}', flush=True)
+            result = {
+                'arch': arch, 'N_requested': N, 'N_actual': N,
+                'status': 'OOM', 'error': str(oom),
+            }
+            all_results.append(result)
 
-        # Train + measure
-        label = f'{arch}@N={actual_N}'
-        timing = run_sweep_point(model, data, ei.to(device), et.to(device),
-                                 cached_adj_train, cached_adj_full, label,
-                                 neg_k=neg_k)
+        finally:
+            reset_vram()
 
-        # Count brain edges if applicable
-        brain_edges = 0
-        if arch == 'brain' and hasattr(model.encoder, 'last_n_constructed'):
-            brain_edges = model.encoder.last_n_constructed
-
-        result = {
-            'arch':          arch,
-            'N_requested':   N,
-            'N_actual':      actual_N,
-            'E_train':       E_train,
-            'adj_build_s':   adj_t,
-            'e_adj_pairs':   n_pairs,
-            'e_adj_train':   int(cached_adj_train.shape[1]),
-            'encode_fwd_s':  timing['encode_fwd_s'],
-            'ep1_s':         timing['ep1_s'],
-            'mean_ep_s':     timing['mean_ep_s'],
-            'peak_vram_mb':  timing['peak_vram_mb'],
-            'val_mrr':       timing['val_mrr'],
-            'brain_edges':   brain_edges,
-            'ep_times':      timing['ep_times'],
-        }
-        all_results.append(result)
-        print(f'\n  ✓ {label}  enc_fwd={result["encode_fwd_s"]:.2f}s  '
-              f'mean_ep={result["mean_ep_s"]:.1f}s  '
-              f'VRAM={result["peak_vram_mb"]:.0f}MB  MRR={result["val_mrr"]:.4f}',
-              flush=True)
-
-        # Free before next N
-        del model, cached_adj_full, cached_adj_train
-        reset_vram()
+        # Incremental save after each N so OOM doesn't lose earlier results
+        if out_path is not None:
+            try:
+                existing = {}
+                if os.path.exists(out_path):
+                    with open(out_path) as f_in:
+                        existing = json.load(f_in)
+                existing[arch] = all_results
+                with open(out_path, 'w') as f_out:
+                    json.dump(existing, f_out, indent=2, default=str)
+            except Exception as save_err:
+                print(f'  [warn] incremental save failed: {save_err}', flush=True)
 
     return all_results
 
@@ -513,11 +539,20 @@ def main():
     adj_cap_str = f'{args.max_adj_pairs:,}' if args.max_adj_pairs else 'None'
     print(f'  max_adj_pairs: {adj_cap_str}\n', flush=True)
 
+    out_path = os.path.join(os.path.dirname(__file__),
+                            '..', 'delta', 'phase69_output.json')
+
+    # Load existing results so --brain-only / --delta-only appends rather than overwrites
     all_results = {}
+    if os.path.exists(out_path):
+        with open(out_path) as f:
+            all_results = json.load(f)
+
     for arch in archs:
         results = run_arch_sweep(arch, args.n_values,
                                  max_adj_pairs=args.max_adj_pairs,
-                                 neg_k=args.neg_k)
+                                 neg_k=args.neg_k,
+                                 out_path=out_path)
         all_results[arch] = results
 
         # Fit scaling law on forward-only encode time (≥2 points needed)
@@ -540,9 +575,7 @@ def main():
             ratio = bt / dt if dt > 0 else float('inf')
             print(f'  {n:>8,}  {dt:>10.1f}  {bt:>10.1f}  {ratio:>8.2f}×')
 
-    # Save JSON results
-    out_path = os.path.join(os.path.dirname(__file__),
-                            '..', 'delta', 'phase69_output.json')
+    # Save final JSON results
     with open(out_path, 'w') as f:
         # ep_times lists make JSON bulky — include for analysis but cap at 30 entries
         json.dump(all_results, f, indent=2, default=str)

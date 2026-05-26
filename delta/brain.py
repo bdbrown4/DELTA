@@ -68,10 +68,11 @@ class BrainConstructor(nn.Module):
         Project concatenated features → edge features (weighted by prob)
     """
 
-    def __init__(self, d_node, d_edge, target_density=0.005):
+    def __init__(self, d_node, d_edge, target_density=0.005, chunk_size=64):
         super().__init__()
         self.d_edge = d_edge
         self.target_density = target_density
+        self._chunk_size = chunk_size  # rows processed per iteration in Phase 1
 
         # Edge score MLP: (src || tgt) → score
         self.edge_scorer = nn.Sequential(
@@ -90,10 +91,11 @@ class BrainConstructor(nn.Module):
         """Score and select edges from node features.
 
         Two-phase approach to avoid O(N²) backward:
-          Phase 1 (no grad): Score all N² pairs, select top-k by logit value
-          Phase 2 (with grad): Re-score selected k pairs for gradient flow
-
-        This gives O(N²) forward but only O(k) backward.
+          Phase 1 (no grad): Score N² pairs in row-chunks, select top-k by logit.
+            Memory: O(chunk_size × N) instead of O(N²).
+            Collects 2k candidates across all chunks then takes global top-k.
+          Phase 2 (with grad): Re-score selected k pairs for gradient flow.
+            Memory: O(k). Backward only through k pairs.
 
         Args:
             node_features: [N, d_node] enriched node features
@@ -108,19 +110,55 @@ class BrainConstructor(nn.Module):
         N, d = node_features.shape
         device = node_features.device
 
-        # --- Phase 1: Select top-k edges (no gradient, O(N²)) ---
         k = int(self.target_density * N * (N - 1))
         k = max(k, N)  # at least N edges
 
+        # --- Phase 1: chunked row-wise scoring (no gradient) ---
+        # Process chunk_size rows at a time → peak alloc O(chunk_size × N × 2d).
+        # Collect a 2× safety buffer of candidates per chunk, then global top-k.
         with torch.no_grad():
-            src_exp = node_features.unsqueeze(1).expand(-1, N, -1)
-            tgt_exp = node_features.unsqueeze(0).expand(N, -1, -1)
-            all_pairs = torch.cat([src_exp, tgt_exp], dim=-1)     # [N, N, 2d]
-            logits_all = self.edge_scorer(all_pairs).squeeze(-1)  # [N, N]
-            logits_all.fill_diagonal_(float('-inf'))
-            _, topk_idx = logits_all.view(-1).topk(min(k, logits_all.numel()))
-            src_idx = topk_idx // N
-            tgt_idx = topk_idx % N
+            chunk_size   = self._chunk_size
+            # Candidates to keep per chunk: (2k / total_chunks) + margin.
+            # 2× safety factor ensures the true global top-k survives the cull.
+            cand_per_row = max(2 * k // N + 1, 1)
+
+            cand_scores: list = []
+            cand_flat:   list = []
+
+            for start in range(0, N, chunk_size):
+                end = min(start + chunk_size, N)
+                C   = end - start
+
+                # [C, N, 2d] — peak chunk allocation
+                pairs = torch.cat([
+                    node_features[start:end].unsqueeze(1).expand(-1, N, -1),
+                    node_features.unsqueeze(0).expand(C, -1, -1),
+                ], dim=-1)
+                logits = self.edge_scorer(pairs).squeeze(-1)  # [C, N]
+
+                # Mask self-loops (row i ↔ global node start+i)
+                logits[
+                    torch.arange(C, device=device),
+                    torch.arange(start, start + C, device=device),
+                ] = float('-inf')
+
+                # Keep top-(cand_per_row * C) from this chunk
+                buf  = min(cand_per_row * C, C * N)
+                flat = logits.reshape(-1)
+                top_scores, top_local = flat.topk(min(buf, flat.numel()))
+
+                row_global = top_local // N + start
+                col_idx    = top_local %  N
+                cand_scores.append(top_scores)
+                cand_flat.append(row_global * N + col_idx)
+
+            # Global top-k from all chunk candidates
+            all_scores = torch.cat(cand_scores)
+            all_flat   = torch.cat(cand_flat)
+            _, final_idx = all_scores.topk(min(k, all_scores.numel()))
+            topk_flat  = all_flat[final_idx]
+            src_idx    = topk_flat // N
+            tgt_idx    = topk_flat %  N
 
         # --- Phase 2: Re-score selected pairs WITH gradient (O(k)) ---
         sel_src = node_features[src_idx]  # [k, d]

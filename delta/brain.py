@@ -184,105 +184,91 @@ class BrainConstructor(nn.Module):
 
 
 class BrainEncoder(nn.Module):
-    """3-stage self-bootstrap encoder for the Brain architecture.
+    """Multi-round self-constructing graph encoder.
 
-    Stage 1: Bootstrap DELTALayers on input graph → enriched features
-    Stage 2: BrainConstructor → learn new edges from enriched features
-    Stage 3: Full DELTALayers on augmented graph → final features
+    Stage 0: Bootstrap DELTALayers (once) → initial structural enrichment
+    Round r (for r in 0..rounds-1):
+        Bridge → BrainConstructor → augment → DELTALayers
 
-    When hybrid=True (default), Stage 3 operates on original edges + new edges.
-    When hybrid=False, Stage 3 uses only constructed edges.
+    Each round sees node/edge features enriched by all prior rounds.
+    Edge-replace strategy: each round augments from ORIGINAL edges only
+    (not cumulative), so constructed edges never accumulate and VRAM stays bounded.
 
-    This is the core of The Brain: DELTA constructs its own graph and reasons
-    over it, reducing dependency on pre-defined topology.
+    rounds=1 is backward-compatible with the original 3-stage pipeline.
+
+    When hybrid=True (default), each round's DELTA operates on original + constructed edges.
+    When hybrid=False, each round's DELTA uses only constructed edges.
     """
 
     def __init__(self, d_node, d_edge, bootstrap_layers=1, delta_layers=2,
                  num_heads=4, dropout=0.1, target_density=0.005,
                  hybrid=True, init_temp=1.0, topk_edges=None,
-                 use_router_in_delta=False):
+                 use_router_in_delta=False, rounds=1):
         super().__init__()
 
         self.hybrid = hybrid
         self.use_router_in_delta = use_router_in_delta
+        self.rounds = rounds
         self.last_sparsity_loss = torch.tensor(0.0)
         self.last_num_constructed_edges = 0
 
-        # Stage 1: Bootstrap DELTA layers (router always OFF — enrichment only)
+        # Stage 0: Bootstrap DELTA layers (router always OFF — enrichment only)
         self.bootstrap_layers = nn.ModuleList([
             DELTALayer(d_node, d_edge, num_heads, dropout=dropout,
                        init_temp=init_temp, topk_edges=topk_edges)
             for _ in range(bootstrap_layers)
         ])
 
-        # Bridge between Stage 1 and Stage 2/3
-        # Prevents gradient shortcut where Stage 3 ignores Stage 1
-        self.node_bridge = nn.Sequential(
-            nn.LayerNorm(d_node),
-            nn.Linear(d_node, d_node),
-            nn.GELU(),
-        )
-        self.edge_bridge = nn.Sequential(
-            nn.LayerNorm(d_edge),
-            nn.Linear(d_edge, d_edge),
-            nn.GELU(),
-        )
-
-        # Stage 2: Differentiable graph constructor
-        self.constructor = BrainConstructor(d_node, d_edge, target_density)
-
-        # Stage 3: Full DELTA layers on augmented graph
-        # topk_edges applies to Stage 3 attention over augmented E_adj
-        self.delta_layers = nn.ModuleList([
-            DELTALayer(d_node, d_edge, num_heads, dropout=dropout,
-                       init_temp=init_temp, topk_edges=topk_edges)
-            for _ in range(delta_layers)
+        # Per-round modules (rounds=1 gives same capacity as original single-round code)
+        # Each round independently: bridges features, constructs edges, reasons over them.
+        self.round_node_bridges = nn.ModuleList([
+            nn.Sequential(nn.LayerNorm(d_node), nn.Linear(d_node, d_node), nn.GELU())
+            for _ in range(rounds)
+        ])
+        self.round_edge_bridges = nn.ModuleList([
+            nn.Sequential(nn.LayerNorm(d_edge), nn.Linear(d_edge, d_edge), nn.GELU())
+            for _ in range(rounds)
+        ])
+        self.constructors = nn.ModuleList([
+            BrainConstructor(d_node, d_edge, target_density)
+            for _ in range(rounds)
+        ])
+        # rounds × delta_layers_per_round independent DELTA layers
+        self.round_delta_layers = nn.ModuleList([
+            nn.ModuleList([
+                DELTALayer(d_node, d_edge, num_heads, dropout=dropout,
+                           init_temp=init_temp, topk_edges=topk_edges)
+                for _ in range(delta_layers)
+            ])
+            for _ in range(rounds)
         ])
 
     def forward(self, graph):
-        """Process graph through 3-stage Brain pipeline.
+        """Process graph through multi-round Brain pipeline.
 
-        Args:
-            graph: DeltaGraph with node_features, edge_features, edge_index
+        Stage 0: Bootstrap pass on original graph (once).
+        Round r (for r in 0..rounds-1):
+            1. Bridge: LayerNorm + Linear projects current node/edge features.
+            2. BrainConstructor: scores all node pairs (chunked O(chunk×N)),
+               selects top-k edges, builds differentiable edge features.
+            3. Augment: original edges + round-r constructed edges.
+            4. DELTALayers: reason over augmented graph.
 
-        Returns:
-            DeltaGraph with enriched features (on augmented graph)
+        Edge-replace strategy ensures VRAM stays bounded:
+            Each round augments from ORIGINAL edges only. Round r's constructed
+            edges are discarded before round r+1 constructs fresh ones.
+            VRAM ≈ O(bootstrap_E_adj + augmented_E_adj_per_round) regardless of rounds.
 
-        Memory design (N=5000, 98GB VRAM):
-            Stage 1 on full 63M E_adj saves ~47GB activations for backward.
-            Stage 3 forward on augmented ~82M E_adj adds ~21GB peak ctx tensor.
-            Concurrent peak would exceed 94.97GB → OOM.
-
-            Fix: inject a SUBSAMPLED E_adj for Stage 1 only.
-            Stage 1 is structural enrichment — 30M randomly sampled pairs
-            (50% of the full E_adj) captures the same structural signal as
-            63M with half the peak memory and full gradient flow.
-            Stage 3 still runs on the FULL augmented E_adj (original + constructed).
-
-            Memory with 30M bootstrap E_adj:
-              Stage 1 ctx [30M, 128] bf16 = 7.7GB
-              Stage 1 saved activations ≈ 12GB
-              Stage 3 ctx [82M, 128] bf16 = 21GB
-              Stage 3 saved activations ≈ 35GB
-              Peak concurrent ≈ 50GB → fits with 45GB headroom on 98GB.
+        Memory note (98 GB server GPU, bootstrap_edge_budget path):
+            Same budget logic as original 3-stage code applies to each round.
         """
         original_edge_index = graph.edge_index
+        n_orig = original_edge_index.shape[1]
         bootstrap_budget = getattr(self, 'bootstrap_edge_budget', None)
 
-        # Stage 1: Bootstrap pass on original graph (optionally subsampled E_adj)
-        # Subsampled E_adj halves peak activation memory while retaining full
-        # gradient flow — no quality compromise vs no_grad on full E_adj.
-        #
-        # Handle both cases:
-        #   - Training: cached_edge_adj is pre-built and injected into
-        #     graph._edge_adj_cache before calling forward(). Just subsample it.
-        #   - Eval (cached_edge_adj=None): _edge_adj_cache is None → build the
-        #     full orig adj first, then subsample. Avoids DELTALayer building
-        #     the unsubsampled 63M adj which would allocate [63M, 128] = 30.7GB
-        #     and cause CUDA memory compaction under pool pressure.
+        # Stage 0: Bootstrap pass on original graph (optionally subsampled E_adj)
         if bootstrap_budget is not None:
             if graph._edge_adj_cache is None:
-                # Eval path: build original adj then subsample
                 orig_adj = graph.build_edge_adjacency()
             else:
                 _, orig_adj = graph._edge_adj_cache
@@ -295,67 +281,68 @@ class BrainEncoder(nn.Module):
             graph = layer(graph, use_router=False,
                          use_partitioning=False, use_memory=False)
 
-        # Bridge: transform features between stages
-        bridged_nf = self.node_bridge(graph.node_features)
-        bridged_ef = self.edge_bridge(graph.edge_features)
-
-        # Stage 2: Construct new edges from enriched features
+        # Multi-round construction loop
+        total_sparsity_loss = graph.node_features.new_zeros(1).squeeze()
+        total_new_edges = 0
         tau = getattr(self, '_constructor_tau', 1.0)
-        new_ei, new_ef, sparsity_loss = self.constructor(bridged_nf, tau=tau)
+        stage3_budget = getattr(self, 'bootstrap_edge_budget', None)
 
-        self.last_sparsity_loss = sparsity_loss
-        self.last_num_constructed_edges = new_ei.shape[1]
+        for r in range(self.rounds):
+            # Bridge: project current features (prevents gradient shortcut across rounds)
+            node_feats = self.round_node_bridges[r](graph.node_features)
+            # Extract original-edge features: first n_orig rows of edge_features.
+            # After round r-1, graph.edge_features = [orig_ef_updated | constructed_ef_{r-1}].
+            # We take the original slice and re-bridge it for this round.
+            orig_ef_slice = graph.edge_features[:n_orig]
+            edge_feats = self.round_edge_bridges[r](orig_ef_slice)
 
-        # Build augmented graph
-        if self.hybrid and original_edge_index.shape[1] > 0:
-            # Keep original edges + add new edges
-            aug_ei = torch.cat([original_edge_index, new_ei], dim=1)
-            aug_ef = torch.cat([bridged_ef, new_ef], dim=0)
-        else:
-            # Only constructed edges
-            aug_ei = new_ei
-            aug_ef = new_ef
+            # Construct new edges from current (bridged) node features
+            new_ei, new_ef, sparsity_loss = self.constructors[r](node_feats, tau=tau)
+            total_sparsity_loss = total_sparsity_loss + sparsity_loss
+            total_new_edges += new_ei.shape[1]
 
-        augmented_graph = DeltaGraph(
-            node_features=bridged_nf,
-            edge_features=aug_ef,
-            edge_index=aug_ei,
-        )
+            # Build augmented graph (edge-replace: original + this round's edges)
+            if self.hybrid and n_orig > 0:
+                aug_ei = torch.cat([original_edge_index, new_ei], dim=1)
+                aug_ef = torch.cat([edge_feats, new_ef], dim=0)
+            else:
+                aug_ei = new_ei
+                aug_ef = new_ef
 
-        # Stage 3: Full DELTA on augmented graph
-        if not self.use_router_in_delta:
-            # Router OFF: edge_index unchanged across layers → cache E_adj once
-            aug_edge_adj = augmented_graph.build_edge_adjacency()
-            # Subsample augmented E_adj if budget set (reuse bootstrap_edge_budget).
-            # Augmented graph adds ~25K constructed edges → E_adj grows from ~63M
-            # to ~82M. A single DELTALayer on 82M needs ~97GB, which already
-            # exceeds 94.97GB. Subsample to 30M: Stage1_saved(22GB) + Stage3_L2
-            # forward(36GB) + Stage3_L1_saved(22GB) = 80GB peak → fits.
-            stage3_budget = getattr(self, 'bootstrap_edge_budget', None)
-            if stage3_budget is not None and aug_edge_adj.shape[1] > stage3_budget:
-                perm3 = torch.randperm(aug_edge_adj.shape[1], device=aug_edge_adj.device)
-                aug_edge_adj = aug_edge_adj[:, perm3[:stage3_budget]]
-                # Update the graph's cache so the layer sees the subsampled adj
-                augmented_graph._edge_adj_cache = (1, aug_edge_adj)
-            # Note: no empty_cache() here — it's called in the hot path every batch
-            # and with a large GPU memory pool takes minutes under memory pressure.
-            # The pool reuses freed aug E_adj build tensors for Stage 3 ctx allocs.
-            for layer in self.delta_layers:
-                augmented_graph = layer(augmented_graph, use_router=False,
-                                       use_partitioning=False, use_memory=False)
-                # Restore cache on new graph object (same edge_index)
-                augmented_graph._edge_adj_cache = (1, aug_edge_adj)
-        else:
-            # Router ON: pruning changes edge_index each layer → rebuild E_adj per layer
-            stage3_budget = getattr(self, 'bootstrap_edge_budget', None)
-            for layer in self.delta_layers:
+            augmented_graph = DeltaGraph(
+                node_features=node_feats,
+                edge_features=aug_ef,
+                edge_index=aug_ei,
+            )
+
+            # Reason over augmented graph
+            if not self.use_router_in_delta:
+                # Router OFF: edge_index fixed across layers → cache E_adj once per round
                 aug_edge_adj = augmented_graph.build_edge_adjacency()
                 if stage3_budget is not None and aug_edge_adj.shape[1] > stage3_budget:
                     perm3 = torch.randperm(aug_edge_adj.shape[1], device=aug_edge_adj.device)
                     aug_edge_adj = aug_edge_adj[:, perm3[:stage3_budget]]
                     augmented_graph._edge_adj_cache = (1, aug_edge_adj)
-                # Note: no empty_cache() — see router=OFF path comment above
-                augmented_graph = layer(augmented_graph, use_router=True,
-                                       use_partitioning=False, use_memory=False)
+                for layer in self.round_delta_layers[r]:
+                    augmented_graph = layer(augmented_graph, use_router=False,
+                                           use_partitioning=False, use_memory=False)
+                    # Restore cache on new graph object returned by layer
+                    augmented_graph._edge_adj_cache = (1, aug_edge_adj)
+            else:
+                # Router ON: pruning changes edge_index each layer → rebuild E_adj per layer
+                for layer in self.round_delta_layers[r]:
+                    aug_edge_adj = augmented_graph.build_edge_adjacency()
+                    if stage3_budget is not None and aug_edge_adj.shape[1] > stage3_budget:
+                        perm3 = torch.randperm(aug_edge_adj.shape[1], device=aug_edge_adj.device)
+                        augmented_graph._edge_adj_cache = (1, aug_edge_adj[:, perm3[:stage3_budget]])
+                    augmented_graph = layer(augmented_graph, use_router=True,
+                                           use_partitioning=False, use_memory=False)
 
-        return augmented_graph
+            # Pass enriched graph to next round
+            # augmented_graph.edge_features[:n_orig] = orig-edge feats updated by this round
+            graph = augmented_graph
+
+        self.last_sparsity_loss = total_sparsity_loss / self.rounds
+        self.last_num_constructed_edges = total_new_edges  # total across all rounds
+
+        return graph

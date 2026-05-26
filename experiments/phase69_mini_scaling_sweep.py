@@ -331,7 +331,8 @@ def make_delta_model(num_entities: int, num_relations: int) -> torch.nn.Module:
                                D_NODE, D_EDGE).to(device)
 
 
-def make_brain_model(num_entities: int, num_relations: int) -> torch.nn.Module:
+def make_brain_model(num_entities: int, num_relations: int,
+                     rounds: int = 1) -> torch.nn.Module:
     enc = BrainEncoder(
         d_node=D_NODE, d_edge=D_EDGE,
         bootstrap_layers=1, delta_layers=1,
@@ -340,6 +341,7 @@ def make_brain_model(num_entities: int, num_relations: int) -> torch.nn.Module:
         hybrid=True,
         init_temp=1.0,
         topk_edges=TOPK,
+        rounds=rounds,
     )
     return LinkPredictionModel(enc, num_entities, num_relations,
                                D_NODE, D_EDGE).to(device)
@@ -392,7 +394,8 @@ def print_scaling_report(arch: str, ns: list, results: list, law: dict):
 def run_arch_sweep(arch: str, n_values: list,
                    max_adj_pairs: int = DEFAULT_MAX_ADJ_PAIRS,
                    neg_k: int = NEG_K,
-                   out_path: str = None) -> list:
+                   out_path: str = None,
+                   rounds: int = 1) -> list:
     """Run one architecture across all N values. Returns list of result dicts.
 
     max_adj_pairs  — cap E_adj for training to keep VRAM bounded (None=no cap)
@@ -436,7 +439,8 @@ def run_arch_sweep(arch: str, n_values: list,
             if arch == 'delta':
                 model = make_delta_model(data['num_entities'], data['num_relations'])
             else:
-                model = make_brain_model(data['num_entities'], data['num_relations'])
+                model = make_brain_model(data['num_entities'], data['num_relations'],
+                                         rounds=rounds)
 
             n_params = sum(p.numel() for p in model.parameters())
             print(f'  Model params: {n_params:,}', flush=True)
@@ -495,7 +499,8 @@ def run_arch_sweep(arch: str, n_values: list,
                 if os.path.exists(out_path):
                     with open(out_path) as f_in:
                         existing = json.load(f_in)
-                existing[arch] = all_results
+                save_key = f'brain_r{rounds}' if (arch == 'brain' and rounds > 1) else arch
+                existing[save_key] = all_results
                 with open(out_path, 'w') as f_out:
                     json.dump(existing, f_out, indent=2, default=str)
             except Exception as save_err:
@@ -518,6 +523,8 @@ def main():
                         help='Cap E_adj for training VRAM (default: 10M; 0=no cap)')
     parser.add_argument('--neg-k', type=int, default=NEG_K,
                         help=f'Negative samples per triple (default: {NEG_K})')
+    parser.add_argument('--rounds', type=int, default=1,
+                        help='Number of (construct→reason) rounds in BrainEncoder (default: 1)')
     args = parser.parse_args()
     # 0 or negative means no cap
     if args.max_adj_pairs is not None and args.max_adj_pairs <= 0:
@@ -529,11 +536,16 @@ def main():
     if not args.delta_only:
         archs.append('brain')
 
+    brain_rounds = getattr(args, 'rounds', 1)
+    # JSON key: 'brain' for rounds=1 (baseline), 'brain_r2' / 'brain_r3' etc. for multi-round
+    brain_key = 'brain' if brain_rounds == 1 else f'brain_r{brain_rounds}'
+
     print(f'\nPhase 69: Mini-Architecture Scaling Sweep')
     print(f'  Device:        {device}')
     print(f'  Architecture:  d_node={D_NODE}, d_edge={D_EDGE}, topk={TOPK}')
     print(f'  N sweep:       {args.n_values}')
     print(f'  Architectures: {archs}')
+    print(f'  Brain rounds:  {brain_rounds} (→ key="{brain_key}")')
     print(f'  Epochs/point:  {MAX_EPOCHS}')
     print(f'  neg_k:         {args.neg_k}')
     adj_cap_str = f'{args.max_adj_pairs:,}' if args.max_adj_pairs else 'None'
@@ -549,11 +561,13 @@ def main():
             all_results = json.load(f)
 
     for arch in archs:
+        arch_key = brain_key if arch == 'brain' else arch
         results = run_arch_sweep(arch, args.n_values,
                                  max_adj_pairs=args.max_adj_pairs,
                                  neg_k=args.neg_k,
-                                 out_path=out_path)
-        all_results[arch] = results
+                                 out_path=out_path,
+                                 rounds=getattr(args, 'rounds', 1))
+        all_results[arch_key] = results
 
         # Fit scaling law on forward-only encode time (≥2 points needed)
         ns     = [r['N_actual']    for r in results]

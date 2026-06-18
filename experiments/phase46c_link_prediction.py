@@ -68,8 +68,19 @@ from delta.datasets import download_dataset, _load_triples
 # Data Loading — proper train/val/test separation
 # ═══════════════════════════════════════════════════════════════════════════
 
-def load_lp_data(name='fb15k-237', data_dir='data', max_entities=None):
+def load_lp_data(name='fb15k-237', data_dir='data', max_entities=None,
+                 sample_mode='degree', sample_seed=42, use_cache=False):
     """Load KG for link prediction with STRICT split separation.
+
+    sample_mode controls how max_entities is applied:
+      'degree' (default) — keep the top-N highest-degree entities (DENSE
+                 subgraph; backward-compatible with all prior phases).
+      'random'  — keep N uniformly-random entities (SPARSE subgraph, mean
+                 degree close to the full FB15k-237 ~4-10 regime where 2-hop
+                 edge adjacency helps; cf. Phase 66 dense vs Phase 67 sparse).
+    use_cache (opt-in, default False so existing phases are unaffected) caches
+    the returned dict to data/.lp_cache keyed by (name, max_entities,
+    sample_mode, sample_seed).
 
     Unlike load_real_kg() (Phase 37), this function:
       ✗ Does NOT merge all splits into one graph
@@ -85,6 +96,18 @@ def load_lp_data(name='fb15k-237', data_dir='data', max_entities=None):
     """
     dataset_dir = download_dataset(name, data_dir)
 
+    cache_path = None
+    if use_cache:
+        import hashlib
+        key = f"{name}|{max_entities}|{sample_mode}|{sample_seed}"
+        digest = hashlib.md5(key.encode()).hexdigest()[:12]
+        cache_dir = os.path.join(data_dir, '.lp_cache')
+        os.makedirs(cache_dir, exist_ok=True)
+        cache_path = os.path.join(cache_dir, f"{name}_{digest}.pt")
+        if os.path.exists(cache_path):
+            print(f"  [cache] load_lp_data hit: {cache_path}")
+            return torch.load(cache_path, weights_only=False)
+
     train_raw = _load_triples(os.path.join(dataset_dir, 'train.txt'))
     val_raw = _load_triples(os.path.join(dataset_dir, 'valid.txt'))
     test_raw = _load_triples(os.path.join(dataset_dir, 'test.txt'))
@@ -98,14 +121,18 @@ def load_lp_data(name='fb15k-237', data_dir='data', max_entities=None):
     num_entities = len(all_entities)
     num_relations = len(all_relations)
 
-    # Subsample by entity degree (densest subset) for smoke testing
+    # Subsample entities (see docstring: 'degree' = dense top-N, 'random' = sparse).
     if max_entities and max_entities < num_entities:
-        degree = defaultdict(int)
-        for h, r, t in train_raw:
-            degree[h] += 1
-            degree[t] += 1
-        top = sorted(degree.keys(), key=lambda e: degree[e], reverse=True)
-        keep = set(top[:max_entities])
+        if sample_mode == 'random':
+            import random as _random
+            keep = set(_random.Random(sample_seed).sample(all_entities, max_entities))
+        else:
+            degree = defaultdict(int)
+            for h, r, t in train_raw:
+                degree[h] += 1
+                degree[t] += 1
+            top = sorted(degree.keys(), key=lambda e: degree[e], reverse=True)
+            keep = set(top[:max_entities])
 
         train_raw = [(h, r, t) for h, r, t in train_raw if h in keep and t in keep]
         val_raw = [(h, r, t) for h, r, t in val_raw if h in keep and t in keep]
@@ -150,13 +177,17 @@ def load_lp_data(name='fb15k-237', data_dir='data', max_entities=None):
     print(f"    {num_entities} entities, {num_relations} relations")
     print(f"    {train.shape[1]} train / {val.shape[1]} val / {test.shape[1]} test")
 
-    return {
+    result = {
         'train': train, 'val': val, 'test': test,
         'num_entities': num_entities,
         'num_relations': num_relations,
         'hr_to_tails': dict(hr_to_tails),
         'rt_to_heads': dict(rt_to_heads),
     }
+    if cache_path is not None:
+        torch.save(result, cache_path)
+        print(f"  [cache] load_lp_data saved: {cache_path}")
+    return result
 
 
 def build_train_graph_tensors(train_triples):

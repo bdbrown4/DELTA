@@ -222,17 +222,30 @@ class DeltaGraph:
             self._edge_adj_cache = (hops, adj_1hop)
             return adj_1hop
 
-        # Multi-hop: use SPARSE matrix powers to avoid O(E²) memory
+        # Multi-hop: use SPARSE matrix powers to avoid O(E²) memory.
+        # NOTE: previously this densified adj_sparse via .to_dense() inside the
+        # loop, materializing a full [E, E] dense matrix (the 2-hop OOM driver
+        # that forced Phase 66 to randomly subsample hops=2). We only ever use
+        # the sparsity PATTERN (indices) downstream, not the path-count values,
+        # so a sparse@sparse matmul is both correct and far cheaper. Values are
+        # binarized each step to keep them from growing across higher hops.
         E = self.num_edges
         indices = adj_1hop  # [2, nnz]
         values = torch.ones(adj_1hop.shape[1], device=self.device)
         adj_sparse = torch.sparse_coo_tensor(indices, values, (E, E), device=self.device).coalesce()
 
-        # Compose by sparse matrix multiplication
+        # Compose by sparse matrix multiplication (sparse @ sparse → sparse)
         combined = adj_sparse
         power = adj_sparse
         for _ in range(hops - 1):
-            power = torch.sparse.mm(power, adj_sparse.to_dense()).to_sparse().coalesce()
+            power = torch.sparse.mm(power, adj_sparse).coalesce()
+            # Binarize values so repeated multiplication does not blow up counts
+            # (downstream only reads .indices(), so values are otherwise unused).
+            power = torch.sparse_coo_tensor(
+                power.indices(),
+                torch.ones(power.indices().shape[1], device=self.device),
+                (E, E), device=self.device,
+            ).coalesce()
             combined = (combined + power).coalesce()
 
         # Extract non-zero entries (excluding self-loops)

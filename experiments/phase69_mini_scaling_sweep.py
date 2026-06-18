@@ -451,10 +451,16 @@ def run_arch_sweep(arch: str, n_values: list,
                                      cached_adj_train, cached_adj_full, label,
                                      neg_k=neg_k)
 
-            # Count brain edges if applicable
+            # Count brain edges if applicable.
+            # NOTE: BrainEncoder exposes `last_num_constructed_edges` (set in
+            # brain.py forward); the old attribute name `last_n_constructed`
+            # never existed, so brain_edges was silently always 0. Fall back to
+            # the legacy name for safety.
             brain_edges = 0
-            if arch == 'brain' and hasattr(model.encoder, 'last_n_constructed'):
-                brain_edges = model.encoder.last_n_constructed
+            if arch == 'brain':
+                brain_edges = getattr(
+                    model.encoder, 'last_num_constructed_edges',
+                    getattr(model.encoder, 'last_n_constructed', 0))
 
             result = {
                 'arch':          arch,

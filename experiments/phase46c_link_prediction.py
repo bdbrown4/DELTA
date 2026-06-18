@@ -69,7 +69,8 @@ from delta.datasets import download_dataset, _load_triples
 # ═══════════════════════════════════════════════════════════════════════════
 
 def load_lp_data(name='fb15k-237', data_dir='data', max_entities=None,
-                 sample_mode='degree', sample_seed=42, use_cache=False):
+                 sample_mode='degree', sample_seed=42, use_cache=False,
+                 sample_frac=None):
     """Load KG for link prediction with STRICT split separation.
 
     sample_mode controls how max_entities is applied:
@@ -99,7 +100,7 @@ def load_lp_data(name='fb15k-237', data_dir='data', max_entities=None,
     cache_path = None
     if use_cache:
         import hashlib
-        key = f"{name}|{max_entities}|{sample_mode}|{sample_seed}"
+        key = f"{name}|{max_entities}|{sample_mode}|{sample_seed}|{sample_frac}"
         digest = hashlib.md5(key.encode()).hexdigest()[:12]
         cache_dir = os.path.join(data_dir, '.lp_cache')
         os.makedirs(cache_dir, exist_ok=True)
@@ -121,8 +122,22 @@ def load_lp_data(name='fb15k-237', data_dir='data', max_entities=None,
     num_entities = len(all_entities)
     num_relations = len(all_relations)
 
-    # Subsample entities (see docstring: 'degree' = dense top-N, 'random' = sparse).
-    if max_entities and max_entities < num_entities:
+    # Subsample. 'edge' = sample a fraction of TRAIN edges and keep the entities they
+    # touch (full-entity-diversity SPARSE graph, faithful to Phase 67's regime); 'random'
+    # = random top-N entities (sparse, small); 'degree' = dense top-N (default).
+    if sample_mode == 'edge' and sample_frac and sample_frac < 1.0:
+        import random as _random
+        k = int(len(train_raw) * sample_frac)
+        train_raw = _random.Random(sample_seed).sample(train_raw, k)
+        keep = {e for h, r, t in train_raw for e in (h, t)}
+        val_raw = [(h, r, t) for h, r, t in val_raw if h in keep and t in keep]
+        test_raw = [(h, r, t) for h, r, t in test_raw if h in keep and t in keep]
+        all_entities = sorted({e for h, r, t in (train_raw + val_raw + test_raw)
+                               for e in (h, t)})
+        all_relations = sorted({r for _, r, _ in (train_raw + val_raw + test_raw)})
+        num_entities = len(all_entities)
+        num_relations = len(all_relations)
+    elif max_entities and max_entities < num_entities:
         if sample_mode == 'random':
             import random as _random
             keep = set(_random.Random(sample_seed).sample(all_entities, max_entities))

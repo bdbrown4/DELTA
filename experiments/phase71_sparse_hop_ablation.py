@@ -90,7 +90,7 @@ QTYPES = ['1p', '2p', '3p', '4p', '5p']
 def evaluate_multihop_extended_with_adj(model, queries_by_type, edge_index,
                                         edge_types, full_hr2t, device, adj,
                                         cache_hops, temperature=1.0,
-                                        batch_size=64):
+                                        batch_size=256):
     """Soft-traversal multi-hop eval (1p-5p) with a pre-built adjacency injected.
 
     Identical scoring to phase42/phase44, but encodes node features ONCE under
@@ -128,21 +128,26 @@ def evaluate_multihop_extended_with_adj(model, queries_by_type, edge_index,
                     weights = torch.softmax(scores / temperature, dim=-1)
                     current_emb = weights @ node_feats
 
+            # Vectorized filtered ranking (single scatter + one comparison per batch).
+            answers = torch.tensor([q[2] for q in batch], device=device)
+            rows = []; cols = []
             for i in range(B):
-                anchor, rel_chain, answer = batch[i][0], batch[i][1], batch[i][2]
-                valid = compute_valid_answers(anchor, rel_chain, full_hr2t)
-                for va in valid:
-                    if va != answer:
-                        scores[i, va] = float('-inf')
-                rank = int((scores[i] >= scores[i, answer]).sum().item())
-                all_ranks.append(max(rank, 1))
+                ans = batch[i][2]
+                for va in compute_valid_answers(batch[i][0], batch[i][1], full_hr2t):
+                    if va != ans:
+                        rows.append(i); cols.append(va)
+            if rows:
+                scores[torch.tensor(rows, device=device),
+                       torch.tensor(cols, device=device)] = float('-inf')
+            tgt = scores[torch.arange(B, device=device), answers]
+            all_ranks.append((scores >= tgt.unsqueeze(1)).sum(dim=1).clamp_(min=1))
 
-        ranks = np.array(all_ranks, dtype=np.float64)
+        ranks = torch.cat(all_ranks).double()
         results[qtype] = {
-            'MRR': float(np.mean(1.0 / ranks)),
-            'Hits@1': float(np.mean(ranks <= 1)),
-            'Hits@3': float(np.mean(ranks <= 3)),
-            'Hits@10': float(np.mean(ranks <= 10)),
+            'MRR': float((1.0 / ranks).mean()),
+            'Hits@1': float((ranks <= 1).double().mean()),
+            'Hits@3': float((ranks <= 3).double().mean()),
+            'Hits@10': float((ranks <= 10).double().mean()),
             'count': len(queries),
         }
     return results

@@ -387,47 +387,52 @@ def _train_epoch_with_adj(model, train_triples, edge_index, edge_types,
     return total_loss / max(num_batches, 1)
 
 
+def _filtered_ranks(scores, targets, filt_map, key_a, key_b):
+    """Vectorized filtered ranks. scores[B,N]; targets[B]; sets known-true entities
+    (except the target) to -inf via a single scatter, then ranks = #(score >= target).
+
+    Identical semantics to the old per-row loop (rank = (scores_i >= scores_i[target]).sum(),
+    clamped to >=1) but without per-row .item() syncs. key_a/key_b index filt_map, e.g.
+    tails: filt_map=hr_to_tails, (key_a,key_b)=(h,r); heads: rt_to_heads, (r,t)."""
+    B = scores.shape[0]
+    a = key_a.tolist(); b = key_b.tolist(); tg = targets.tolist()
+    rows = []; cols = []
+    for i in range(B):
+        for e in filt_map.get((a[i], b[i]), ()):
+            if e != tg[i]:
+                rows.append(i); cols.append(e)
+    if rows:
+        scores[torch.tensor(rows, device=scores.device),
+               torch.tensor(cols, device=scores.device)] = float('-inf')
+    tgt = scores[torch.arange(B, device=scores.device), targets]
+    return (scores >= tgt.unsqueeze(1)).sum(dim=1).clamp_(min=1)
+
+
 @torch.no_grad()
 def _evaluate_with_adj(model, triples, edge_index, edge_types,
                         hr_to_tails, rt_to_heads, device, adj, cache_hops,
-                        batch_size=128):
-    """Filtered link prediction evaluation with controlled adjacency."""
+                        batch_size=512):
+    """Filtered link prediction evaluation with controlled adjacency (vectorized)."""
     model.eval()
     node_feats = _encode_with_adj(model, edge_index, edge_types,
                                    adj, cache_hops, device)
-    all_ranks = []
+    triples = triples.to(device)
+    rank_chunks = []
 
     for start in range(0, triples.shape[1], batch_size):
-        batch = triples[:, start:start + batch_size].to(device)
+        batch = triples[:, start:start + batch_size]
         h, r, t = batch[0], batch[1], batch[2]
-        B = h.shape[0]
-
         scores_t = model.score_all_tails(node_feats, h, r)
-        for i in range(B):
-            hi, ri, ti = h[i].item(), r[i].item(), t[i].item()
-            true_tails = hr_to_tails.get((hi, ri), set())
-            for tt in true_tails:
-                if tt != ti:
-                    scores_t[i, tt] = float('-inf')
-            rank = int((scores_t[i] >= scores_t[i, ti]).sum().item())
-            all_ranks.append(max(rank, 1))
-
+        rank_chunks.append(_filtered_ranks(scores_t, t, hr_to_tails, h, r))
         scores_h = model.score_all_heads(node_feats, r, t)
-        for i in range(B):
-            hi, ri, ti = h[i].item(), r[i].item(), t[i].item()
-            true_heads = rt_to_heads.get((ri, ti), set())
-            for th_id in true_heads:
-                if th_id != hi:
-                    scores_h[i, th_id] = float('-inf')
-            rank = int((scores_h[i] >= scores_h[i, hi]).sum().item())
-            all_ranks.append(max(rank, 1))
+        rank_chunks.append(_filtered_ranks(scores_h, h, rt_to_heads, r, t))
 
-    ranks = np.array(all_ranks, dtype=np.float64)
+    ranks = torch.cat(rank_chunks).double()
     return {
-        'MRR': float(np.mean(1.0 / ranks)),
-        'Hits@1': float(np.mean(ranks <= 1)),
-        'Hits@3': float(np.mean(ranks <= 3)),
-        'Hits@10': float(np.mean(ranks <= 10)),
+        'MRR': float((1.0 / ranks).mean()),
+        'Hits@1': float((ranks <= 1).double().mean()),
+        'Hits@3': float((ranks <= 3).double().mean()),
+        'Hits@10': float((ranks <= 10).double().mean()),
     }
 
 

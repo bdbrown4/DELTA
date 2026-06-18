@@ -8,7 +8,7 @@ LOG=phase73_run.log
 echo "[watch] started $(date)"
 
 STATUS=timeout
-for i in $(seq 1 480); do            # up to ~16h (480 * 120s)
+for i in $(seq 1 900); do            # up to ~30h (900 * 120s) — ETA grew to ~16h, headroom for safety
   if grep -q "Results saved to phase73_output.json" "$LOG" 2>/dev/null; then
     STATUS=complete; break
   fi

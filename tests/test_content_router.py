@@ -74,7 +74,9 @@ def test_aux_loss_gradient():
     rel, ef, ei, R = _toy()
     ef = ef.clone().requires_grad_(True)
     r = ContentRouter(ef.shape[1], d_r=4)
-    aux = r.aux_losses(ef, ei)
+    comp_Y = (torch.rand(R, R) < 0.1).float()           # toy composability matrix
+    aux = r.aux_losses(ef, rel, comp_Y, R)
+    assert torch.isfinite(aux)                          # bounded (no NaN/explosion)
     aux.backward()
     assert r.Wt.weight.grad is not None and r.Wt.weight.grad.abs().sum() > 0
     print("[PASS] test_aux_loss_gradient")

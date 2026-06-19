@@ -88,7 +88,7 @@ def encode_content(model, ei, et, adj, route_prob, device):
 
 
 def train_content(cond, router, data, epochs, lr, device, bs, seed, eval_every, patience,
-                  K, tau, R, aux_w=1.0, comp=None, et_cpu=None):
+                  K, tau, R, comp_Y, aux_w=1.0, comp=None, et_cpu=None):
     torch.manual_seed(seed); np.random.seed(seed)
     model = create_lp_model('delta_matched', data['num_entities'], data['num_relations']).to(device)
     router = router.to(device)
@@ -117,8 +117,11 @@ def train_content(cond, router, data, epochs, lr, device, bs, seed, eval_every, 
             loss = (F.binary_cross_entropy_with_logits(st, tt) +
                     F.binary_cross_entropy_with_logits(sh, th)) / 2
             if cond != 'content_random':
-                loss = loss + aux_w * router.aux_losses(_edge_feats(model, et, device), ei.to(device))
-            opt.zero_grad(); loss.backward(); opt.step()
+                loss = loss + aux_w * router.aux_losses(
+                    _edge_feats(model, et, device), et.to(device), comp_Y, R)
+            opt.zero_grad(); loss.backward()
+            torch.nn.utils.clip_grad_norm_([p for p in params if p.requires_grad], 1.0)
+            opt.step()
         if epoch % eval_every == 0 or epoch == epochs:
             val = eval_content_lp(model, router, data, data['val'], ei, et, K, tau, R, device)
             if comp is not None:
@@ -202,6 +205,9 @@ def main():
     R = data['num_relations']
     enc_de = 24  # delta_matched encoder edge dim
     comp = composable_relpairs(data['train'])
+    comp_Y = torch.zeros(R, R)
+    for i, j in comp:
+        comp_Y[i, j] = 1.0
     print(f"  ents={data['num_entities']} E={ei0.shape[1]} R={R} test={data['test'].shape[1]} comp_pairs={len(comp)}")
 
     queries = None
@@ -231,7 +237,7 @@ def main():
                 router = ContentRouter(enc_de, d_r=args.d_r, tie=tie, freeze=freeze)
                 model, router, best_val, ei, et, elapsed = train_content(
                     cond, router, data, args.epochs, args.lr, device, args.batch_size, seed,
-                    args.eval_every, args.patience, args.K, args.tau, R,
+                    args.eval_every, args.patience, args.K, args.tau, R, comp_Y,
                     comp=comp, et_cpu=et0)
                 adj, rp = cached_content_adj(model, router, et, args.K, args.tau, R, device)
                 # ASSERT eval uses the content builder (composable_frac differs from structural baselines)

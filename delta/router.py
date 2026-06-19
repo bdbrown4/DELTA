@@ -54,33 +54,32 @@ class ContentRouter(nn.Module):
         return build_content_edge_adjacency(edge_rel, tk, hk, K, tau=tau,
                                             num_relations=num_relations)
 
-    def aux_losses(self, edge_feats, edge_index, consistency_w=0.1, spread_w=0.01):
-        """Scalar aux loss to add to the training objective. Positives: (t, s) where
-        tail(t)==head(s) (s is a real continuation of t) -> push tail_key(t).head_key(s) up;
-        random negatives down. Spread term discourages key collapse."""
+    def aux_losses(self, edge_feats, edge_rel, comp_Y, num_relations, consistency_w=1.0):
+        """Composability-shaping aux loss — the SAME objective validated in the 74c gate
+        (which reached composable_frac 0.913). Operates at the RELATION level (matching how
+        routing aggregates): relation-mean keys -> bounded affinity -> BCE against the [R,R]
+        composability matrix comp_Y (1 where r_i can chain into r_j). Pos-weighted for the
+        ~5% composable density. Bounded by 1/sqrt(d_r) so logits can't explode (the per-edge
+        version diverged: cons -> 777)."""
         dev = edge_feats.device
-        E = edge_index.shape[1]
+        R = num_relations
+        E = edge_feats.shape[0]
         tk, hk = self.keys(edge_feats)
-        head, tail = edge_index[0], edge_index[1]
-        order_h = torch.argsort(head)
-        sh = head[order_h]
-        lo = torch.searchsorted(sh, tail, right=False)
-        hi = torch.searchsorted(sh, tail, right=True)
-        has = hi > lo
-        if has.any():
-            t_idx = torch.where(has)[0]
-            s_pos = order_h[lo[t_idx]]                       # a real continuation per t
-            s_neg = torch.randint(0, E, (t_idx.shape[0],), device=dev)
-            pos = (tk[t_idx] * hk[s_pos]).sum(-1)
-            neg = (tk[t_idx] * hk[s_neg]).sum(-1)
-            cons = -(torch.log(torch.sigmoid(pos) + 1e-9).mean()
-                     + torch.log1p(-torch.sigmoid(neg) + 1e-9).mean())
-        else:
+        cnt = torch.zeros(R, device=dev); cnt.index_add_(0, edge_rel, torch.ones(E, device=dev))
+        tk_r = torch.zeros(R, self.d_r, device=dev); tk_r.index_add_(0, edge_rel, tk)
+        hk_r = torch.zeros(R, self.d_r, device=dev); hk_r.index_add_(0, edge_rel, hk)
+        nz = cnt > 0
+        tk_r[nz] = tk_r[nz] / cnt[nz].unsqueeze(1); hk_r[nz] = hk_r[nz] / cnt[nz].unsqueeze(1)
+        aff = (tk_r @ hk_r.t()) / (self.d_r ** 0.5)         # [R,R] bounded affinity
+        mask = nz.unsqueeze(0) & nz.unsqueeze(1)            # both relations present
+        if mask.sum() == 0:
             cons = torch.zeros((), device=dev)
-        spread = -(tk.var(0).mean() + hk.var(0).mean())     # negative variance = anti-collapse
+        else:
+            y = comp_Y.to(dev)[mask]
+            posw = (y.numel() - y.sum()) / y.sum().clamp(min=1)
+            cons = F.binary_cross_entropy_with_logits(aff[mask], y, pos_weight=posw)
         self.consistency_loss = cons.detach()
-        self.spread_loss = spread.detach()
-        return consistency_w * cons + spread_w * spread
+        return consistency_w * cons
 
 
 class PostAttentionPruner(nn.Module):

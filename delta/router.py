@@ -19,7 +19,68 @@ import torch.nn as nn
 import torch.nn.functional as F
 from typing import Tuple, Optional
 
-from delta.graph import DeltaGraph, TIER_HOT, TIER_WARM, TIER_COLD
+from delta.graph import (DeltaGraph, TIER_HOT, TIER_WARM, TIER_COLD,
+                         build_content_edge_adjacency)
+
+
+class ContentRouter(nn.Module):
+    """Bilinear composability router for content-dependent edge adjacency (Phase 75).
+
+    Projects edge features to low-rank tail/head keys; edges route by bilinear affinity
+    tail_key . head_key (top-K, via build_content_edge_adjacency). Variants:
+      - tie=True   -> head key IS the tail key  (the content_sim symmetric control).
+      - freeze=True -> keys frozen at init       (the content_random control).
+    aux_losses() supplies the composability-shaping signal the LP gradient alone lacks
+    (red-team finding): a self-supervised middle-consistency term over REAL structural
+    2-hop continuations, plus a weak anti-collapse (key-spread) term.
+    """
+
+    def __init__(self, d_edge: int, d_r: int = 16, tie: bool = False, freeze: bool = False):
+        super().__init__()
+        self.Wt = nn.Linear(d_edge, d_r, bias=False)
+        self.Wh = self.Wt if tie else nn.Linear(d_edge, d_r, bias=False)
+        self.d_r, self.tie = d_r, tie
+        if freeze:
+            for p in self.parameters():
+                p.requires_grad_(False)
+        self.consistency_loss = torch.tensor(0.0)
+        self.spread_loss = torch.tensor(0.0)
+
+    def keys(self, edge_feats):
+        return self.Wt(edge_feats), self.Wh(edge_feats)   # tail_key, head_key
+
+    def build(self, edge_feats, edge_rel, K, tau=1.0, num_relations=None):
+        tk, hk = self.keys(edge_feats)
+        return build_content_edge_adjacency(edge_rel, tk, hk, K, tau=tau,
+                                            num_relations=num_relations)
+
+    def aux_losses(self, edge_feats, edge_index, consistency_w=0.1, spread_w=0.01):
+        """Scalar aux loss to add to the training objective. Positives: (t, s) where
+        tail(t)==head(s) (s is a real continuation of t) -> push tail_key(t).head_key(s) up;
+        random negatives down. Spread term discourages key collapse."""
+        dev = edge_feats.device
+        E = edge_index.shape[1]
+        tk, hk = self.keys(edge_feats)
+        head, tail = edge_index[0], edge_index[1]
+        order_h = torch.argsort(head)
+        sh = head[order_h]
+        lo = torch.searchsorted(sh, tail, right=False)
+        hi = torch.searchsorted(sh, tail, right=True)
+        has = hi > lo
+        if has.any():
+            t_idx = torch.where(has)[0]
+            s_pos = order_h[lo[t_idx]]                       # a real continuation per t
+            s_neg = torch.randint(0, E, (t_idx.shape[0],), device=dev)
+            pos = (tk[t_idx] * hk[s_pos]).sum(-1)
+            neg = (tk[t_idx] * hk[s_neg]).sum(-1)
+            cons = -(torch.log(torch.sigmoid(pos) + 1e-9).mean()
+                     + torch.log1p(-torch.sigmoid(neg) + 1e-9).mean())
+        else:
+            cons = torch.zeros((), device=dev)
+        spread = -(tk.var(0).mean() + hk.var(0).mean())     # negative variance = anti-collapse
+        self.consistency_loss = cons.detach()
+        self.spread_loss = spread.detach()
+        return consistency_w * cons + spread_w * spread
 
 
 class PostAttentionPruner(nn.Module):

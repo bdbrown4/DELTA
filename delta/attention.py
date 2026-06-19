@@ -161,19 +161,26 @@ class EdgeAttention(nn.Module):
         self._log_temp = nn.Parameter(torch.full((num_heads,), math.log(init_temp)))
 
     def forward(self, graph: DeltaGraph, edge_adj: Optional[torch.Tensor] = None,
-                return_weights: bool = False):
+                return_weights: bool = False, route_prob: Optional[torch.Tensor] = None):
         """
         Args:
             graph: DeltaGraph
             edge_adj: [2, E_adj] edge-to-edge adjacency (precomputed).
                       If None, computed from graph.
             return_weights: if True, also return per-edge-adj attention weights
+            route_prob: optional [E_adj] per-pair routing probability (content-dependent
+                      adjacency, Phase 75). When given, log(route_prob) is added to the
+                      attention scores — biasing attention toward composable sources AND
+                      providing the differentiable gradient path to the ContentRouter keys.
+                      Default None => identical behavior to all prior phases.
 
         Returns:
             Updated edge features [E, d_edge], or (features, attn_weights) if return_weights
         """
         if edge_adj is None:
             edge_adj = graph.build_edge_adjacency()
+        if route_prob is None:
+            route_prob = getattr(graph, '_route_prob', None)
 
         E = graph.num_edges
         H = self.num_heads
@@ -207,6 +214,11 @@ class EdgeAttention(nn.Module):
         # Apply learnable per-head temperature
         temp = self._log_temp.exp()  # [H], always positive
         attn_scores = attn_scores * temp  # [E_adj, H]
+
+        # Content-routing bias (Phase 75): log(route_prob) added to scores biases attention
+        # toward composable sources and is the gradient path to the ContentRouter keys.
+        if route_prob is not None:
+            attn_scores = attn_scores + torch.log(route_prob.clamp_min(1e-9)).unsqueeze(-1)
 
         # Top-k sparse filtering: keep only k highest-scoring neighbors per target edge
         if self.topk_edges is not None:

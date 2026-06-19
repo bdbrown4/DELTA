@@ -305,3 +305,71 @@ class DeltaGraph:
             node_importance=self.node_importance.to(device) if self.node_importance is not None else None,
             edge_importance=self.edge_importance.to(device) if self.edge_importance is not None else None,
         )
+
+
+def build_content_edge_adjacency(edge_rel, tk_e, hk_e, K, tau=1.0,
+                                 num_relations=None, exclude_self=True):
+    """Content-dependent edge adjacency by BILINEAR composability routing (Phase 75).
+
+    Each target edge t attends to source edges s by descending bilinear affinity
+    aff(r_t, r_s) = mean tail_key(r_t) . mean head_key(r_s), top-K. Relation-only routing
+    => affinity factors through an [R, R] matrix => O(E*R + E*K), no O(E^2). Returns
+    (adj [2, E_adj] src/tgt, route_prob [E_adj]) — route_prob = softmax(aff/tau) on the
+    selected source's relation, carrying the differentiable gradient path to the router keys.
+
+    tk_e, hk_e: [E, d_r] per-edge tail/head keys (from ContentRouter). edge_rel: [E] rel ids.
+    Set router keys tied (Wh==Wt) for the content_sim control; frozen for content_random.
+    """
+    E = edge_rel.shape[0]
+    dev = edge_rel.device
+    R = int(num_relations) if num_relations is not None else int(edge_rel.max().item()) + 1
+    d_r = tk_e.shape[1]
+    relcount = torch.zeros(R, device=dev)
+    relcount.index_add_(0, edge_rel, torch.ones(E, device=dev))
+    tk_r = torch.zeros(R, d_r, device=dev); tk_r.index_add_(0, edge_rel, tk_e)
+    hk_r = torch.zeros(R, d_r, device=dev); hk_r.index_add_(0, edge_rel, hk_e)
+    nz = relcount > 0
+    tk_r[nz] = tk_r[nz] / relcount[nz].unsqueeze(1)
+    hk_r[nz] = hk_r[nz] / relcount[nz].unsqueeze(1)
+    aff = tk_r @ hk_r.t()                          # [R, R] (row=target rel, col=source rel)
+    aff_soft = torch.softmax(aff / tau, dim=1)     # differentiable route prob per (tgt, src) rel
+    rcount = relcount.long()
+    order = torch.argsort(edge_rel)                # edges grouped by relation (contiguous pools)
+    starts = torch.zeros(R + 1, dtype=torch.long, device=dev)
+    starts[1:] = rcount.cumsum(0)
+    rel_order = torch.argsort(aff, dim=1, descending=True)   # [R, R] source rels by affinity
+
+    src_list, tgt_list, rp_list = [], [], []
+    for rt in torch.where(rcount > 0)[0].tolist():
+        # template: take source edges from highest-affinity source relations until K filled
+        tmpl_src, tmpl_rel, filled = [], [], 0
+        for rs in rel_order[rt].tolist():
+            c = rcount[rs].item()
+            if c == 0:
+                continue
+            take = min(c, K - filled)
+            tmpl_src.append(order[starts[rs]:starts[rs] + take])
+            tmpl_rel.append(torch.full((take,), rs, dtype=torch.long, device=dev))
+            filled += take
+            if filled >= K:
+                break
+        if not tmpl_src:
+            continue
+        tmpl_src = torch.cat(tmpl_src); tmpl_rel = torch.cat(tmpl_rel)   # [L], L<=K
+        L = tmpl_src.shape[0]
+        tgt_edges = order[starts[rt]:starts[rt] + rcount[rt]]            # [T] targets of rel rt
+        T = tgt_edges.shape[0]
+        src = tmpl_src.unsqueeze(0).expand(T, L).reshape(-1)
+        tgt = tgt_edges.unsqueeze(1).expand(T, L).reshape(-1)
+        rp = aff_soft[rt, tmpl_rel].unsqueeze(0).expand(T, L).reshape(-1)
+        if exclude_self:
+            m = src != tgt
+            src, tgt, rp = src[m], tgt[m], rp[m]
+        src_list.append(src); tgt_list.append(tgt); rp_list.append(rp)
+
+    if not src_list:
+        return (torch.zeros(2, 0, dtype=torch.long, device=dev),
+                torch.zeros(0, device=dev))
+    adj = torch.stack([torch.cat(src_list), torch.cat(tgt_list)])
+    route_prob = torch.cat(rp_list)
+    return adj, route_prob

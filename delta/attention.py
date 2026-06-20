@@ -160,6 +160,40 @@ class EdgeAttention(nn.Module):
         # Learnable per-head temperature (same semantics as NodeAttention)
         self._log_temp = nn.Parameter(torch.full((num_heads,), math.log(init_temp)))
 
+    @staticmethod
+    def compose_scores(W_q, W_k, W_ctx, log_temp, q_state, edge_feats,
+                       node_features, src_nodes, tgt_nodes, num_heads, d_head):
+        """Pure edge-composition score: the EXACT score block of EdgeAttention.forward
+        (dot-product of a query state against an edge's key + endpoint-node context bias +
+        per-head temperature), factored out so the query-time (JIT / Phase 77 PEC-pf) path can
+        invoke the identical operator with a query-conditioned `q_state` instead of an edge's own
+        projected query.
+
+        Deliberately reads NOTHING off any graph object (no `graph._route_prob`) so it is safe to
+        call directly per hop without the layer-0-only route_prob/edge_adj forwarding bug.
+
+        Args:
+            W_q, W_k: nn.Linear(d_edge, d_edge) — query/key projections.
+            W_ctx:    nn.Linear(2*d_node, num_heads) — endpoint-node context bias.
+            log_temp: [num_heads] learnable log-temperature (multiplied as exp()).
+            q_state:    [M, d_edge] the query side (an edge's features in AOT; the path frontier
+                        state in JIT).
+            edge_feats: [M, d_edge] the key side (the candidate/source edge's features).
+            node_features: [N, d_node]; src_nodes/tgt_nodes: [M] endpoint ids for the ctx bias.
+            num_heads, d_head: head geometry (d_edge == num_heads * d_head).
+
+        Returns:
+            scores [M, num_heads]  (pre-softmax, pre-route_prob).
+        """
+        M = q_state.shape[0]
+        Q = W_q(q_state).view(M, num_heads, d_head)
+        Kk = W_k(edge_feats).view(M, num_heads, d_head)
+        scores = (Q * Kk).sum(dim=-1) / math.sqrt(d_head)            # [M, H]
+        ctx = torch.cat([node_features[src_nodes], node_features[tgt_nodes]], dim=-1)
+        scores = scores + W_ctx(ctx)                                  # [M, H]
+        scores = scores * log_temp.exp()                             # [M, H]
+        return scores
+
     def forward(self, graph: DeltaGraph, edge_adj: Optional[torch.Tensor] = None,
                 return_weights: bool = False, route_prob: Optional[torch.Tensor] = None):
         """
@@ -187,8 +221,6 @@ class EdgeAttention(nn.Module):
         d_h = self.d_head
 
         e = graph.edge_features  # [E, d_edge]
-        Q = self.W_q(e).view(E, H, d_h)
-        K = self.W_k(e).view(E, H, d_h)
         V = self.W_v(e).view(E, H, d_h)
 
         if edge_adj.shape[1] == 0:
@@ -198,22 +230,13 @@ class EdgeAttention(nn.Module):
 
         src_edges, tgt_edges = edge_adj  # [E_adj] each
 
-        # Attention scores between adjacent edges
-        q_tgt = Q[tgt_edges]  # [E_adj, H, d_h]
-        k_src = K[src_edges]  # [E_adj, H, d_h]
-        attn_scores = (q_tgt * k_src).sum(dim=-1) / math.sqrt(d_h)  # [E_adj, H]
-
-        # Node context bias: use endpoint features of both edges
-        src_edge_ctx = torch.cat([
-            graph.node_features[graph.edge_index[0, src_edges]],
-            graph.node_features[graph.edge_index[1, src_edges]]
-        ], dim=-1)  # [E_adj, 2*d_node]
-        ctx_bias = self.W_ctx(src_edge_ctx)  # [E_adj, H]
-        attn_scores = attn_scores + ctx_bias
-
-        # Apply learnable per-head temperature
-        temp = self._log_temp.exp()  # [H], always positive
-        attn_scores = attn_scores * temp  # [E_adj, H]
+        # Attention scores between adjacent edges — the dot/ctx/temperature block, now the shared
+        # pure operator (so the Phase 77 JIT path invokes bit-identical math). The query side is the
+        # TARGET edge's features, the key side the SOURCE edge's; ctx uses the SOURCE edge endpoints.
+        attn_scores = EdgeAttention.compose_scores(
+            self.W_q, self.W_k, self.W_ctx, self._log_temp,
+            e[tgt_edges], e[src_edges], graph.node_features,
+            graph.edge_index[0, src_edges], graph.edge_index[1, src_edges], H, d_h)
 
         # Content-routing bias (Phase 75): log(route_prob) added to scores biases attention
         # toward composable sources and is the gradient path to the ContentRouter keys.

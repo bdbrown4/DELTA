@@ -28,11 +28,45 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import argparse, time, json
 import torch
-from experiments.phase46c_link_prediction import load_lp_data, build_train_graph_tensors
-from experiments.phase66_hop_ablation import build_condition_adjs, train_with_controlled_adj, _evaluate_with_adj
-from experiments.phase71_sparse_hop_ablation import evaluate_multihop_extended_with_adj, QTYPES
-from experiments.phase42_multihop import build_full_adjacency
+from experiments.phase46c_link_prediction import load_lp_data, build_train_graph_tensors, create_lp_model
+from experiments.phase66_hop_ablation import build_condition_adjs, train_with_controlled_adj, _evaluate_with_adj, _encode_with_adj
+from experiments.phase71_sparse_hop_ablation import QTYPES
+from experiments.phase42_multihop import build_full_adjacency, compute_valid_answers
 from experiments.phase44_depth import generate_extended_queries, audit_extended_queries
+
+
+@torch.no_grad()
+def fast_mh_eval(model, queries, valid_cache, ei, et, adj, ch, device, tau, bs=256):
+    """Multi-hop eval reusing PRECOMPUTED valid-answer sets (valid_cache[qtype][i]) instead of
+    recomputing the per-query graph walk every call — the τ-sweep made that ~100x redundant."""
+    model.eval()
+    nf = _encode_with_adj(model, ei, et, adj, ch, device)
+    out = {}
+    for qt in QTYPES:
+        qs = queries.get(qt, [])
+        if not qs:
+            out[qt] = {'MRR': 0.0, 'count': 0}; continue
+        nh = len(qs[0][1]); ranks = []
+        for s in range(0, len(qs), bs):
+            batch = qs[s:s + bs]; B = len(batch)
+            cur = nf[torch.tensor([q[0] for q in batch], device=device)]
+            for hop in range(nh):
+                rels = torch.tensor([q[1][hop] for q in batch], device=device)
+                sc = (cur * model.decoder_rel_emb(rels)) @ nf.t()
+                if hop < nh - 1:
+                    cur = torch.softmax(sc / tau, -1) @ nf
+            ans = torch.tensor([q[2] for q in batch], device=device); rows, cols = [], []
+            for i in range(B):
+                a = batch[i][2]
+                for va in valid_cache[qt][s + i]:
+                    if va != a:
+                        rows.append(i); cols.append(va)
+            if rows:
+                sc[torch.tensor(rows, device=device), torch.tensor(cols, device=device)] = float('-inf')
+            ranks.append((sc >= sc[torch.arange(B, device=device), ans].unsqueeze(1)).sum(1).clamp_(min=1))
+        rk = torch.cat(ranks).double()
+        out[qt] = {'MRR': float((1.0 / rk).mean()), 'count': len(qs)}
+    return out
 
 CKPT_DIR = os.path.join(os.path.dirname(__file__), '..', 'checkpoints')
 
@@ -88,30 +122,47 @@ def main():
     print("  " + ", ".join(f"{q}={len(queries.get(q,[]))}" for q in QTYPES))
     print("  audit:", "PASS" if not audit_extended_queries(queries, data) else "ISSUES")
     full_hr2t = build_full_adjacency(data)
+    print("  precomputing valid-answer sets ONCE (shared across all conditions/seeds/tau)...")
+    t0 = time.time()
+    valid_cache = {qt: [set(compute_valid_answers(q[0], q[1], full_hr2t)) for q in queries.get(qt, [])]
+                   for qt in QTYPES}
+    print(f"    done [{time.time()-t0:.0f}s]")
 
-    results = []
+    out_path = os.path.join(os.path.dirname(__file__), '..', args.out)
+    results = json.load(open(out_path)) if os.path.exists(out_path) else []
+    done = {(r['condition'], r['seed']) for r in results}
+    if done:
+        print(f"  resuming: {len(done)} (condition,seed) already done -> skipping")
+    eix, etx = build_train_graph_tensors(data['train'])
+
     for cond in conditions:
-        adj, ch = adjs[cond]
+        adj, ch = adjs[cond]; adj_dev = adj.to(device)
         for seed in seeds:
+            if (cond, seed) in done:
+                print(f"  skip {cond} seed={seed} (already in output)"); continue
             print(f"\n=== {cond} seed={seed} ===")
             ckpt = os.path.join(CKPT_DIR, f'p76_{cond}_s{seed}_f{args.sample_frac}.pt')
-            model, best_val, eix, etx, elapsed, npar = train_with_controlled_adj(
-                cond, adj, ch, data, args.epochs, args.lr, device, args.batch_size, seed,
-                args.eval_every, args.patience)
-            torch.save({'state': model.state_dict(), 'cond': cond, 'seed': seed}, ckpt)
-            adj_dev = adj.to(device)
+            if os.path.exists(ckpt):
+                model = create_lp_model('delta_matched', data['num_entities'], data['num_relations']).to(device)
+                model.load_state_dict(torch.load(ckpt)['state'])
+                npar = sum(p.numel() for p in model.parameters())
+                print("  loaded checkpoint (skip training)")
+            else:
+                model, best_val, _, _, elapsed, npar = train_with_controlled_adj(
+                    cond, adj, ch, data, args.epochs, args.lr, device, args.batch_size, seed,
+                    args.eval_every, args.patience)
+                torch.save({'state': model.state_dict(), 'cond': cond, 'seed': seed}, ckpt)
             lp = _evaluate_with_adj(model, data['test'], eix, etx, data['hr_to_tails'],
                                     data['rt_to_heads'], device, adj_dev, ch)
             row = {'condition': cond, 'seed': seed, 'lp_MRR': lp['MRR'], 'params': int(npar)}
             for tau in taus:
-                mh = evaluate_multihop_extended_with_adj(model, queries, eix, etx, full_hr2t,
-                                                         device, adj_dev, ch, temperature=tau)
+                mh = fast_mh_eval(model, queries, valid_cache, eix, etx, adj_dev, ch, device, tau)
                 for q in QTYPES:
                     row[f'{q}_MRR_t{tau}'] = mh[q]['MRR']
             print("  LP=%.4f | 5p@tau: %s" % (lp['MRR'],
                   " ".join("%.2f=%.4f" % (t, row[f'5p_MRR_t{t}']) for t in taus)))
             results.append(row)
-            with open(os.path.join(os.path.dirname(__file__), '..', args.out), 'w') as f:
+            with open(out_path, 'w') as f:
                 json.dump(results, f, indent=2)
     print("\nDONE. saved", args.out)
 

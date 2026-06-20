@@ -10,7 +10,7 @@ import pytest
 
 from delta.graph import DeltaGraph
 from delta.attention import EdgeAttention
-from delta.path_compose import PathComposerPF, build_R2E, build_hr2t, MODES
+from delta.path_compose import PathComposerPF, build_R2E, build_csr, build_hr2t, MODES
 
 
 def _toy(seed=0, N=10, d_node=48, d_edge=24):
@@ -179,6 +179,27 @@ def test_train_only_hr2t_no_leak():
     assert 5 not in train_hr2t.get((2, 0), set()), "test-only tail must NOT be in train_hr2t"
     assert 5 in full[(2, 0)], "full adjacency should contain the test tail"
     assert (3, 0) not in train_hr2t and 4 in full[(3, 0)], "val-only edge leaks into train_hr2t"
+
+
+# ── batched scorer must equal the per-query reference (all arms, mixed K) ──
+def test_batched_equals_per_query():
+    nf, ef0, ei, et, R = _toy(seed=13, N=14)
+    R2E = build_R2E(ei, et, R, nf.device)
+    csr = build_csr(ei, et, R, nf.device)
+    # assemble a mixed-K query batch that includes nonempty 2p/3p paths
+    probe = PathComposerPF(R, mode='pec'); ej0 = torch.zeros(ei.shape[1], probe.d_edge)
+    qs = []
+    for a in range(nf.shape[0]):
+        qs.append((a, [list(R2E)[0]]))                      # 1p
+    twohop = _find_2hop(nf, ei, R2E, R)
+    if twohop:
+        qs.append(twohop)
+    for mode in MODES:
+        m = PathComposerPF(R, mode=mode)
+        ej = m.build_ej(nf, ef0, ei)
+        ref = torch.stack([m.forward_query(int(a), list(rc), nf, ej, R2E) for (a, rc) in qs], 0)
+        vec = m.score_batch_vec(qs, nf, ef0, ei, csr)
+        assert torch.allclose(ref, vec, atol=1e-5), f"{mode}: batched != per-query (max {(ref-vec).abs().max():.2e})"
 
 
 # ── capacity arm: operator weights frozen, the rest trainable ──

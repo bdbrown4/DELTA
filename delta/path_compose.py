@@ -63,6 +63,36 @@ def build_hr2t(triples):
     return dict(hr2t)
 
 
+def build_csr(edge_index, edge_types, num_relations, device):
+    """CSR-style index for vectorized (src_node, relation) -> edges lookup. Sorts edges by the
+    combined key src*R + rel so a batch of (node, rel) queries gathers all matching edges via
+    searchsorted ranges. Returns dict consumed by the batched DP."""
+    ei = edge_index.to(device); et = edge_types.to(device)
+    key = ei[0] * num_relations + et
+    order = torch.argsort(key)
+    return {'key_sorted': key[order].contiguous(), 'eid_sorted': order.contiguous(),
+            'tgt_sorted': ei[1][order].contiguous(), 'R': num_relations}
+
+
+def _gather_edges(fnode, frel, csr):
+    """For frontier entries with node fnode[i] and relation frel[i], gather all matching train edges.
+    Returns (seg, eid, tgt): seg[m] = frontier-entry index that matched edge m came from."""
+    R = csr['R']; ks = csr['key_sorted']
+    qk = fnode * R + frel
+    lo = torch.searchsorted(ks, qk, right=False)
+    hi = torch.searchsorted(ks, qk, right=True)
+    counts = hi - lo
+    total = int(counts.sum().item())
+    if total == 0:
+        z = torch.zeros(0, dtype=torch.long, device=fnode.device)
+        return z, z, z
+    seg = torch.repeat_interleave(torch.arange(fnode.shape[0], device=fnode.device), counts)
+    starts = torch.cumsum(counts, 0) - counts
+    within = torch.arange(total, device=fnode.device) - torch.repeat_interleave(starts, counts)
+    gpos = lo[seg] + within
+    return seg, csr['eid_sorted'][gpos], csr['tgt_sorted'][gpos]
+
+
 def build_R2E(edge_index, edge_types, num_relations, device):
     """R2E[r] = (src_nodes, edge_ids, tgt_nodes) for all train edges of relation r (sorted by src is
     not required). Used to gather, per hop, the typed edges leaving the current frontier."""
@@ -223,6 +253,72 @@ class PathComposerPF(nn.Module):
         ej = self.build_ej(nf, ef0, edge_index)
         rows = [self.forward_query(int(a), list(rc), nf, ej, R2E) for (a, rc) in queries]
         return torch.stack(rows, 0)                              # [B, N]
+
+    # ── batched / vectorized forward (same math as forward_query; grouped by chain length K) ──
+    def _traverse_batch(self, anchors, rel_mat, K, nf, ej, csr):
+        """anchors [Q], rel_mat [Q,K]. Runs K-1 hops in lockstep across the batch. Returns the
+        penult frontier as flat (fnode [F], fquery [F], fz [F,d_edge])."""
+        N = nf.shape[0]
+        Q = anchors.shape[0]
+        fnode = anchors
+        fquery = torch.arange(Q, device=nf.device)
+        fz = self.seed_norm(self.W_seed(nf[anchors]))               # [Q, d_edge]
+        for i in range(K - 1):
+            frel = rel_mat[fquery, i]                               # relation for each entry this hop
+            seg, eid, tgt = _gather_edges(fnode, frel, csr)
+            if seg.numel() == 0:
+                empty = torch.zeros(0, dtype=torch.long, device=nf.device)
+                return empty, empty, fz[:0]
+            z_src = fz[seg]; q_of = fquery[seg]; src_node = fnode[seg]
+            ej_e = ej[eid]; rel_e = frel[seg]
+            logits = self._hop_logits(z_src, ej_e, nf, src_node, tgt)          # [M,H]
+            msg = self._hop_message(z_src, ej_e, rel_e)                        # [M,d_edge]
+            gkey = q_of * N + tgt
+            uniq, inv = torch.unique(gkey, return_inverse=True)
+            G = uniq.shape[0]
+            attn = _scatter_softmax(logits, inv, G)
+            mh = msg.view(-1, self.num_heads, self.d_head)
+            weighted = (mh * attn.unsqueeze(-1)).reshape(-1, self.d_edge)
+            agg = torch.zeros(G, self.d_edge, device=nf.device)
+            agg.scatter_add_(0, inv.unsqueeze(-1).expand(-1, self.d_edge), weighted)
+            fz = self.hop_norm(self.W_out(agg))
+            fnode = uniq % N; fquery = uniq // N
+        return fnode, fquery, fz
+
+    def _readout_batch(self, fnode, fquery, fz, rel_K, Q, nf):
+        """All-N readout for a batch of Q queries. rel_K [Q]. Returns scores [Q, N]."""
+        N = nf.shape[0]
+        rk_all = self.rel_emb(rel_K)                                # [Q, d_edge]
+        if fnode.numel() == 0:
+            return self.read_bias.expand(Q, N)
+        rk_e = rk_all[fquery]                                       # [F, d_edge]
+        pa = self.W_poolattn(torch.cat([fz, rk_e], -1)).squeeze(-1)        # [F]
+        # softmax of pa within each query group
+        mx = torch.full((Q,), -1e9, device=nf.device).scatter_reduce(0, fquery, pa, reduce='amax', include_self=False)
+        ex = torch.exp(pa - mx[fquery])
+        den = torch.zeros(Q, device=nf.device).scatter_add(0, fquery, ex)
+        w = ex / (den[fquery] + 1e-10)
+        pooled = torch.zeros(Q, self.d_edge, device=nf.device)
+        pooled.scatter_add_(0, fquery.unsqueeze(-1).expand(-1, self.d_edge), w.unsqueeze(-1) * fz)
+        q_read = self.W_read(torch.cat([pooled, rk_all], -1))      # [Q, d_node]
+        return q_read @ nf.t() + self.read_bias                    # [Q, N]
+
+    def score_batch_vec(self, queries, nf, ef0, edge_index, csr):
+        """Vectorized scorer. queries: list of (anchor, rel_chain). Groups by K, runs batched
+        traverse+readout per group, returns scores [B, N] in input order. ej rebuilt once."""
+        ej = self.build_ej(nf, ef0, edge_index)
+        N = nf.shape[0]
+        out = torch.empty(len(queries), N, device=nf.device)
+        by_k = {}
+        for i, (a, rc) in enumerate(queries):
+            by_k.setdefault(len(rc), []).append(i)
+        for K, idxs in by_k.items():
+            anchors = torch.tensor([int(queries[i][0]) for i in idxs], device=nf.device)
+            rel_mat = torch.tensor([list(queries[i][1]) for i in idxs], device=nf.device)
+            fnode, fquery, fz = self._traverse_batch(anchors, rel_mat, K, nf, ej, csr)
+            scores = self._readout_batch(fnode, fquery, fz, rel_mat[:, K - 1], len(idxs), nf)
+            out[torch.tensor(idxs, device=nf.device)] = scores
+        return out
 
     def penult_reachable_mask(self, anchor, rel_chain, train_hr2t, N, device):
         """Entities reachable from the penult frontier via r_K in the TRAIN graph (the MASK-ONLY /

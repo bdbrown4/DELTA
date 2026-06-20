@@ -1,0 +1,59 @@
+{
+  "gate_a": {
+    "1p": {
+      "n": 18159,
+      "penult_nonempty_rate": 1.0,
+      "old_full_chain_gold_reach": 0.0
+    },
+    "2p": {
+      "n": 10000,
+      "penult_nonempty_rate": 1.0,
+      "old_full_chain_gold_reach": 0.0328
+    },
+    "3p": {
+      "n": 10000,
+      "penult_nonempty_rate": 1.0,
+      "old_full_chain_gold_reach": 0.0991
+    },
+    "4p": {
+      "n": 10000,
+      "penult_nonempty_rate": 1.0,
+      "old_full_chain_gold_reach": 0.1769
+    },
+    "5p": {
+      "n": 10000,
+      "penult_nonempty_rate": 1.0,
+      "old_full_chain_gold_reach": 0.2128
+    }
+  },
+  "gate_b": {
+    "2": {
+      "usable_distinct": 6000,
+      "considered": 6005,
+      "penult_nonempty_among_considered": 6005
+    },
+    "3": {
+      "usable_distinct": 6000,
+      "considered": 6180,
+      "penult_nonempty_among_considered": 6180
+    },
+    "4": {
+      "usable_distinct": 6000,
+      "considered": 6804,
+      "penult_nonempty_among_considered": 6804
+    }
+  },
+  "gate_c": {
+    "within_full": 0.043636343437360094,
+    "between_full": 0.0913502399485403,
+    "within_frac_full": 0.3232643003659779,
+    "within_type": 2.4369367918181045e-11,
+    "within_frac_type": 1.117325630671023e-10,
+    "threshold": 0.15,
+    "passed": true
+  },
+  "a_ok": true,
+  "b_ok": true,
+  "c_ok": true,
+  "verdict_proceed": true
+}

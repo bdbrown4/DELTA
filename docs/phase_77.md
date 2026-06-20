@@ -1,9 +1,55 @@
 # Phase 77 — JIT pivot: query-time edge composition (PEC-pf). PRE-REGISTRATION + Step-0 gates
 
-## RESULTS (5 seeds [42,123,456,7,99], edge-sampled FB15k-237 frac=0.10, 10k queries/depth) — PASS (pending adversarial verification)
+## RESULTS (5 seeds [42,123,456,7,99], edge-sampled FB15k-237 frac=0.10, 10k queries/depth) — **FAIL** (PASS was a statistical artifact, caught by adversarial verification)
 
-Pre-registered PASS: PEC-pf beats ALL four controls (capacity, rrprior, static, MASK-ONLY) at BOTH
-4p and 5p on the penult-reachable stratum, per-query bootstrap CI excluding 0. MET.
+**CORRECTED VERDICT: FAIL.** The initially-reported PASS did NOT survive correct statistics. A 3-adversary
+red-team (jit-verify-positive workflow) found the pre-registered primary endpoint counted the WRONG unit
+of replication: phase77_analyze.py collapsed the 5-seed axis (`.mean(1)`) then bootstrapped by resampling
+~8.5k FIXED, cross-seed-correlated QUERY ids — treating them as iid replicates and understating variance
+~10-15x. The true unit is the SEED (one independent training). The pre-registration itself recorded that
+seed-level was "underpowered" and switched to per-query — i.e. the analysis that manufactures stars was
+chosen over the honest one (a methodological error, NOT a code bug; the mechanism is cleanly isolated and
+all 10 gating tests pass). Independently reproduced.
+
+SEED-LEVEL paired test (n=5, the correct unit; * = p<0.05 AND seed-cluster CI excludes 0):
+```
+pec - control   3p              4p               5p          per-seed @5p (fragility)
+capacity      -0.001 p.69    +0.014 p.17     +0.029 p.12    [+.017 +.002 +.088 +.018 +.022]
+rrprior       +0.005 p.004*  +0.005 p.44     +0.017 p.041*  [+.016 +.010 +.034 +.024 +.000]
+static        +0.003 p.39    +0.010 p.18     +0.013 p.15    [+.017 -.004 +.033 +.025 -.005]
+MASKONLY      +0.045 p.000*  +0.021 p.000*   +0.039 p.005*  (the weak reachability floor)
+```
+CORRECTED conjunctive gate (pec > capacity AND rrprior AND static AND MASKONLY at 4p AND 5p): FAILS — 5 of
+the 6 within-JIT {capacity,static,rrprior}x{4p,5p} clauses are non-significant; only pec-rrprior 5p
+(p=0.041, not Holm-robust) and pec-MASKONLY survive. Result is also load-bearing on ONE seed (456
+contributes 40-97% of contested 4p/5p margins; drop-456 flips even the inflated per-query PASS).
+
+### What honestly survives (thin)
+- pec robustly beats only the MASK-ONLY reachability floor (a weak bar the non-compositional `static` arm
+  also clears).
+- A SUGGESTIVE but seed-fragile, extrapolation-only, AXIS-CONFOUNDED instance-over-type signal
+  (pec-rrprior 3p/5p; rrprior differs from pec on TWO axes — attention on/off AND message type), NOT shown
+  to use edge-instance content (no shuffled-edge control run), appearing at UNTRAINED depths (trained K<=3;
+  4p/5p are extrapolation) — the wrong signature for learned routing.
+- "JIT ~2x AOT" is real but is the trained all-N BCE READOUT/objective, present at 1p where zero traversal
+  occurs (forward_query short-circuit) — NOT query-time edge participation. Not a composition result.
+
+### Conclusion
+Query-time edge composition is NOT robustly demonstrated by this experiment. The thesis pin
+([[query-time-edge-composition]]) remains OPEN but UNPROVEN. This is another rigorously-caught false
+positive (cf. early-stop, small-sample, capacity confounds in Phases 66-76) — the diligence pipeline
+working as intended. Optional cheap next steps (only if chasing the thin residual): shuffled-edge control
+(does pec use edge instance content?), one-axis instance-vs-type message control (de-confound pec-rrprior),
+train-at-depth (in-distribution vs extrapolation), and more seeds for a powered seed-level test.
+
+---
+
+### (Superseded) original per-query analysis — kept for the record; this is the INVALID inference
+The numbers below used the per-query bootstrap later shown to be invalid (wrong replication unit). They are
+NOT the verdict; see the corrected seed-level analysis above.
+
+Pre-registered PASS (per-query bootstrap — INVALID): PEC-pf beats ALL four controls (capacity, rrprior,
+static, MASK-ONLY) at BOTH 4p and 5p on the penult-reachable stratum, per-query bootstrap CI excluding 0.
 
 MRR (mean over 5 seeds, full all-N):
 ```

@@ -96,54 +96,67 @@ def main():
                 cells = [f"{np.mean([x[f'{qt}_MRR'] for x in rows]):9.4f}" for qt in ['1p'] + DEPTHS]
                 print(f"  {arm:<18}" + "".join(cells))
 
-    # ── per-query bootstrap: pec - control on the FIXED penult-reachable stratum ──
-    print("\n=== PEC-pf vs controls - per-query paired bootstrap on penult-reachable stratum ===")
-    print("  (margin = mean per-query RR difference; 95% CI by resampling query ids; * = CI excludes 0)")
-    pvals = {}   # (control, depth) -> margin, ci for Holm
+    # helper: per-seed strat margin matrix (pec - control), shape [n_seed]
+    def seed_margins(ctrl, qt):
+        mask = strat.get(qt)
+        ms = []
+        for j, s in enumerate(have):
+            d = np.load(os.path.join(root, f'phase77_rr_s{s}.npz'))
+            pec = d[f'pec_{qt}_rr'][mask]
+            ctl = d[f'pec_{qt}_maskrr'][mask] if ctrl == 'MASKONLY' else d[f'{ctrl}_{qt}_rr'][mask]
+            ms.append(float((pec - ctl).mean()))
+        return np.array(ms)
+
+    # ── PRIMARY (CORRECTED): seed is the unit of replication, NOT the query. The per-query bootstrap
+    #    below treats ~8.5k cross-seed-correlated queries as iid and understates variance ~10-15x; the
+    #    honest test resamples/contrasts the 5 independent seed trainings. ──
+    from scipy import stats as _st
+    print("\n=== PRIMARY: SEED-LEVEL paired test (n_seed={}, the correct replication unit) ===".format(len(have)))
+    print("  margin = per-seed mean strat RR diff; t-test across seeds (sig p<0.05); per-seed shows fragility")
+    seedp = {}
     for ctrl in CONTROLS + ['MASKONLY']:
         print(f"\n  pec - {ctrl}:")
         for qt in DEPTHS:
             if qt not in rr['pec']:
                 continue
-            mask = strat.get(qt, np.ones(rr['pec'][qt].shape[0], bool))
-            pec_q = rr['pec'][qt][mask].mean(1)                      # per-query mean over seeds
-            if ctrl == 'MASKONLY':
-                # pec full-readout RR vs pec mask-only RR on the same queries
-                ckey = [k for k in [f'pec_{qt}_maskrr'] ]
-                ctrl_q = np.stack([np.load(os.path.join(root, f'phase77_rr_s{s}.npz'))[f'pec_{qt}_maskrr']
-                                   for s in have], 1)[mask].mean(1)
-            else:
-                if qt not in rr.get(ctrl, {}):
-                    continue
-                ctrl_q = rr[ctrl][qt][mask].mean(1)
-            diff = pec_q - ctrl_q
-            m, (lo, hi) = boot_ci(diff, seed=hash((ctrl, qt)) % (2**31))
-            sig = '*' if (lo > 0 or hi < 0) else ' '
-            pvals[(ctrl, qt)] = (m, lo, hi)
-            print(f"    {qt}: n={int(mask.sum()):5d}  margin={m:+.4f}  CI[{lo:+.4f},{hi:+.4f}] {sig}")
+            m = seed_margins(ctrl, qt)
+            t, p = _st.ttest_1samp(m, 0.0) if m.std() > 0 else (float('inf'), 0.0)
+            # seed-cluster bootstrap CI (resample seeds with replacement)
+            rng = np.random.RandomState(7)
+            bs = np.array([m[rng.randint(0, len(m), len(m))].mean() for _ in range(20000)])
+            lo, hi = np.percentile(bs, [2.5, 97.5])
+            sig = '*' if (p < 0.05 and lo > 0) else ' '
+            seedp[(ctrl, qt)] = (float(m.mean()), p, lo, hi)
+            ps = " ".join(f"{x:+.3f}" for x in m)
+            print(f"    {qt}: mean={m.mean():+.4f} t-p={p:.3f} clusterCI[{lo:+.4f},{hi:+.4f}] {sig}  per-seed[{ps}]")
 
-    # ── depth x condition: does the pec-control margin grow with depth? ──
-    print("\n=== depth trend of margins (pec - control), strat ===")
-    for ctrl in CONTROLS:
-        seq = [pvals[(ctrl, qt)][0] for qt in DEPTHS if (ctrl, qt) in pvals]
-        trend = "increasing" if all(seq[i] <= seq[i+1] for i in range(len(seq)-1)) else "non-monotone"
-        print(f"  pec-{ctrl}: " + " ".join(f"{q}={pvals[(ctrl,q)][0]:+.4f}" for q in DEPTHS if (ctrl,q) in pvals)
-              + f"   [{trend}]")
-
-    # ── pre-registered verdict (4p AND 5p, all controls, CI excludes 0) ──
-    print("\n=== PRE-REGISTERED VERDICT (PASS needs pec > {capacity,rrprior,static,MASKONLY} at 4p AND 5p, CI>0) ===")
+    print("\n=== CORRECTED VERDICT (PASS needs pec > {capacity,rrprior,static,MASKONLY} at 4p AND 5p, seed-level) ===")
     overall_pass = True
     for qt in ['4p', '5p']:
         clause = []
         for ctrl in CONTROLS + ['MASKONLY']:
-            if (ctrl, qt) in pvals:
-                m, lo, hi = pvals[(ctrl, qt)]
-                ok = lo > 0
+            if (ctrl, qt) in seedp:
+                _, p, lo, hi = seedp[(ctrl, qt)]
+                ok = (p < 0.05 and lo > 0)
                 clause.append(f"{ctrl}{'OK' if ok else 'NO'}")
                 overall_pass = overall_pass and ok
         print(f"  {qt}: " + "  ".join(clause))
-    print(f"\n  ==> {'PASS (query-time composition supported)' if overall_pass else 'FAIL on >=1 clause (see above)'}")
-    print("  (3p is the strongest-prior depth - 2 trained traversal hops; 4p/5p are extrapolation.)")
+    print(f"\n  ==> {'PASS' if overall_pass else 'FAIL (query-time composition NOT robustly supported at seed level)'}")
+
+    # ── SECONDARY (INVALID as inference — shown only to expose the inflation): per-query bootstrap ──
+    print("\n=== SECONDARY: per-query bootstrap (INVALID PRIMARY — understates variance ~10-15x; for comparison) ===")
+    for ctrl in CONTROLS + ['MASKONLY']:
+        cells = []
+        for qt in ['4p', '5p']:
+            if qt not in rr['pec']:
+                continue
+            mask = strat.get(qt)
+            pec_q = rr['pec'][qt][mask].mean(1)
+            ctrl_q = (np.stack([np.load(os.path.join(root, f'phase77_rr_s{s}.npz'))[f'pec_{qt}_maskrr']
+                                for s in have], 1)[mask].mean(1) if ctrl == 'MASKONLY' else rr[ctrl][qt][mask].mean(1))
+            m, (lo, hi) = boot_ci(pec_q - ctrl_q, seed=hash((ctrl, qt)) % (2**31))
+            cells.append(f"{qt} {m:+.4f}[{lo:+.4f},{hi:+.4f}]{'*' if lo>0 else ' '}")
+        print(f"  pec-{ctrl}: " + "   ".join(cells))
 
 
 if __name__ == '__main__':

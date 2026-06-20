@@ -1,5 +1,57 @@
 # Phase 77 — JIT pivot: query-time edge composition (PEC-pf). PRE-REGISTRATION + Step-0 gates
 
+## RESULTS (5 seeds [42,123,456,7,99], edge-sampled FB15k-237 frac=0.10, 10k queries/depth) — PASS (pending adversarial verification)
+
+Pre-registered PASS: PEC-pf beats ALL four controls (capacity, rrprior, static, MASK-ONLY) at BOTH
+4p and 5p on the penult-reachable stratum, per-query bootstrap CI excluding 0. MET.
+
+MRR (mean over 5 seeds, full all-N):
+```
+arm          1p      2p      3p      4p      5p
+pec        0.2201  0.1614  0.2006  0.2508  0.3128
+capacity   0.2226  0.1617  0.2019  0.2386  0.2859
+rrprior    0.2195  0.1579  0.1948  0.2458  0.2958
+static     0.2159  0.1573  0.1962  0.2414  0.2989
+AOT-best  ~0.106  ~0.093  ~0.107  ~0.135  ~0.165   (existing p76 checkpoints, soft-traversal)
+```
+
+Per-query bootstrap (pec - control, penult stratum, * = 95% CI excludes 0):
+```
+              2p        3p        4p        5p
+capacity   +0.0004   -0.0011   +0.0137*  +0.0294*    (vs RANDOM operator)
+rrprior    +0.0022*  +0.0051*  +0.0048*  +0.0169*    (vs [R,R] relation-type prior)
+static     +0.0024*  +0.0034*  +0.0097*  +0.0133*    (vs NO path composition)
+MASKONLY   +0.0513*  +0.0446*  +0.0211*  +0.0391*    (vs reachability floor)
+```
+
+### Headline findings
+1. **Query-time ≈ 2× ahead-of-time.** PEC-pf roughly doubles AOT soft-traversal MRR at every depth
+   (5p 0.31 vs ~0.16). Invoking edges at query time with a matching objective recovers the signal the
+   AOT encode-once paradigm discards — the converse of the Phase-76 diagnosis, and the payoff of the pivot.
+2. **Composition beats no-composition / random / type-prior / mask at 4p AND 5p (pre-registered PASS).**
+   The seed-42 4p/rrprior tie (−0.0008) was seed noise: pooled over 5 seeds it is +0.0048*.
+3. **The signal concentrates at DEEP hops (4p/5p), which are EXTRAPOLATION depths** (trained on K<=3,
+   i.e. <=2 penult traversal hops; 4p/5p penult = 3/4 hops). The learned operator's advantage over a
+   RANDOM operator compounds with depth (capacity contrast: 3p ~0 -> 5p +0.029) and generalizes beyond
+   its training depth. pec beats static and rrprior at ALL depths; it beats capacity specifically at 4p/5p.
+
+### Honest caveats (carry into verification)
+- Effect sizes are modest in absolute MRR (~0.01-0.03 at 4p/5p) though statistically robust (n~8.5k/depth,
+  5 seeds, tight CIs).
+- Depth trend is "deep >> shallow" but NOT strictly monotone (2p/3p margins ~0 for capacity); could be
+  "shallow hops saturate / are too easy" rather than "composition specifically helps deep." Both readings
+  are interesting; do not over-claim strict monotonic interaction.
+- SCOPE: the encoder is FROZEN (hops1 per seed) and shared by all JIT arms — this controls the embedding
+  confound by construction, but the result is "given fixed edge-attention embeddings, query-time
+  composition of them helps." End-to-end co-training is untested (a follow-up if this survives verification).
+- The JIT≈2×AOT gap conflates query-time edge participation WITH a trained multi-hop readout; the clean
+  composition claim rests on the WITHIN-JIT controls (pec vs capacity/static/rrprior), which share training.
+- This is a POSITIVE in a project whose positives have repeatedly turned out to be artifacts (early-stop,
+  small-sample, capacity). It must survive the same adversarial scrutiny before being treated as final.
+
+Artifacts: phase77_output.json, phase77_rr_s{seed}.npz, experiments/phase77_jit_path_score.py,
+experiments/phase77_analyze.py, delta/path_compose.py, tests/test_path_compose.py (10 gating tests).
+
 ## Status
 
 PRE-REGISTERED + Step-0 abort gates PASSED (no training). Building the PEC-pf model next.

@@ -87,34 +87,51 @@ def generate_train_chains(data, k_counts, seed=42):
 
 
 # ───────────────────────── train / eval ─────────────────────────
+def _batch_loss(model, chains, tgt_sets, bidx, nf, ef0, ei, csr, N, device, label_smooth, train=True):
+    qs = [(chains[i][0], chains[i][1]) for i in bidx]
+    scores = model.score_batch_vec(qs, nf, ef0, ei, csr)               # [B, N] (vectorized)
+    y = torch.zeros(len(bidx), N, device=device)
+    for bi, i in enumerate(bidx):
+        a = tgt_sets[i]
+        if a:
+            y[bi, torch.tensor(a, device=device)] = 1.0
+    y = y * (1.0 - label_smooth)
+    return F.binary_cross_entropy_with_logits(scores, y)
+
+
 def train_arm(mode, nf, ef0, ei, csr, chains, train_hr2t, num_relations, N, device,
-              epochs, lr, batch, seed, label_smooth=0.1, log_every=25):
+              epochs, lr, batch, seed, label_smooth=0.1, log_every=25, patience=8, val_frac=0.1):
     torch.manual_seed(seed)
     model = PathComposerPF(num_relations, d_node=nf.shape[1], d_edge=ef0.shape[1], mode=mode).to(device)
     opt = torch.optim.Adam([p for p in model.parameters() if p.requires_grad], lr=lr)
     tgt_sets = [sorted(compute_valid_answers(a, rc, train_hr2t)) for (a, rc, _t) in chains]
-    idx = np.arange(len(chains))
+    rng = np.random.RandomState(seed)
+    perm = rng.permutation(len(chains))
+    n_val = max(batch, int(len(chains) * val_frac))
+    val_idx, tr_idx = perm[:n_val], perm[n_val:]
+    best_val, best_state, since = float('inf'), None, 0
     for ep in range(epochs):
-        np.random.RandomState(seed + ep).shuffle(idx)
-        tot = 0.0; nb = 0
-        model.train()
-        for s in range(0, len(idx), batch):
-            bidx = idx[s:s + batch]
-            qs = [(chains[i][0], chains[i][1]) for i in bidx]
-            scores = model.score_batch_vec(qs, nf, ef0, ei, csr)       # [B, N] (vectorized)
-            y = torch.zeros(len(bidx), N, device=device)
-            for bi, i in enumerate(bidx):
-                a = tgt_sets[i]
-                if a:
-                    y[bi, torch.tensor(a, device=device)] = 1.0
-            y = y * (1.0 - label_smooth)
-            loss = F.binary_cross_entropy_with_logits(scores, y)
+        np.random.RandomState(seed + ep).shuffle(tr_idx)
+        model.train(); tot = 0.0; nb = 0
+        for s in range(0, len(tr_idx), batch):
+            loss = _batch_loss(model, chains, tgt_sets, tr_idx[s:s + batch], nf, ef0, ei, csr, N, device, label_smooth)
             opt.zero_grad(); loss.backward()
             torch.nn.utils.clip_grad_norm_([p for p in model.parameters() if p.requires_grad], 1.0)
-            opt.step()
-            tot += loss.item(); nb += 1
-        if log_every and (ep % log_every == 0 or ep == epochs - 1):
-            print(f"    [{mode}] ep{ep:3d} loss={tot/max(nb,1):.4f}")
+            opt.step(); tot += loss.item(); nb += 1
+        model.eval()
+        with torch.no_grad():
+            vl = np.mean([_batch_loss(model, chains, tgt_sets, val_idx[s:s + batch], nf, ef0, ei, csr,
+                                      N, device, label_smooth).item() for s in range(0, len(val_idx), batch)])
+        if vl < best_val - 1e-5:
+            best_val = vl; best_state = {k: v.detach().clone() for k, v in model.state_dict().items()}; since = 0
+        else:
+            since += 1
+        if log_every and (ep % log_every == 0 or ep == epochs - 1 or since >= patience):
+            print(f"    [{mode}] ep{ep:3d} train={tot/max(nb,1):.4f} val={vl:.4f} best={best_val:.4f}")
+        if since >= patience:
+            print(f"    [{mode}] early-stop ep{ep} (no val improvement for {patience})"); break
+    if best_state is not None:
+        model.load_state_dict(best_state)
     return model
 
 

@@ -43,6 +43,9 @@ wandb/
 results/
 phase*_output.txt
 phase*_output.json
+phase*_rr_s*.npz
+*.npz
+*.pkl
 *.log
 
 # OS

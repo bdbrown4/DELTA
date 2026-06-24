@@ -33,6 +33,15 @@ from delta.graph import DeltaGraph
 from delta.attention import EdgeAttention
 
 MODES = ('pec', 'capacity', 'rrprior', 'static')
+# Phase-78 lesion arms (all behave like pec on the operator; they differ only in WHICH edge content the
+# operator sees, via a within-relation-type permutation set by set_edge_perm):
+#   shuffle       — permute the per-edge ej (post endpoint-injection); W_ctx endpoints stay REAL.
+#                   Tests the edge's own ej representation (message+key) only.
+#   shuffle_full  — permute ej AND the endpoints fed to W_ctx (full edge-identity swap, coherent).
+#                   The coherence-clean control: pec~shuffle_full is a clean refutation of edge-instance use.
+#   ef0_shuffle   — permute ONLY the frozen ef0 BEFORE injection (real endpoints retained). ef0 is
+#                   relation-type dominated (GATE C within-relation var ~0) -> near-noop SANITY control.
+LESION_MODES = ('shuffle', 'shuffle_full', 'ef0_shuffle')
 
 
 @torch.no_grad()
@@ -122,7 +131,7 @@ def _scatter_softmax(scores, index, N):
 class PathComposerPF(nn.Module):
     def __init__(self, num_relations, d_node=48, d_edge=24, num_heads=4, mode='pec'):
         super().__init__()
-        assert mode in MODES, mode
+        assert mode in MODES or mode in LESION_MODES, mode   # LESION_MODES = Phase-78 within-type edge-content controls
         assert d_edge % num_heads == 0
         self.mode = mode
         self.d_node = d_node
@@ -130,6 +139,13 @@ class PathComposerPF(nn.Module):
         self.num_heads = num_heads
         self.d_head = d_edge // num_heads
         self.num_relations = num_relations
+        # Phase-78 controls: a fixed within-relation-type permutation of edge indices, set via
+        # set_edge_perm(). None for every arm except LESION_MODES. edge_perm permutes ej (shuffle/
+        # shuffle_full) or ef0 (ef0_shuffle); ctx_src/ctx_tgt carry the permuted edge's endpoints for
+        # the W_ctx attention context (shuffle_full only — full edge-identity swap).
+        self.register_buffer('edge_perm', None, persistent=False)
+        self.register_buffer('ctx_src', None, persistent=False)
+        self.register_buffer('ctx_tgt', None, persistent=False)
 
         # instance-signal injection: per-edge DP state from frozen ef0 + endpoint entity features
         self.W_ein = nn.Linear(d_edge + 2 * d_node, d_edge)
@@ -163,19 +179,76 @@ class PathComposerPF(nn.Module):
                     p.requires_grad_(False)
             self._log_temp.requires_grad_(False)
 
+    def set_edge_perm(self, edge_types, seed, edge_index=None):
+        """Phase-78 controls. Fix a within-relation-type permutation of edge indices: each edge is
+        reassigned the per-edge content of a RANDOM other edge of the SAME relation. This preserves
+        (a) relation-type statistics of the composed messages and (b) the traversal connectivity
+        (routing in traverse/_traverse_batch always uses the REAL src/tgt, never the permutation),
+        while destroying the binding between an edge's position in the graph and its instance content.
+        Singleton-relation edges map to themselves. The permutation is fixed for the whole run (trained
+        AND evaluated under it) so the operator gets its best shot at wrong-bound content.
+
+        edge_index is REQUIRED for shuffle_full: ctx_src/ctx_tgt = the permuted edge's endpoints, fed
+        to W_ctx so the attention context is coherent with the swapped ej (a full edge-identity swap).
+        For 'shuffle'/'ef0_shuffle' the W_ctx endpoints stay real (edge_index optional)."""
+        et = edge_types.detach().to('cpu')
+        E = et.shape[0]
+        g = torch.Generator().manual_seed(int(seed))
+        perm = torch.arange(E)
+        for r in torch.unique(et):
+            idx = (et == r).nonzero(as_tuple=False).squeeze(1)
+            if idx.numel() > 1:
+                perm[idx] = idx[torch.randperm(idx.numel(), generator=g)]
+        dev = edge_types.device
+        self.edge_perm = perm.to(dev)
+        if self.mode == 'shuffle_full':
+            assert edge_index is not None, "shuffle_full needs edge_index to permute the W_ctx endpoints"
+        if edge_index is not None:                            # build unconditionally (used only by shuffle_full)
+            self.ctx_src = edge_index[0][self.edge_perm].to(dev)  # so a later mode-flip to shuffle_full is safe
+            self.ctx_tgt = edge_index[1][self.edge_perm].to(dev)
+
+    @torch.no_grad()
+    def scramble_strength(self, nf, ef0, edge_index):
+        """Positive-control diagnostic: how much the within-type permutation actually MOVES per-edge
+        content on this testbed. Returns (frac_moved, rel_disp): fraction of edges with perm[e]!=e, and
+        mean ||ej_lesion - ej_pec|| / mean ||ej_pec||. A near-zero rel_disp means the lesion has no
+        lever here (type-degenerate testbed) -> a 'pec~lesion' result is testbed-capacity, NOT a
+        refutation. Computed against the SHUFFLE construction (ej permuted post-injection)."""
+        assert self.edge_perm is not None
+        frac = float((self.edge_perm != torch.arange(self.edge_perm.shape[0], device=self.edge_perm.device)).float().mean())
+        src, tgt = edge_index[0], edge_index[1]
+        ej = self.ein_norm(self.W_ein(torch.cat([ef0, nf[src], nf[tgt]], -1)))
+        rel = float((ej[self.edge_perm] - ej).norm(dim=-1).mean() / (ej.norm(dim=-1).mean() + 1e-9))
+        return frac, rel
+
     # ── per-edge DP state (recompute per step; depends on trained W_ein + frozen nf/ef0) ──
     def build_ej(self, nf, ef0, edge_index):
         src, tgt = edge_index[0], edge_index[1]
+        if self.mode == 'ef0_shuffle':                           # permute the type-dominated ef0 BEFORE injection
+            assert self.edge_perm is not None, "ef0_shuffle requires set_edge_perm first"
+            ef0 = ef0[self.edge_perm]
         x = torch.cat([ef0, nf[src], nf[tgt]], dim=-1)
-        return self.ein_norm(self.W_ein(x))                      # [E, d_edge]
+        ej = self.ein_norm(self.W_ein(x))                        # [E, d_edge]
+        if self.mode in ('shuffle', 'shuffle_full'):             # wrong-bind the whole ej within relation type
+            assert self.edge_perm is not None, "shuffle/shuffle_full require set_edge_perm first"
+            ej = ej[self.edge_perm]
+        return ej
+
+    def _ctx_endpoints(self, eid, real_src, real_tgt):
+        """Endpoints fed to W_ctx. Real for every arm EXCEPT shuffle_full, which uses the permuted
+        edge's endpoints so the attention context matches the swapped ej (coherent full-identity swap)."""
+        if self.mode == 'shuffle_full':
+            return self.ctx_src[eid], self.ctx_tgt[eid]
+        return real_src, real_tgt
 
     def _hop_logits(self, z_src, ej_e, nf, src, tgt):
         """Per-hop attention logits [M,H] for the selected edges, per arm. (Only re-weights when a
         target node receives >1 incoming edge in a hop; on this sparse graph that is the minority, so
-        the COMPOSITION lives in the message, not here.)"""
+        the COMPOSITION lives in the message, not here.) src/tgt are the W_ctx context endpoints
+        (already remapped by _ctx_endpoints for shuffle_full); routing is handled by the caller."""
         if self.mode == 'rrprior':
             return torch.zeros(z_src.shape[0], self.num_heads, device=z_src.device)  # uniform
-        # pec / capacity / static: the shared edge-to-edge attention operator
+        # pec / capacity / static / shuffle*: the shared edge-to-edge attention operator
         return EdgeAttention.compose_scores(
             self.W_q, self.W_k, self.W_ctx, self._log_temp,
             z_src, ej_e, nf, src, tgt, self.num_heads, self.d_head)
@@ -215,7 +288,8 @@ class PathComposerPF(nn.Module):
             zpos[frontier] = torch.arange(frontier.shape[0], device=nf.device)
             z_src = z[zpos[e_src]]                                # [M, d_edge]
             ej_e = ej[e_id]                                       # [M, d_edge]
-            logits = self._hop_logits(z_src, ej_e, nf, e_src, e_tgt)        # [M, H]
+            cs, ct = self._ctx_endpoints(e_id, e_src, e_tgt)     # W_ctx context (perm'd for shuffle_full)
+            logits = self._hop_logits(z_src, ej_e, nf, cs, ct)             # [M, H]
             new_nodes, inv = torch.unique(e_tgt, return_inverse=True)
             Fn = new_nodes.shape[0]
             attn = _scatter_softmax(logits, inv, Fn)             # [M, H]
@@ -271,7 +345,8 @@ class PathComposerPF(nn.Module):
                 return empty, empty, fz[:0]
             z_src = fz[seg]; q_of = fquery[seg]; src_node = fnode[seg]
             ej_e = ej[eid]; rel_e = frel[seg]
-            logits = self._hop_logits(z_src, ej_e, nf, src_node, tgt)          # [M,H]
+            cs, ct = self._ctx_endpoints(eid, src_node, tgt)                   # W_ctx context (perm'd for shuffle_full)
+            logits = self._hop_logits(z_src, ej_e, nf, cs, ct)                 # [M,H]
             msg = self._hop_message(z_src, ej_e, rel_e)                        # [M,d_edge]
             gkey = q_of * N + tgt
             uniq, inv = torch.unique(gkey, return_inverse=True)

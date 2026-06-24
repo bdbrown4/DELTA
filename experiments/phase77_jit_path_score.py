@@ -26,7 +26,7 @@ from experiments.phase44_depth import generate_extended_queries
 from experiments.phase71_sparse_hop_ablation import QTYPES
 from experiments.phase76_diagnose_5p import fast_mh_eval, random_adjacency
 from experiments.phase66_hop_ablation import build_condition_adjs
-from delta.path_compose import PathComposerPF, encode_with_edges, build_R2E, build_csr, build_hr2t, MODES
+from delta.path_compose import PathComposerPF, encode_with_edges, build_R2E, build_csr, build_hr2t, MODES, LESION_MODES
 
 CKPT_DIR = os.path.join(os.path.dirname(__file__), '..', 'checkpoints')
 JIT_ARMS = ['pec', 'capacity', 'rrprior', 'static']
@@ -100,9 +100,16 @@ def _batch_loss(model, chains, tgt_sets, bidx, nf, ef0, ei, csr, N, device, labe
 
 
 def train_arm(mode, nf, ef0, ei, csr, chains, train_hr2t, num_relations, N, device,
-              epochs, lr, batch, seed, label_smooth=0.1, log_every=25, patience=8, val_frac=0.1):
+              epochs, lr, batch, seed, label_smooth=0.1, log_every=25, patience=8, val_frac=0.1, et=None):
     torch.manual_seed(seed)
-    model = PathComposerPF(num_relations, d_node=nf.shape[1], d_edge=ef0.shape[1], mode=mode).to(device)
+    if mode == 'aot_readout':                              # Phase-79 node-only control (no edges; same readout head)
+        from delta.aot_readout import AOTReadout
+        model = AOTReadout(num_relations, d_node=nf.shape[1], d_edge=ef0.shape[1]).to(device)
+    else:
+        model = PathComposerPF(num_relations, d_node=nf.shape[1], d_edge=ef0.shape[1], mode=mode).to(device)
+        if mode in LESION_MODES:                           # Phase-78 controls: fix the within-type permutation
+            assert et is not None, "lesion arms need edge_types (et) for the within-relation-type permutation"
+            model.set_edge_perm(et, seed, edge_index=ei)   # edge_index required by shuffle_full (W_ctx endpoints)
     opt = torch.optim.Adam([p for p in model.parameters() if p.requires_grad], lr=lr)
     tgt_sets = [sorted(compute_valid_answers(a, rc, train_hr2t)) for (a, rc, _t) in chains]
     rng = np.random.RandomState(seed)

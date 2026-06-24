@@ -10,7 +10,7 @@ import pytest
 
 from delta.graph import DeltaGraph
 from delta.attention import EdgeAttention
-from delta.path_compose import PathComposerPF, build_R2E, build_csr, build_hr2t, MODES
+from delta.path_compose import PathComposerPF, build_R2E, build_csr, build_hr2t, MODES, LESION_MODES
 
 
 def _toy(seed=0, N=10, d_node=48, d_edge=24):
@@ -117,6 +117,98 @@ def test_pec_differs_from_static_message_composition():
     s_static = static.forward_query(a, rc, nf, static.build_ej(nf, ef0, ei), R2E)
     assert not torch.allclose(s_pec, s_static, atol=1e-5), \
         "pec (z_src⊙W_v(ej)) must differ from static (W_v(ej) only) — composition must matter"
+
+
+# ── (iv-c) Phase-78 shuffled-edge control: within-type permutation preserves relation type AND the
+#           traversal frontier (routing is structural), but moves edge-instance content out of place. ──
+def test_shuffle_perm_stays_within_relation_type():
+    nf, ef0, ei, et, R = _toy(seed=21)
+    m = PathComposerPF(R, mode='shuffle')
+    m.set_edge_perm(et, seed=0)
+    assert torch.equal(et[m.edge_perm], et), "shuffled edge must keep its own relation type"
+    assert not torch.equal(m.edge_perm, torch.arange(ei.shape[1])), "toy graph has multi-edge relations -> non-trivial perm"
+
+
+def test_shuffle_preserves_frontier_but_changes_penult_state():
+    nf, ef0, ei, et, R = _toy(seed=21)
+    R2E = build_R2E(ei, et, R, nf.device)
+    q = _find_2hop(nf, ei, R2E, R)
+    assert q is not None, "toy graph produced no 2-hop path; bump seed"
+    a, rc = q
+    pec = PathComposerPF(R, mode='pec')
+    shuf = PathComposerPF(R, mode='shuffle')
+    shuf.load_state_dict(pec.state_dict())          # identical weights -> only the ej binding differs
+    shuf.set_edge_perm(et, seed=0)
+    f_pec, z_pec = pec.traverse(a, rc, nf, pec.build_ej(nf, ef0, ei), R2E)
+    f_shuf, z_shuf = shuf.traverse(a, rc, nf, shuf.build_ej(nf, ef0, ei), R2E)
+    assert torch.equal(f_pec, f_shuf), "shuffle routes over the REAL graph -> identical frontier set"
+    assert not torch.allclose(z_pec, z_shuf, atol=1e-6), "shuffled edge content MUST change pec's penult state"
+
+
+def test_shuffle_is_noop_when_every_relation_is_singleton():
+    # E == R, exactly one edge per relation -> within-type permutation is forced to identity -> shuffle == pec
+    g = torch.Generator().manual_seed(2)
+    N, d_node, d_edge, R = 8, 48, 24, 6
+    src = torch.randint(0, N, (R,), generator=g); tgt = torch.randint(0, N, (R,), generator=g)
+    et = torch.arange(R); ei = torch.stack([src, tgt]); ef0 = torch.randn(R, d_edge, generator=g)
+    m = PathComposerPF(R, mode='shuffle'); m.set_edge_perm(et, seed=3)
+    assert torch.equal(m.edge_perm, torch.arange(R)), "singleton relations -> identity permutation (nothing to scramble)"
+    nf = torch.randn(N, d_node, generator=g)
+    ref = m.ein_norm(m.W_ein(torch.cat([ef0, nf[src], nf[tgt]], -1)))
+    assert torch.allclose(m.build_ej(nf, ef0, ei), ref), "identity-perm shuffle must equal the raw ej"
+
+
+# ── (iv-d) Phase-78 shuffle_full: coherence-clean control — swaps the WHOLE edge identity (ej AND the
+#           W_ctx endpoints) within type, so it closes the endpoint loophole that plain 'shuffle' leaves. ──
+def test_shuffle_full_swaps_ctx_endpoints_and_preserves_frontier():
+    nf, ef0, ei, et, R = _toy(seed=21)
+    R2E = build_R2E(ei, et, R, nf.device)
+    q = _find_2hop(nf, ei, R2E, R)
+    assert q is not None
+    a, rc = q
+    pec = PathComposerPF(R, mode='pec')
+    sf = PathComposerPF(R, mode='shuffle_full')
+    sf.load_state_dict(pec.state_dict())          # identical weights -> only the edge-identity binding differs
+    sf.set_edge_perm(et, seed=0, edge_index=ei)
+    assert torch.equal(et[sf.edge_perm], et), "permutation stays within relation type"
+    assert torch.equal(sf.ctx_src, ei[0][sf.edge_perm]) and torch.equal(sf.ctx_tgt, ei[1][sf.edge_perm]), \
+        "W_ctx endpoints must be the PERMUTED edge's endpoints (full identity swap)"
+    f_pec, z_pec = pec.traverse(a, rc, nf, pec.build_ej(nf, ef0, ei), R2E)
+    f_sf, z_sf = sf.traverse(a, rc, nf, sf.build_ej(nf, ef0, ei), R2E)
+    assert torch.equal(f_pec, f_sf), "routing uses the REAL graph -> identical frontier"
+    assert not torch.allclose(z_pec, z_sf, atol=1e-6), "full edge-identity swap must change the penult state"
+
+
+def test_shuffle_full_requires_edge_index():
+    nf, ef0, ei, et, R = _toy(seed=21)
+    m = PathComposerPF(R, mode='shuffle_full')
+    with pytest.raises(AssertionError):
+        m.set_edge_perm(et, seed=0)               # shuffle_full needs the endpoints -> must pass edge_index
+
+
+# ── (iv-e) ef0_shuffle: permutes only the frozen ef0 (sanity control). No-op when ef0 is type-constant
+#           (GATE C regime), but moves when ef0 carries within-relation instance signal. ──
+def test_ef0_shuffle_noop_when_ef0_type_constant_but_moves_otherwise():
+    g = torch.Generator().manual_seed(4)
+    N, d_node, d_edge, R, E = 10, 48, 24, 4, 20
+    nf = torch.randn(N, d_node, generator=g)
+    src = torch.randint(0, N, (E,), generator=g); tgt = torch.randint(0, N, (E,), generator=g)
+    et = torch.randint(0, R, (E,), generator=g); ei = torch.stack([src, tgt])
+    ef0_type = torch.randn(R, d_edge, generator=g)[et]            # ef0 a pure function of relation type
+    pec = PathComposerPF(R, mode='pec'); ef0s = PathComposerPF(R, mode='ef0_shuffle')
+    ef0s.load_state_dict(pec.state_dict()); ef0s.set_edge_perm(et, seed=1)
+    assert torch.allclose(pec.build_ej(nf, ef0_type, ei), ef0s.build_ej(nf, ef0_type, ei), atol=1e-6), \
+        "ef0_shuffle must be a no-op when ef0 has no within-relation instance signal (the GATE C regime)"
+    ef0_inst = ef0_type + 0.5 * torch.randn(E, d_edge, generator=g)
+    assert not torch.allclose(pec.build_ej(nf, ef0_inst, ei), ef0s.build_ej(nf, ef0_inst, ei), atol=1e-6), \
+        "with instance-varying ef0, ef0_shuffle MUST move"
+
+
+def test_scramble_strength_reports_movement():
+    nf, ef0, ei, et, R = _toy(seed=21)
+    m = PathComposerPF(R, mode='shuffle'); m.set_edge_perm(et, seed=0, edge_index=ei)
+    frac, rel = m.scramble_strength(nf, ef0, ei)
+    assert 0.0 < frac <= 1.0 and rel > 0.0, "multi-edge-relation toy graph must show nonzero scramble strength"
 
 
 # ── (v) anchor-sensitivity at EVERY hop (catches dropped per-hop conditioning) ──

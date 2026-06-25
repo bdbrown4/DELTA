@@ -188,7 +188,7 @@ Holm-corrected across the **4p AND 5p joint** test:
 
 Honest priors: the deepest TRAINED composition is 2 hops (K-1 for 3p), so the claim is strongest at
 **3p**; 4p/5p are extrapolation. A clean negative (PEC-pf ≤ RRprior) is the more likely outcome given
-Phase 74's [R,R]-prior finding and this sparse (degree-1.48) testbed — and that is an accepted,
+Phase 74's [R,R]-prior finding and this sparse (degree ~4.7) testbed — and that is an accepted,
 decisive result, not a disappointment.
 
 ## Step-0 gate results (experiments/phase77_step0_gates.py → phase77_step0_gates.json) — ALL PASS

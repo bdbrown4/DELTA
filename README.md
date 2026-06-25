@@ -1,5 +1,20 @@
 # DELTA: Dual Edge-Linked Transformer Architecture
 
+> ## ⛔ PROJECT CLOSED (2026-06-25) — read this first
+> DELTA is a **finished project with a closed-NEGATIVE result.** After 79 phases, the central thesis —
+> that edge-to-edge attention gives a real multi-hop *composition* advantage — is **refuted** on this
+> testbed: edge composition adds no meaningful advantage structurally (Phases 66–76) or at query time
+> (Phases 78–79, n=15); edge attention's value here is **generic capacity, not composition.** The one
+> durable positive is **methodological** (rigor + an eval-paradigm note), not an architecture win, and
+> absolute performance is **sub-SOTA** on a custom subgraph.
+>
+> **The "Core Thesis" and "Headline Results" below are SUPERSEDED / re-scoped** (the Phase-44 "compositional
+> advantage" is single-seed dense-subgraph behavior; the LP MRRs are dense-subgraph only; the temperature
+> "modes" were revoked in Phase 53/54). The committed NeurIPS draft asserts the refuted thesis and **must
+> not ship as written.**
+>
+> **➡ Authoritative findings: [`docs/DELTA_FINAL.md`](docs/DELTA_FINAL.md).**
+
 > **[Full Documentation](https://bdbrown4.github.io/DELTA/)** — Architecture, experiment results, research agenda, and setup guides.
 
 A research implementation of the DELTA architecture — a novel AI framework that operates on dynamic graphs with dual parallel attention across nodes and edges, tiered memory, and a learned importance router. Building toward **[The Brain](https://bdbrown4.github.io/DELTA/the-brain/)**: a system that dynamically constructs its own relational graphs and reasons over them.

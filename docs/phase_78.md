@@ -32,7 +32,7 @@ lesion lever (median 3p readout displacement) = 0.65   (>> disp_min 0.02 -> NOT 
 Across Phases 66–78, edge-to-edge composition (structural *and* query-time/instance) shows no *meaningful*
 task advantage under either AOT or JIT — even with the eval redesigned to reward it and the lesion verified
 to have a lever. Edge attention's value is generic **capacity**, not composition. Scope: refuted on this
-testbed (edge-sampled FB15k-237 frac=0.10, degree-1.48, type-dominated) under a FROZEN encoder; end-to-end
+testbed (edge-sampled FB15k-237 frac=0.10, degree ~4.7, type-dominated) under a FROZEN encoder; end-to-end
 co-training and the "JIT ≈ 2× AOT" readout question remain the only unexplored doors (Phase 79 candidate).
 
 ### Operational notes (for reproducibility)
@@ -69,7 +69,7 @@ A 4-adversary red-team (mechanism / statistics / confounds / plumbing) returned 
    `W_ctx(nf_src,nf_tgt)` endpoint channel (real endpoints, both arms) intact. So `pec≈shuffle` was
    biased toward false-refute (working endpoint channel retained) and `pec≫shuffle` toward false-confirm
    (an incoherent-`(ej, endpoint, z_src)`-triple distribution-shift penalty mimics composition). On a
-   degree-1.48, type-dominated graph the within-type permutation moves so little that `pec≈shuffle` was
+   degree ~4.7, type-dominated graph the within-type permutation moves so little that `pec≈shuffle` was
    partly pre-determined.
 
 The mechanism *implementation* was verified sound (within-type/deterministic/device-safe permutation;
@@ -127,7 +127,7 @@ sample_seed=42; only the MODEL seed varies. ~5 arms × 15 seeds + 10 encoders.
 
 ## Honest priors
 
-A clean negative is still the most likely outcome (Phase-74 [R,R]-prior; degree-1.48 type-dominated
+A clean negative is still the most likely outcome (Phase-74 [R,R]-prior; degree ~4.7 type-dominated
 testbed; 11 prior phases of caught artifacts). With the displacement positive-control, a structurally
 pre-determined `pec≈shuffle_full` is correctly labeled testbed-capacity rather than a refutation — so
 the experiment can no longer manufacture either a false REFUTE or a false CONFIRM.

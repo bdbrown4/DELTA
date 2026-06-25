@@ -1,5 +1,41 @@
 # Phase 79 — Is the "JIT ≈ 2× AOT" gain the trained readout, or the path mechanism?
 
+## Status: COMPLETE (n=15, 2026-06-24) — it's the trained READOUT, not the path.
+
+## RESULT
+
+PRIMARY (`gap_path = pec − aot_readout` @3p, seed-level paired-t, **n=15**):
+
+```
+gap_path @3p: mean = +0.0050   p = 0.007   95% CI [+0.0016, +0.0085]
+   -> SIGNIFICANT but 5x INSIDE the +-0.015 meaningful band => SIGNIFICANT-BUT-NEGLIGIBLE.
+guard pec > static @3p: FAILS (p=0.054) -> the tiny gap isn't clean edge-content either.
+1p zero-traversal gate: gap_path @1p = +0.0007 -> PASS (arms agree where neither traverses).
+path_fraction = gap_path / gap_total @3p = 0.03  -> ~97% of the gain is the trained HEAD, ~3% the path.
+```
+
+3p MRR (mean over 15 seeds):
+`pec 0.2020 ~ static 0.1991 ~ aot_readout 0.1963  >>  aotsoft48 (untrained floor) 0.0011`
+— and all three are ~2× the published 64-d AOT-soft (`.107` @3p).
+
+**Conclusion.** A node-only model with **no edges** (`aot_readout`) recovers the JIT 2×. So the gain is the
+**query-time trained readout/objective** — i.e. the encode-once soft-traversal eval *understates*
+multi-hop ability ~2×, independent of edge composition. This closes the loop: edge-to-edge composition
+adds no meaningful value under AOT (structural, 66–76), JIT-instance (Phase 78), **or** as the source of
+the JIT 2× (Phase 79).
+
+**Strategic compass.** The lever in DELTA's own setup is **query-conditioning / the trained readout**, not
+edge composition. A competitive pivot points toward the NBFNet / conditional-message-passing family —
+*away* from edge attention as the thesis. See [[query-time-edge-composition]].
+
+**Operational.** Design red-teamed pre-build (3 lenses, 2 kills_design caught — the v1 confounded the 64-d
+decoder-space AOT-soft with 48-d JIT). No crashes (the hops1-only encoder fix carried over; GPU ~5 GB).
+Committed `ae39926`.
+
+---
+
+## (Pre-registration, below — design as committed before the run)
+
 ## Status: PRE-REGISTERED (design red-teamed, 3 lenses, build_with_fixes). Building.
 
 ## Question

@@ -52,6 +52,7 @@ plugins:
 
 nav:
   - Home: index.md
+  - "⛔ FINAL FINDINGS (Project Closed)": DELTA_FINAL.md
   - Explainer (Start Here): explainer.md
   - Architecture:
     - Overview: architecture.md

@@ -1,5 +1,12 @@
 # Key Findings
 
+
+> ## ⛔ PROJECT CLOSED (2026-06-25) — read this first
+> DELTA is a **finished project with a closed-NEGATIVE result.** After 79 phases, the central thesis — that edge-to-edge attention gives a real multi-hop *composition* advantage — is **refuted** on this testbed: edge composition adds no meaningful advantage structurally (Phases 66–76) or at query time (Phases 78–79, n=15); the value is **generic capacity, not composition.**
+> **The findings below are SUPERSEDED / re-scoped:** the 2-hop-adjacency "solves compositional reasoning" and +0.100-@5p depth claims are single-seed dense-subgraph behavior mis-attributed to composition; the temperature "three operating modes" were revoked (Phase 53/54); and Finding 48/49 ("Phase 67 CONFIRMED … LANDMARK" + the density story) **do not reproduce** (Phase 73; ~95% random-adjacency capacity, Phase 76).
+> **➡ Authoritative findings: [`docs/DELTA_FINAL.md`](https://github.com/bdbrown4/DELTA/blob/main/docs/DELTA_FINAL.md).**
+
+
 44 key findings from 66 experiment phases, organized by research stage. See [Validation Phases](validation-phases.md) for complete result tables.
 
 ---

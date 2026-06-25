@@ -1,5 +1,12 @@
 # DELTA: Dual Edge-Linked Transformer Architecture
 
+
+> ## ⛔ PROJECT CLOSED (2026-06-25) — read this first
+> DELTA is a **finished project with a closed-NEGATIVE result.** After 79 phases, the central thesis — that edge-to-edge attention gives a real multi-hop *composition* advantage — is **refuted** on this testbed: edge composition adds no meaningful advantage structurally (Phases 66–76) or at query time (Phases 78–79, n=15); edge attention's value here is **generic capacity, not composition.**
+> **Everything below is SUPERSEDED / re-scoped:** the "63 phases" count is stale (now 79), the multi-hop "dominance" / +24% / depth-scaling wins are single-seed dense-subgraph behavior mis-attributed to composition, and the LP MRRs are dense-subgraph only — absolute performance is **sub-SOTA**. The one durable positive is **methodological**, not architectural.
+> **➡ Authoritative findings: [`docs/DELTA_FINAL.md`](https://github.com/bdbrown4/DELTA/blob/main/docs/DELTA_FINAL.md).**
+
+
 A research implementation of the DELTA architecture — building toward **[The Brain](the-brain.md)**: a system that dynamically constructs its own relational graphs and reasons over them, without pre-defined topology or transformer scaffolding.
 
 ---

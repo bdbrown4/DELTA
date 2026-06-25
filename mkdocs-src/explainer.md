@@ -1,5 +1,12 @@
 # DELTA, Explained for a Software Engineer
 
+
+> ## ⛔ PROJECT CLOSED (2026-06-25) — read this first
+> DELTA is a **finished project with a closed-NEGATIVE result.** This "Start Here" page presents the edge-composition thesis as a confirmed positive — it is **refuted.** After 79 phases, edge-to-edge composition adds no meaningful advantage structurally (Phases 66–76) or at query time (Phases 78–79, n=15); edge attention's value here is **generic capacity, not composition.**
+> **Everything below is SUPERSEDED.** In particular the Phase-67 "+0.012 confirmation" and the density-control story ("the cleanest evidence in DELTA's validation stack") **do not survive:** Phase-67 does not reproduce (Phase 73 hops2−hops1 @3p = −0.0013, positive 2/5 seeds) and the surviving edge positive is ~95% reproduced by random adjacency (Phase 76) — capacity, not composition.
+> **➡ Authoritative findings: [`docs/DELTA_FINAL.md`](https://github.com/bdbrown4/DELTA/blob/main/docs/DELTA_FINAL.md).**
+
+
 ## The 30-second version
 
 There's a class of AI models called **graph neural networks** (GNNs) — they're what Google uses to rank search results, what Pinterest uses for recommendations, what drug companies use to predict molecule interactions. They work on data structured as networks: nodes connected by edges (relationships).

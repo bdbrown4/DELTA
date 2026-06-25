@@ -1,5 +1,11 @@
 # Project Structure
 
+
+> ## ⛔ PROJECT CLOSED (2026-06-25) — stale counts below
+> DELTA closed at **Phase 79** with a closed-NEGATIVE result. The directory listing is still accurate, but the counts are stale: it says **"63 phases"** (now 79) and **"tests 44/44"**, and it references `docs/PUBLICATION_ROADMAP.md`, which **no longer exists.** For the authoritative phase docs see `docs/phase_66.md`…`phase_79.md`.
+> **➡ Authoritative findings: [`docs/DELTA_FINAL.md`](https://github.com/bdbrown4/DELTA/blob/main/docs/DELTA_FINAL.md).**
+
+
 ```
 DELTA/
 |-- delta/                    Core library

@@ -1,5 +1,12 @@
 # Status & Roadmap
 
+
+> ## ⛔ PROJECT CLOSED (2026-06-25) — read this first
+> DELTA is a **finished project with a closed-NEGATIVE result.** This status page is pre-refutation and pre-closure ("Last updated Phase 66"); the project terminated at Phase 79. The central thesis — edge-to-edge attention → a real multi-hop *composition* advantage — is **refuted** on this testbed: no meaningful advantage structurally (Phases 66–76) or at query time (Phases 78–79, n=15); **generic capacity, not composition.**
+> **Everything below is SUPERSEDED:** the "Current Best Results" are dense-subgraph-only or single-seed re-scoped numbers, propositions P9/P10/P12–14 (multi-hop compositional dominance, +0.100, temperature modes) are refuted/revoked, and the NeurIPS "Publication Pathway" pitches the **refuted thesis — the draft must not ship as written.** No roadmap is active.
+> **➡ Authoritative findings: [`docs/DELTA_FINAL.md`](https://github.com/bdbrown4/DELTA/blob/main/docs/DELTA_FINAL.md).**
+
+
 *Last updated: Phase 66 completed (2026-04-23)*
 
 ---

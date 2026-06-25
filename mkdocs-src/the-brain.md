@@ -1,5 +1,12 @@
 # The Brain: DELTA's End Goal
 
+
+> ## ⛔ PROJECT CLOSED (2026-06-25) — read this first
+> DELTA is a **finished project with a closed-NEGATIVE result.** This vision page asserts that "edges should think" is a proven advantage — it is **not.** After 79 phases the central thesis (edge-to-edge attention → a real multi-hop *composition* advantage) is **refuted** on this testbed: edge composition adds no meaningful advantage structurally (Phases 66–76) or at query time (Phases 78–79, n=15).
+> **The "What's Been Proven" claims and roadmap below are SUPERSEDED:** the depth-accelerating multi-hop win is single-seed dense-subgraph behavior mis-attributed to composition, and the "Capacity Paradox" is **inverted** — the surviving edge benefit is **generic capacity, not compositional abstraction** (Phase 76). The project is closed, not active.
+> **➡ Authoritative findings: [`docs/DELTA_FINAL.md`](https://github.com/bdbrown4/DELTA/blob/main/docs/DELTA_FINAL.md).**
+
+
 ## The Vision
 
 The human brain doesn't process information as flat sequences. It builds, strengthens, and prunes synaptic connections — dynamically constructing the graph over which reasoning flows. Every thought creates new pathways; every pathway shapes the next thought.

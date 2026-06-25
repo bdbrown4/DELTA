@@ -6,6 +6,13 @@ All experiment phases with results. Phases 1-30 validated core architecture and 
 
 ## Phase 1â€“15: Core Architecture Validation
 
+
+> ## ⛔ PROJECT CLOSED (2026-06-25) — read this first
+> DELTA is a **finished project with a closed-NEGATIVE result.** These per-phase tables are a **historical record that stops at Phase 68** — before the entire refutation arc (Phases 71–79). The headline conclusions they present were later **refuted:** edge-to-edge composition adds no meaningful advantage structurally (Phases 66–76) or at query time (Phases 78–79, n=15); the value is **generic capacity, not composition.**
+> **Read the tables below as superseded:** the multi-hop "dominance" (+0.100 @5p, 3p 0.742) is single-seed dense-subgraph behavior, the temperature "modes" were revoked (Phase 53/54), and the Phase-67 "+0.017 LANDMARK confirmation" **does not reproduce** (Phase 73; ~95% random-adjacency capacity, Phase 76).
+> **➡ Authoritative findings: [`docs/DELTA_FINAL.md`](https://github.com/bdbrown4/DELTA/blob/main/docs/DELTA_FINAL.md).**
+
+
 | Phase | Validates | Task | Result |
 |-------|-----------|------|--------|
 | 1 | Edge-to-edge attention discovers relational patterns | Edge attention vs node attention vs MLP | Edge 100%, Node 26.7%, MLP 100% |

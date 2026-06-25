@@ -1,5 +1,11 @@
 # Architecture Overview
 
+
+> ## ⛔ PROJECT CLOSED (2026-06-25) — read this first
+> DELTA is a **finished project with a closed-NEGATIVE result.** The mechanism claims on this page — "Multi-Hop Edge Adjacency … enables compositional reasoning," the temperature "three operating modes," and "5p 0.790 vs 0.690; only model improving with depth" — are **SUPERSEDED.** After 79 phases, edge-to-edge composition adds no meaningful advantage structurally (Phases 66–76) or at query time (Phases 78–79, n=15); the value is **generic capacity, not composition** (Phase 76), the depth win is single-seed dense-subgraph behavior, and the temperature modes were revoked (Phase 53/54).
+> **➡ Authoritative findings: [`docs/DELTA_FINAL.md`](https://github.com/bdbrown4/DELTA/blob/main/docs/DELTA_FINAL.md).**
+
+
 ## Core Thesis
 
 Reality is a graph. Language is a lossy compression of reality into sequences. Transformers reconstruct relational structure from flat sequences. DELTA operates on relational structure directly.

@@ -1,5 +1,11 @@
 # Why DELTA? — Transformer vs Graph Neural Net vs DELTA
 
+
+> ## ⛔ PROJECT CLOSED (2026-06-25) — read this first
+> DELTA is a **finished project with a closed-NEGATIVE result.** This diagram frames edge-to-edge attention as "the key to compositional inference" — that compositional framing is the **refuted thesis.** After 79 phases, edge composition adds no meaningful advantage structurally (Phases 66–76) or at query time (Phases 78–79, n=15); the value is **generic capacity, not composition** (Phase 76). The +24% Phase 28 number survives only as a small dense-synthetic **capacity** result, not as composition evidence.
+> **➡ Authoritative findings: [`docs/DELTA_FINAL.md`](https://github.com/bdbrown4/DELTA/blob/main/docs/DELTA_FINAL.md).**
+
+
 <style>
 .delta-visual {
   background: #0d1117;

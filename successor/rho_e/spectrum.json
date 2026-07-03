@@ -1,0 +1,35 @@
+{
+  "fb15k237": {
+    "rho_e": 0.0,
+    "status": "schema_empty",
+    "n_edges": 310116,
+    "n_keys": 0,
+    "dup_fraction": 0.0,
+    "edge_budget": 200000,
+    "note": "symbolic KG; no edge attributes beyond type; schema-degenerate by construction",
+    "dims": [],
+    "elapsed_s": 0.7
+  },
+  "icews14": {
+    "rho_e": 0.940053103990432,
+    "status": "ok",
+    "n_edges": 90730,
+    "n_keys": 50295,
+    "dup_fraction": 0.5851,
+    "edge_budget": 200000,
+    "note": "temporal KG; z = event day; x on timestamp-stripped typed simple graph",
+    "dims": [
+      {
+        "name": "timestamp_day",
+        "kind": "continuous",
+        "excluded": false,
+        "weight": 1.0,
+        "share_within_key": 0.3051,
+        "v_knn": 0.024,
+        "v_gbt": 0.0863,
+        "rho_dim": 0.9401
+      }
+    ],
+    "elapsed_s": 16.3
+  }
+}

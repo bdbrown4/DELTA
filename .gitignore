@@ -61,3 +61,6 @@ Thumbs.db
 # prompt md file
 prompt.md
 colab_ssh.py
+
+# external datasets (auto-downloaded by successor/rho_e/compute_spectrum.py)
+data/icews14/

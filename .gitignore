@@ -64,3 +64,4 @@ colab_ssh.py
 
 # external datasets (auto-downloaded by successor/rho_e/compute_spectrum.py)
 data/icews14/
+data/wd50k*/

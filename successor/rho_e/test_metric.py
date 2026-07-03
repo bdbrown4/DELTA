@@ -240,6 +240,17 @@ def test_many_types_unseen_tau_and_determinism():
     assert r1.rho_e == r2.rho_e, "same seed must be bitwise deterministic"
 
 
+# ── real-data regression: categorical z with SINGLETON classes must not crash (GBT early-stopping) ──
+def test_categorical_singleton_classes_no_crash():
+    x = _nodes()
+    src, dst, tau = _simple_edges(3000)
+    # a categorical dim with several classes that appear exactly once (per-key summaries -> singletons)
+    z = RNG.integers(0, 8, len(src))
+    z[:6] = [100, 101, 102, 103, 104, 105]        # six singleton classes
+    rep = compute_rho_e(src, dst, tau, [("z", z, "categorical")], x, seed=0)
+    assert rep.status == "ok" and np.isfinite(rep.rho_e)
+
+
 # ── audit 15: too few keys -> clean 'insufficient_keys' status, no crash ──
 def test_insufficient_keys_status():
     x = _nodes()

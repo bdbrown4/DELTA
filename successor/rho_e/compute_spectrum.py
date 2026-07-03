@@ -104,7 +104,91 @@ def load_icews14():
                 note="temporal KG; z = event day; x on timestamp-stripped typed simple graph")
 
 
-LOADERS = {"fb15k237": load_fb15k237, "icews14": load_icews14}
+def _load_wd50k_variant(variant):
+    """Hyper-relational KG (StarE). Statement = h,main_rel,t[,qual_rel,qual_ent]* (comma-sep).
+    Edge = main triple (h, main_rel, t); z = qualifier content. The four variants (wd50k / _33 / _66
+    / _100) form the qualifier-fraction DIAL. z-encoding (STEP1: qualifier ENTITIES are pure per-instance
+    but high-card/unpredictable-by-construction -> excluded to avoid trivial rho~1; qualifier RELATIONS
+    carry a discriminative type-determined component):
+        n_qual         (continuous): number of qualifier pairs on the statement
+        primary_qual_rel (categorical): most-frequent qualifier relation (top-50 + NONE + OTHER)
+    x is structural, on the qualifier-stripped + collapsed main-triple simple graph (STEP1 §(ii))."""
+    import urllib.request, collections
+    ddir = os.path.join(ROOT, "data", variant)
+    os.makedirs(ddir, exist_ok=True)
+    base = f"https://raw.githubusercontent.com/migalkin/StarE/master/data/clean/{variant}/statements/"
+    for split in ("train.txt", "valid.txt", "test.txt"):
+        p = os.path.join(ddir, split)
+        if not os.path.exists(p):
+            urllib.request.urlretrieve(base + split, p)
+    ents, rels = {}, {}
+    rows = []            # (h, r, t, n_qual, qual_rel_list)
+    qr_counter = collections.Counter()
+    for split in ("train.txt", "valid.txt", "test.txt"):
+        with open(os.path.join(ddir, split), encoding="utf-8") as f:
+            for line in f:
+                parts = line.rstrip("\n").split(",")
+                if len(parts) < 3:
+                    continue
+                h, r, t = parts[0], parts[1], parts[2]
+                quals = parts[3:]
+                qrs = quals[0::2]
+                for q in qrs:
+                    qr_counter[q] += 1
+                rows.append((ents.setdefault(h, len(ents)), rels.setdefault(r, len(rels)),
+                             ents.setdefault(t, len(ents)), len(qrs), qrs))
+    top_qr = {q: i + 2 for i, (q, _) in enumerate(qr_counter.most_common(50))}   # 0=NONE, 1=OTHER
+    src = np.array([r[0] for r in rows]); tau = np.array([r[1] for r in rows]); dst = np.array([r[2] for r in rows])
+    n_qual = np.array([r[3] for r in rows], dtype=float)
+    prim = []
+    for _, _, _, _, qrs in rows:
+        if not qrs:
+            prim.append(0)
+        else:
+            top = collections.Counter(qrs).most_common(1)[0][0]
+            prim.append(top_qr.get(top, 1))
+    prim = np.array(prim)
+    x = structural_x(src, dst, tau, len(ents), len(rels))
+    qual_frac = float(np.mean(n_qual > 0))
+    return dict(src=src, dst=dst, tau=tau, x=x,
+                z_dims=[("n_qual", n_qual, "continuous"), ("primary_qual_rel", prim, "categorical")],
+                note=f"{variant}: hyper-relational; qualifier fraction={qual_frac:.2f}; "
+                     f"z=n_qual+primary_qual_rel (qual-entities excluded, high-card)")
+
+
+LOADERS = {"fb15k237": load_fb15k237, "icews14": load_icews14,
+           "wn18rr": lambda: _load_triples("wn18rr",
+               "https://raw.githubusercontent.com/TimDettmers/ConvE/master/WN18RR/text/"),
+           "wd50k_0": lambda: _load_wd50k_variant("wd50k"),
+           "wd50k_33": lambda: _load_wd50k_variant("wd50k_33"),
+           "wd50k_66": lambda: _load_wd50k_variant("wd50k_66"),
+           "wd50k_100": lambda: _load_wd50k_variant("wd50k_100")}
+
+
+def _load_triples(name, base_url):
+    """Generic tab-separated triple loader (schema-degenerate: no edge attributes -> rho_E := 0)."""
+    import urllib.request
+    ddir = os.path.join(ROOT, "data", name)
+    os.makedirs(ddir, exist_ok=True)
+    for split in ("train.txt", "valid.txt", "test.txt"):
+        p = os.path.join(ddir, split)
+        if not os.path.exists(p):
+            urllib.request.urlretrieve(base_url + split, p)
+    ents, rels, src, dst, tau = {}, {}, [], [], []
+    for split in ("train.txt", "valid.txt", "test.txt"):
+        with open(os.path.join(ddir, split), encoding="utf-8") as f:
+            for line in f:
+                parts = line.rstrip("\n").split("\t")
+                if len(parts) < 3:
+                    continue
+                h, r, t = parts[0], parts[1], parts[2]
+                src.append(ents.setdefault(h, len(ents)))
+                tau.append(rels.setdefault(r, len(rels)))
+                dst.append(ents.setdefault(t, len(ents)))
+    src, dst, tau = np.array(src), np.array(dst), np.array(tau)
+    x = structural_x(src, dst, tau, len(ents), len(rels))
+    return dict(src=src, dst=dst, tau=tau, x=x, z_dims=[],
+                note=f"{name}: symbolic KG; no edge attributes; schema-degenerate")
 
 
 def main():

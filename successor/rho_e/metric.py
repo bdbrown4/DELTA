@@ -166,7 +166,9 @@ def _predictability(feats: np.ndarray, target: np.ndarray, tau_rows: np.ndarray,
                 base[i] = tmeans.get(int(tau_rows[i]), gmean)   # unseen-tau fallback: global mean
         else:
             models = {"knn": KNeighborsClassifier(n_neighbors=k),
-                      "gbt": HistGradientBoostingClassifier(random_state=seed)}
+                      # early_stopping=False: its default uses a STRATIFIED internal split that raises
+                      # on singleton classes (rare categories in real z, e.g. rare qualifier relations).
+                      "gbt": HistGradientBoostingClassifier(random_state=seed, early_stopping=False)}
             u, c = np.unique(ytr, return_counts=True)
             gmaj = u[np.argmax(c)]
             tmaj = {}

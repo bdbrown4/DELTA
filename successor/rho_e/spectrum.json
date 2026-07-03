@@ -1,11 +1,139 @@
 {
+  "wd50k_0": {
+    "rho_e": 0.6113134529567895,
+    "status": "ok",
+    "n_edges": 100000,
+    "n_keys": 98812,
+    "dup_fraction": 0.0204,
+    "edge_budget": 100000,
+    "note": "wd50k: hyper-relational; qualifier fraction=0.14; z=n_qual+primary_qual_rel (qual-entities excluded, high-card)",
+    "dims": [
+      {
+        "name": "n_qual",
+        "kind": "continuous",
+        "excluded": false,
+        "weight": 0.9081,
+        "share_within_key": 0.0192,
+        "v_knn": 0.2539,
+        "v_gbt": 0.4012,
+        "rho_dim": 0.6065
+      },
+      {
+        "name": "primary_qual_rel",
+        "kind": "categorical",
+        "excluded": false,
+        "weight": 0.0919,
+        "share_within_key": 0.0108,
+        "v_knn": 0.3446,
+        "v_gbt": 0.0,
+        "rho_dim": 0.6591
+      }
+    ],
+    "elapsed_s": 344.4
+  },
+  "wd50k_33": {
+    "rho_e": 0.5670356218114023,
+    "status": "ok",
+    "n_edges": 100000,
+    "n_keys": 97614,
+    "dup_fraction": 0.0404,
+    "edge_budget": 100000,
+    "note": "wd50k_33: hyper-relational; qualifier fraction=0.31; z=n_qual+primary_qual_rel (qual-entities excluded, high-card)",
+    "dims": [
+      {
+        "name": "n_qual",
+        "kind": "continuous",
+        "excluded": false,
+        "weight": 0.8295,
+        "share_within_key": 0.0187,
+        "v_knn": 0.2956,
+        "v_gbt": 0.4502,
+        "rho_dim": 0.5582
+      },
+      {
+        "name": "primary_qual_rel",
+        "kind": "categorical",
+        "excluded": false,
+        "weight": 0.1705,
+        "share_within_key": 0.0091,
+        "v_knn": 0.3936,
+        "v_gbt": 0.0,
+        "rho_dim": 0.6099
+      }
+    ],
+    "elapsed_s": 373.3
+  },
+  "wd50k_66": {
+    "rho_e": 0.6128657879409656,
+    "status": "ok",
+    "n_edges": 49167,
+    "n_keys": 46803,
+    "dup_fraction": 0.0813,
+    "edge_budget": 100000,
+    "note": "wd50k_66: hyper-relational; qualifier fraction=0.64; z=n_qual+primary_qual_rel (qual-entities excluded, high-card)",
+    "dims": [
+      {
+        "name": "n_qual",
+        "kind": "continuous",
+        "excluded": false,
+        "weight": 0.7925,
+        "share_within_key": 0.0201,
+        "v_knn": 0.2203,
+        "v_gbt": 0.3996,
+        "rho_dim": 0.6084
+      },
+      {
+        "name": "primary_qual_rel",
+        "kind": "categorical",
+        "excluded": false,
+        "weight": 0.2075,
+        "share_within_key": 0.0102,
+        "v_knn": 0.3739,
+        "v_gbt": 0.0,
+        "rho_dim": 0.6299
+      }
+    ],
+    "elapsed_s": 208.4
+  },
+  "wd50k_100": {
+    "rho_e": 0.6487789008552326,
+    "status": "ok",
+    "n_edges": 31314,
+    "n_keys": 29022,
+    "dup_fraction": 0.1241,
+    "edge_budget": 100000,
+    "note": "wd50k_100: hyper-relational; qualifier fraction=1.00; z=n_qual+primary_qual_rel (qual-entities excluded, high-card)",
+    "dims": [
+      {
+        "name": "n_qual",
+        "kind": "continuous",
+        "excluded": false,
+        "weight": 0.8511,
+        "share_within_key": 0.0159,
+        "v_knn": 0.2569,
+        "v_gbt": 0.3385,
+        "rho_dim": 0.6669
+      },
+      {
+        "name": "primary_qual_rel",
+        "kind": "categorical",
+        "excluded": false,
+        "weight": 0.1489,
+        "share_within_key": 0.0167,
+        "v_knn": 0.4627,
+        "v_gbt": 0.0,
+        "rho_dim": 0.5451
+      }
+    ],
+    "elapsed_s": 169.1
+  },
   "fb15k237": {
     "rho_e": 0.0,
     "status": "schema_empty",
     "n_edges": 310116,
     "n_keys": 0,
     "dup_fraction": 0.0,
-    "edge_budget": 200000,
+    "edge_budget": 100000,
     "note": "symbolic KG; no edge attributes beyond type; schema-degenerate by construction",
     "dims": [],
     "elapsed_s": 0.7
@@ -16,7 +144,7 @@
     "n_edges": 90730,
     "n_keys": 50295,
     "dup_fraction": 0.5851,
-    "edge_budget": 200000,
+    "edge_budget": 100000,
     "note": "temporal KG; z = event day; x on timestamp-stripped typed simple graph",
     "dims": [
       {
@@ -30,6 +158,6 @@
         "rho_dim": 0.9401
       }
     ],
-    "elapsed_s": 16.3
+    "elapsed_s": 16.1
   }
 }

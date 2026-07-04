@@ -1,0 +1,182 @@
+{
+  "molhiv[clean]": {
+    "rho_e": 0.4617317473542819,
+    "status": "ok",
+    "n_edges": 100000,
+    "n_keys": 100000,
+    "dup_fraction": 0.0,
+    "edge_budget": 100000,
+    "key_size_max": 1,
+    "key_size_p95": 1.0,
+    "x_spec": "clean",
+    "note": "ogbg-molhiv bonds; tau=const; z=bond_type+stereo+conjugated; x-specs (clean=atomicnum+struct; zfree=STEP1 non-bond-derived atom subset+struct; zfree_noring=zfree minus is_in_ring (bounds ring-aided bias); full=all-atom-feats+struct, leaky via hybridization/is_aromatic/numH)",
+    "dims": [
+      {
+        "name": "bond_type",
+        "kind": "categorical",
+        "excluded": false,
+        "weight": 0.4191,
+        "share_within_key": 0.0,
+        "v_knn": 0.5376,
+        "v_gbt": 0.5068,
+        "rho_dim": 0.4624
+      },
+      {
+        "name": "bond_stereo",
+        "kind": "categorical",
+        "excluded": true,
+        "weight": 0.0,
+        "share_within_key": 0.0,
+        "v_knn": 1.0,
+        "v_gbt": 1.0,
+        "rho_dim": 0.0
+      },
+      {
+        "name": "is_conjugated",
+        "kind": "categorical",
+        "excluded": false,
+        "weight": 0.5809,
+        "share_within_key": 0.0,
+        "v_knn": 0.5383,
+        "v_gbt": 0.5387,
+        "rho_dim": 0.4613
+      }
+    ],
+    "elapsed_s": 94.6
+  },
+  "molhiv[zfree]": {
+    "rho_e": 0.06328189041409363,
+    "status": "ok",
+    "n_edges": 100000,
+    "n_keys": 100000,
+    "dup_fraction": 0.0,
+    "edge_budget": 100000,
+    "key_size_max": 1,
+    "key_size_p95": 1.0,
+    "x_spec": "zfree",
+    "note": "ogbg-molhiv bonds; tau=const; z=bond_type+stereo+conjugated; x-specs (clean=atomicnum+struct; zfree=STEP1 non-bond-derived atom subset+struct; zfree_noring=zfree minus is_in_ring (bounds ring-aided bias); full=all-atom-feats+struct, leaky via hybridization/is_aromatic/numH)",
+    "dims": [
+      {
+        "name": "bond_type",
+        "kind": "categorical",
+        "excluded": false,
+        "weight": 0.4191,
+        "share_within_key": 0.0,
+        "v_knn": 0.8795,
+        "v_gbt": 0.8398,
+        "rho_dim": 0.1205
+      },
+      {
+        "name": "bond_stereo",
+        "kind": "categorical",
+        "excluded": true,
+        "weight": 0.0,
+        "share_within_key": 0.0,
+        "v_knn": 1.0,
+        "v_gbt": 1.0,
+        "rho_dim": 0.0
+      },
+      {
+        "name": "is_conjugated",
+        "kind": "categorical",
+        "excluded": false,
+        "weight": 0.5809,
+        "share_within_key": 0.0,
+        "v_knn": 0.962,
+        "v_gbt": 0.978,
+        "rho_dim": 0.022
+      }
+    ],
+    "elapsed_s": 117.7
+  },
+  "molhiv[zfree_noring]": {
+    "rho_e": 0.0849613731265359,
+    "status": "ok",
+    "n_edges": 100000,
+    "n_keys": 100000,
+    "dup_fraction": 0.0,
+    "edge_budget": 100000,
+    "key_size_max": 1,
+    "key_size_p95": 1.0,
+    "x_spec": "zfree_noring",
+    "note": "ogbg-molhiv bonds; tau=const; z=bond_type+stereo+conjugated; x-specs (clean=atomicnum+struct; zfree=STEP1 non-bond-derived atom subset+struct; zfree_noring=zfree minus is_in_ring (bounds ring-aided bias); full=all-atom-feats+struct, leaky via hybridization/is_aromatic/numH)",
+    "dims": [
+      {
+        "name": "bond_type",
+        "kind": "categorical",
+        "excluded": false,
+        "weight": 0.4191,
+        "share_within_key": 0.0,
+        "v_knn": 0.8314,
+        "v_gbt": 0.8021,
+        "rho_dim": 0.1686
+      },
+      {
+        "name": "bond_stereo",
+        "kind": "categorical",
+        "excluded": true,
+        "weight": 0.0,
+        "share_within_key": 0.0,
+        "v_knn": 1.0,
+        "v_gbt": 1.0,
+        "rho_dim": 0.0
+      },
+      {
+        "name": "is_conjugated",
+        "kind": "categorical",
+        "excluded": false,
+        "weight": 0.5809,
+        "share_within_key": 0.0,
+        "v_knn": 0.9628,
+        "v_gbt": 0.9754,
+        "rho_dim": 0.0246
+      }
+    ],
+    "elapsed_s": 140.6
+  },
+  "molhiv[full]": {
+    "rho_e": 0.024290853542609497,
+    "status": "ok",
+    "n_edges": 100000,
+    "n_keys": 100000,
+    "dup_fraction": 0.0,
+    "edge_budget": 100000,
+    "key_size_max": 1,
+    "key_size_p95": 1.0,
+    "x_spec": "full",
+    "note": "ogbg-molhiv bonds; tau=const; z=bond_type+stereo+conjugated; x-specs (clean=atomicnum+struct; zfree=STEP1 non-bond-derived atom subset+struct; zfree_noring=zfree minus is_in_ring (bounds ring-aided bias); full=all-atom-feats+struct, leaky via hybridization/is_aromatic/numH)",
+    "dims": [
+      {
+        "name": "bond_type",
+        "kind": "categorical",
+        "excluded": false,
+        "weight": 0.4191,
+        "share_within_key": 0.0,
+        "v_knn": 0.9602,
+        "v_gbt": 0.8241,
+        "rho_dim": 0.0398
+      },
+      {
+        "name": "bond_stereo",
+        "kind": "categorical",
+        "excluded": true,
+        "weight": 0.0,
+        "share_within_key": 0.0,
+        "v_knn": 1.0,
+        "v_gbt": 1.0,
+        "rho_dim": 0.0
+      },
+      {
+        "name": "is_conjugated",
+        "kind": "categorical",
+        "excluded": false,
+        "weight": 0.5809,
+        "share_within_key": 0.0,
+        "v_knn": 0.9799,
+        "v_gbt": 0.9869,
+        "rho_dim": 0.0131
+      }
+    ],
+    "elapsed_s": 165.8
+  }
+}

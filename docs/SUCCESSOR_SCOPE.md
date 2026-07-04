@@ -1,6 +1,10 @@
 # Successor project scope — "When Does Edge Content Matter?" (post-DELTA)
 
-**Status:** SCOPED + KILL-GATED (2026-06-25). This is **not** a DELTA phase — DELTA is CLOSED
+**Status:** SCOPED + KILL-GATED (2026-06-25). **Steps 1–3 now COMPLETE — see
+[../successor/STEP3.md](../successor/STEP3.md) for the audited verdict** (label-free ρ_E killed as a gain
+predictor, survives one-directional; label-aware ρ_E^Y promising-but-unconfirmed after de-confounding;
+theory note #1 ships). This document is the **pre-registration** and is left intact below; the Step-3 file
+records what actually happened against it. This is **not** a DELTA phase — DELTA is CLOSED
 ([DELTA_FINAL.md](DELTA_FINAL.md)). This document scopes the successor bet that DELTA's negative uniquely
 equips: a theory note + a pre-training diagnostic for *when edge-aware architectures can help*, with
 DELTA's 79-phase null as the anchor at the low end of the curve.
@@ -163,6 +167,12 @@ observation; ship #1 alone.
 ---
 
 ## 3. Validation spectrum (what exists vs what we must run)
+
+> **Column clarification (added post-hoc, no content changed):** the middle column is the *predicted*
+> ρ_E, **not** the published gain band. (A Step-3 referee misread "mid" for temporal KGs as a *gain*
+> band; the gain is read from the Evidence column — e.g. temporal = *low* per Radstok. The Step-3 gate
+> outcome is invariant to that choice; see STEP3.md §A.) Measured ρ_E often *differed* from the prediction
+> — notably temporal KGs came in at 0.94, not "mid" — which is itself part of the Step-3 finding.
 
 | Dataset | expected ρ_E | Existing evidence | We must run |
 |---|---|---|---|

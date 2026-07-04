@@ -62,6 +62,8 @@ Thumbs.db
 prompt.md
 colab_ssh.py
 
-# external datasets (auto-downloaded by successor/rho_e/compute_spectrum.py)
+# external datasets (auto-downloaded by successor/rho_e/compute_spectrum.py + compute_ogb.py)
 data/icews14/
 data/wd50k*/
+data/ogb/
+data/wn18rr/

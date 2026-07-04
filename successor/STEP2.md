@@ -1,5 +1,12 @@
 # Step 2 — Spectrum computation + the kill-gate signal (sprint artifact)
 
+> **⚠ SUPERSEDED / CORRECTED BY [STEP3.md](STEP3.md) (2026-07-03).** Step 3 completed the spectrum (added
+> the molecular + ogbl-collab anchors), **corrected Finding 3** (the fixed-n control shows the WD50K dial is
+> a *weak/noisy/non-monotone rise*, not "flat within noise"), hardened Finding 2 (ICEWS 0.94 robust to the
+> size-1/cap/estimator audits), gave Finding 1 a real molecular point, and built + **adversarially
+> de-confounded** the label-aware ρ_E^Y tier. Read STEP3.md for the audited verdict; this file is the
+> Step-2-state snapshot.
+
 **Status:** Step 2 IN PROGRESS (2026-06-25). Six of the seven spectrum points computed at a common
 100k-edge budget with ρ_E v0.2.1 (16/16 gating tests). **The diagnostic law (#2) is trending strongly
 toward its pre-registered kill; the one-directional claim and the theory note (#1) survive.** This is the
